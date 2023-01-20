@@ -294,8 +294,8 @@
 
 								// Define Variable
 								uint32_t _Remain = Variables.File_Size;
-								uint32_t _RequestSize = 200;
-								uint32_t _RecieveSize = 0;
+								uint16_t _RequestSize = 200;
+								uint16_t _RecieveSize = 0;
 								uint32_t _WriteSize = 0;
 
 								// Get Pack

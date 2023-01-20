@@ -5019,7 +5019,7 @@
 			 * @return true Function is success.
 			 * @return false Function fail.
 			 */
-			bool FTPRECV(const uint32_t _Size, uint32_t & _ReadSize, char * _Data) {
+			bool FTPRECV(const uint16_t _Size, uint16_t & _ReadSize, char * _Data) {
 
 				// Clear UART Buffer
 				Clear_UART_Buffer();
@@ -5078,9 +5078,6 @@
 				if (_ReadSize > 0 and _ReadSize < 10) _HeaderSize = 13 + 1;
 				if (_ReadSize > 9 and _ReadSize < 100) _HeaderSize = 13 + 2;
 				if (_ReadSize > 99 and _ReadSize < 1000) _HeaderSize = 13 + 3;
-
-				// Calculare Pack Size
-				uint16_t _PackSize = sizeof(Buffer_Variable);
 
 				// Get Data
 				for (uint16_t i = _HeaderSize; i <= (_HeaderSize + _ReadSize - 1); i++) {
