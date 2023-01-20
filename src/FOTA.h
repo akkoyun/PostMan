@@ -1,5 +1,5 @@
-#ifndef __PostOffice_FOTA__
-#define __PostOffice_FOTA__
+#ifndef __PostMan_FOTA__
+#define __PostMan_FOTA__
 
 	// Define Arduino Library
 	#ifndef __Arduino__

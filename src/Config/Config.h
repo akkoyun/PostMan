@@ -1,5 +1,5 @@
-#ifndef __PostOffice_Config__
-#define __PostOffice_Config__
+#ifndef __PostMan_Config__
+#define __PostMan_Config__
 
 	// Hardware Definitions
 //	#define GSM_Power_Switch

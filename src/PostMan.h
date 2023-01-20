@@ -1,5 +1,5 @@
-#ifndef __PostOffice__
-#define __PostOffice__
+#ifndef __PostMan__
+#define __PostMan__
 
 	// Define Arduino Library
 	#ifndef __Arduino__
@@ -7,22 +7,22 @@
 	#endif
 
 	// Define Library Includes
-	#ifndef __PostOffice_Includes__
+	#ifndef __PostMan_Includes__
 		#include "Config/Includes.h"
 	#endif
 
 	// Define Library Includes
-	#ifndef __PostOffice_GSM__
+	#ifndef __PostMan_GSM__
 		#include "GSM.h"
 	#endif
 
 	// Define Library Includes
-	#ifndef __PostOffice_FOTA__
+	#ifndef __PostMan_FOTA__
 		#include "FOTA.h"
 	#endif
 
 	// Cloud Functions
-	class PostOffice : public GSM {
+	class PostMan : public GSM {
 
 		// Private Functions
 		private:
@@ -395,8 +395,8 @@
 				bool 		Ring				= false;
 			} Interrupt;
 
-			// PostOffice Constructor
-			PostOffice(Stream &_Serial) : GSM(_Serial) {
+			// PostMan Constructor
+			PostMan(Stream &_Serial) : GSM(_Serial) {
 
 				// Clear Interrupt
 				this->Interrupt.Send = false;
@@ -879,4 +879,4 @@
 	};
 
 
-#endif /* defined(__PostOffice__) */
+#endif /* defined(__PostMan__) */

@@ -1,5 +1,5 @@
-#ifndef __PostOffice_GSM__
-#define __PostOffice_GSM__
+#ifndef __PostMan_GSM__
+#define __PostMan_GSM__
 
 	// Define Arduino Library
 	#ifndef __Arduino__
@@ -7,12 +7,12 @@
 	#endif
 
 	// Define Library Includes
-	#ifndef __PostOffice_Includes__
+	#ifndef __PostMan_Includes__
 		#include "Config/Includes.h"
 	#endif
 
 	// Define Hardware Includes
-	#ifndef __PostOffice_Hardware__
+	#ifndef __PostMan_Hardware__
 		#include "Hardware.h"
 	#endif
 
@@ -44,7 +44,7 @@
 				uint8_t 	Second				= 0;
 			} Time;
 
-			// PostOffice Constructor
+			// GSM Constructor
 			GSM(Stream &_Serial) : AT_Command_Set(_Serial) {
 
 			}
@@ -1350,4 +1350,4 @@
 	};
 
 
-#endif /* defined(__PostOffice__) */
+#endif /* defined(__PostMan__) */

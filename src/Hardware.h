@@ -1,5 +1,5 @@
-#ifndef __PostOffice_Hardware__
-#define __PostOffice_Hardware__
+#ifndef __PostMan_Hardware__
+#define __PostMan_Hardware__
 
 	// Define Arduino Library
 	#ifndef __Arduino__
@@ -7,7 +7,7 @@
 	#endif
 
 	// Define Library Includes
-	#ifndef __PostOffice_Includes__
+	#ifndef __PostMan_Includes__
 		#include "Config/Includes.h"
 	#endif
 
@@ -267,4 +267,4 @@
 
 		};
 
-#endif /* defined(__PostOffice_Hardware__) */
+#endif /* defined(__PostMan_Hardware__) */
