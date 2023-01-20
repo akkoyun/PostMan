@@ -1,0 +1,49 @@
+{
+	"name": "PostMan",
+	"version": "0.0.0",
+	"keywords": "GSM, Modem, GPRS, 2G, IoT, Telit, GE910, LE910, Backend, Cloud, PostOffice, API",
+	"description": "GSM Based IoT, Cloud Server Integration Library.",
+	"authors":
+	{
+		"name": "Mehmet Gunce Akkoyun",
+		"email": "akkoyun@me.com",
+		"url": "https://github.com/akkoyun"
+	},
+	"license": "MIT",
+	"frameworks": "arduino",
+	"headers": "PostOffice.h",
+	"platforms":
+	[
+		"atmelavr",
+		"atmelmegaavr"
+	],
+	"repository":
+	{
+		"type": "git",
+		"url": "https://github.com/akkoyun/PostMan"
+	},
+	"dependencies":
+	[
+		{
+			"owner": "akkoyun",
+			"name": "Console",
+			"version": "^1.0.0"
+		},
+		{
+			"owner": "bblanchon",
+			"name": "ArduinoJson",
+			"version": "^6.19.0"
+		}
+	],
+	"examples": [
+		{
+			"name": "PostOffice Sample",
+			"base": "examples/Initialize",
+			"files": [
+				"Initialize.ino"
+			]
+		}
+	]
+}
+
+
