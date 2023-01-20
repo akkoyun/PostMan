@@ -293,10 +293,8 @@
 								char _Data[250];
 
 								// Define Variable
-								uint32_t _Remain = Variables.File_Size;
-								uint16_t _RequestSize = 200;
+								uint32_t _SD_Recieve_Size = 0;
 								uint16_t _RecieveSize = 0;
-								uint32_t _WriteSize = 0;
 
 								// Get Pack
 								while (!Control.Response) {
@@ -304,25 +302,22 @@
 									// Set Data Variable
 									memset(_Data, '\0', 250);
 
-									// Clear Variable
+									// Reset Variable
 									_RecieveSize = 0;
 
 									// Send Command
-									if (AT_Command_Set::FTPRECV(_RequestSize, _RecieveSize, _Data)) {
+									if (AT_Command_Set::FTPRECV(200, _RecieveSize, _Data)) {
 
-										// Calculate Remaining
-										_Remain -= _RecieveSize;
+										if (_RecieveSize > 0) {
 
-										// Calculate Write Size
-										_WriteSize += _RecieveSize;
+											// Print File
+											SD_File.flush();
+											SD_File.write(_Data);
+											delay(5);
 
-										// Calculate Pack Size
-										if (_Remain <= _RequestSize) _RequestSize = _Remain;
+											_SD_Recieve_Size += _RecieveSize;
 
-										// Print File
-										SD_File.flush();
-										SD_File.write(_Data);
-										delay(5);
+										}
 
 									}
 
@@ -331,16 +326,21 @@
 
 									// SD Message
 									#ifdef GSM_Debug
-										Terminal_GSM.Text(25, 112, WHITE, String(map((Variables.File_Size - _Remain), 0, Variables.File_Size, 0, 100)));
-										Terminal_GSM.Text(26, 109, WHITE, String(Variables.Download_Time));
+										Terminal_GSM.Text(25, 112, CYAN, String("   "));
+										Terminal_GSM.Text(25, 112, CYAN, String(map(_SD_Recieve_Size, 0, Variables.File_Size, 0, 100)));
+
+										Terminal_GSM.Text(26, 109, CYAN, String("    "));
+										Terminal_GSM.Text(26, 109, CYAN, String(Variables.Download_Time));
+
 										Terminal_GSM.Text(29, 100, CYAN, String("        "));
-										Terminal_GSM.Text(29, 100, CYAN, String(Variables.File_Size - _Remain));
-										Terminal_GSM.Text(29, 70, CYAN, String("        "));
-										Terminal_GSM.Text(29, 70, CYAN, String(_WriteSize));
+										Terminal_GSM.Text(29, 100, CYAN, String(_RecieveSize));
+
+										Terminal_GSM.Text(31, 100, CYAN, String("        "));
+										Terminal_GSM.Text(31, 100, CYAN, String(_SD_Recieve_Size));
 									#endif
 
 									// Control for File End
-									if (_Remain == 0) Control.Response = true;
+									if (_SD_Recieve_Size == Variables.File_Size) Control.Response = true;
 
 									// End Function
 									if (Variables.Download_Time > 1200) break;

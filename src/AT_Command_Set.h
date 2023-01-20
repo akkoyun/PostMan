@@ -5061,23 +5061,49 @@
 
 				// \r\n#FTPRECV: 150\r\n:100000000C9423070C9454070C9454070C94540735\r\n:100010000C9454070C9454070C9454070C945407F4\r\n:100020000C9454070C9454070C945E3F0C945407A2\r\n:100030000C9454\r\n\r\nOK\r\n
 				// \r\n#FTPRECV: 150\r\n0E0F701EC0F66\r\n:100A7000FD1F6491662361F0D801ED91FC91019016\r\n:100A8000F081E02DC8011995892B11F02196EECF48\r\n:100A9000CE01DF91CF911F910F91FF90EF900895BC\r\n\r\n\r\nOK\r\n
-				// \r\n#FTPRECV: 150\r\n\r\n:10007000FF2059F31836B1F11C3609F43DC01123A5\r\n:1000800021F3612F70E084EA91E00E945483892B70\r\n:10009000E1F2912C812C00FD06C0F5018080918059\r\n:1000A000C501\r\n\r\nOK\r\n
+				// \r\n#FTPRECV: 150\r\n   \r\n:10007000FF2059F31836B1F11C3609F43DC01123A5\r\n:1000800021F3612F70E084EA91E00E945483892B70\r\n:10009000E1F2912C812C00FD06C0F5018080918059\r\n:1000A000C501\r\n\r\nOK\r\n
+
+				// rn#FTPRECV: 200rn2710F931F9392rn:10E2B000CF93DF93EC010E944F718C01CE010E943Drn:10E2C0007F70800F911FDF91CF911F910F91089563rn:10E2D0009A01AB0170E060E00C944271FC01808116rn:10E2E00091810C945C79CF93DF93EC0188819981C3rn:10E2rnrnOKrn
+				
+				// rn#FTPRECV: 1rn
+				// rn#FTPRECV: 10rn
+				// rn#FTPRECV: 150rn
 
 				// Clear Variable
 				_ReadSize = 0;
-				uint16_t _HeaderSize = 0;
-				uint16_t _DataPosition = 0;
+				uint8_t _HeaderSize = 0;
+				uint8_t _DataPosition = 0;
+
+				// Declare Variable
+				char _SizeChar[4];
+				memset(_SizeChar, '\0', 4);
+				uint8_t _SizeCharPos = 0;
 
 				// Handle Pack Size
-				sscanf(Buffer_Variable, "\r\n#FTPRECV: %3d\r\n", &_ReadSize);
+				for (uint8_t i = 0; i < 15; i++) {
 
+					// Handle for Number
+					if (Buffer_Variable[i] >= '0' and Buffer_Variable[i] <= '9') {
+						_SizeChar[_SizeCharPos] = Buffer_Variable[i];
+						_SizeCharPos += 1;
+					}
+
+				}
+
+				// Set Size
+				_ReadSize = atoi(_SizeChar);
+				
 				// Calculate Header Size
-				if (_ReadSize > 0 and _ReadSize < 10) _HeaderSize = 13 + 1;
-				if (_ReadSize > 9 and _ReadSize < 100) _HeaderSize = 13 + 2;
-				if (_ReadSize > 99 and _ReadSize < 1000) _HeaderSize = 13 + 3;
+				if (_ReadSize >= 0 and _ReadSize <= 9) _HeaderSize = 15;
+				if (_ReadSize >= 10 and _ReadSize <= 99) _HeaderSize = 16;
+				if (_ReadSize >= 100 and _ReadSize <= 999) _HeaderSize = 17;
+
+				// Size : 145
+				// rn#FTPRECV: 120rn0E942C08C8010E9490rn:1012C0006E718FE892ECA1EBB1E48093E10490930Ern:1012D000E204A093E304B093E4048CEE91E5A5E06Ern:1012E000BrnrnOKrn
+				// 16 - 120 - 8
 
 				// Get Data
-				for (uint16_t i = _HeaderSize; i <= (_HeaderSize + _ReadSize - 1); i++) {
+				for (uint8_t i = _HeaderSize - 1; i <= (_HeaderSize + _ReadSize); i++) {
 				
 					// Assign Char
 					_Data[_DataPosition] = Buffer_Variable[i];
@@ -5088,8 +5114,8 @@
 				}
 
 				// End Function
-				if (_ReadSize > 1) return (true);
-
+				if (_ReadSize > 0) return (true);
+				
 				// Error Delay
 				delay(5000);
 
