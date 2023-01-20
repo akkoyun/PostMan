@@ -38,7 +38,7 @@
 		Interrupt	= 3,
 		Alarm		= 4,
 		Offline		= 5,
-		FOTA		= 99
+		FOTA_Info	= 99
 	};
 
 #endif

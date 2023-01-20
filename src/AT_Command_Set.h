@@ -4440,7 +4440,7 @@
 					if (Buffer_Variable[Buffer.Read_Order - 1] == 'O' and Buffer_Variable[Buffer.Read_Order] == 'K') Buffer.Response = true;
 
 					// Control for <OK> Response
-					if (Buffer_Variable[Buffer.Read_Order - 2] == 'C' and Buffer_Variable[Buffer.Read_Order - 1] == 'M' and Buffer_Variable[Buffer.Read_Order] == 'E') Buffer.Response = false;
+					if (Buffer_Variable[Buffer.Read_Order - 2] == 'C' and Buffer_Variable[Buffer.Read_Order - 1] == 'M' and Buffer_Variable[Buffer.Read_Order] == 'E') return(false);
 
 					// Increase Read Order
 					if (Buffer_Variable[Buffer.Read_Order] > 31 and Buffer_Variable[Buffer.Read_Order] < 127) Buffer.Read_Order += 1;

@@ -165,13 +165,13 @@
 					// Get Data
 					_Send_Data_CallBack(Pack_Types::Offline);
 
-				} else if (_Pack_Type == Pack_Types::FOTA) {
+				} else if (_Pack_Type == Pack_Types::FOTA_Info) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("FOTA_Download"));
 
 					// Get Data
-					_Send_Data_CallBack(Pack_Types::FOTA);
+					_Send_Data_CallBack(Pack_Types::FOTA_Info);
 
 				} else {
 
@@ -328,7 +328,7 @@
 					}
 
 					// FOTA Download Payload
-					if (_Pack_Type == Pack_Types::FOTA) {
+					if (_Pack_Type == Pack_Types::FOTA_Info) {
 
 						// Set FOTA Status Variable
 						JSON_Payload[F("File_ID")] = this->JSON_Data.JSON_FOTA.File_ID;
