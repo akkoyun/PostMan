@@ -21,7 +21,7 @@
 		#include "AT_Command_Set.h"
 	#endif
 	
-		// Cloud Functions
+	// GSM Functions
 	class GSM : public Hardware, public AT_Command_Set {
 
 		// Public Functions

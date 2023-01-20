@@ -51,9 +51,6 @@
 				// Set Serial Port
 				GSM_Serial = & _Serial;
 
-				// Start GSM Serial
-				Serial3.begin(115200);
-
 			}
 
 			/**

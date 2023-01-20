@@ -125,53 +125,53 @@
 				StaticJsonDocument<1024> JSON;
 
 				// Set Device ID Variable
-				if (_Pack_Type == Pack_Online) {
+				if (_Pack_Type == Pack_Types::Online) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Online"));
 
 					// Get Data
-					_Send_Data_CallBack(Pack_Online);
+					_Send_Data_CallBack(Pack_Types::Online);
 
-				} else if (_Pack_Type == Pack_Timed) {
+				} else if (_Pack_Type == Pack_Types::Timed) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Timed"));
 
 					// Get Data
-					_Send_Data_CallBack(Pack_Timed);
+					_Send_Data_CallBack(Pack_Types::Timed);
 
-				} else if (_Pack_Type == Pack_Interrupt) {
+				} else if (_Pack_Type == Pack_Types::Interrupt) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Interrupt"));
 
 					// Get Data
-					_Send_Data_CallBack(Pack_Interrupt);
+					_Send_Data_CallBack(Pack_Types::Interrupt);
 
-				} else if (_Pack_Type == Pack_Alarm) {
+				} else if (_Pack_Type == Pack_Types::Alarm) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Alarm"));
 
 					// Get Data
-					_Send_Data_CallBack(Pack_Alarm);
+					_Send_Data_CallBack(Pack_Types::Alarm);
 
-				} else if (_Pack_Type == Pack_Offline) {
+				} else if (_Pack_Type == Pack_Types::Offline) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Offline"));
 
 					// Get Data
-					_Send_Data_CallBack(Pack_Offline);
+					_Send_Data_CallBack(Pack_Types::Offline);
 
-				} else if (_Pack_Type == FOTA_Download) {
+				} else if (_Pack_Type == Pack_Types::FOTA) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("FOTA_Download"));
 
 					// Get Data
-					_Send_Data_CallBack(FOTA_Download);
+					_Send_Data_CallBack(Pack_Types::FOTA);
 
 				} else {
 
@@ -193,10 +193,10 @@
 					JSON_Info[F("ID")] = this->JSON_Data.JSON_Info.Device_ID;
 					
 					// Set Device Hardware Version Variable
-					if (_Pack_Type == Pack_Online) JSON_Info[F("Hardware")] = F(__Hardware__);
+					if (_Pack_Type == Pack_Types::Online) JSON_Info[F("Hardware")] = F(__Hardware__);
 
 					// Set Device Firmware Version Variable
-					if (_Pack_Type == Pack_Online) JSON_Info[F("Firmware")] = F(__Firmware__);
+					if (_Pack_Type == Pack_Types::Online) JSON_Info[F("Firmware")] = F(__Firmware__);
 
 					// Set Device Environment Variable
 					JSON_Info[F("Temperature")] = this->JSON_Data.JSON_Info.Temperature;
@@ -215,9 +215,9 @@
 					JSON_Battery[F("AC")] = this->JSON_Data.JSON_Battery.AC;
 					JSON_Battery[F("SOC")] = this->JSON_Data.JSON_Battery.SOC;
 					JSON_Battery[F("Charge")] = this->JSON_Data.JSON_Battery.Charge;
-					if (_Pack_Type == Pack_Online) JSON_Battery[F("T")] = this->JSON_Data.JSON_Battery.T;
-					if (_Pack_Type == Pack_Online) JSON_Battery[F("FB")] = this->JSON_Data.JSON_Battery.FB;
-					if (_Pack_Type == Pack_Online) JSON_Battery[F("IB")] = this->JSON_Data.JSON_Battery.IB;
+					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("T")] = this->JSON_Data.JSON_Battery.T;
+					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("FB")] = this->JSON_Data.JSON_Battery.FB;
+					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("IB")] = this->JSON_Data.JSON_Battery.IB;
 
 				#endif
 
@@ -228,7 +228,7 @@
 					JsonObject JSON_GSM = JSON_Device["IoT"].createNestedObject(F("GSM"));
 
 					// Get GSM Parameters
-					if (_Pack_Type == Pack_Online) {
+					if (_Pack_Type == Pack_Types::Online) {
 
 						// Define IoT Module
 						JsonObject JSON_Module = JSON_GSM.createNestedObject(F("Module"));
@@ -273,7 +273,7 @@
 					JSON_Payload[F("TimeStamp")] = this->JSON_Data.Time_Stamp;
 
 					// Online Payload
-					if (_Pack_Type == Pack_Online) {
+					if (_Pack_Type == Pack_Types::Online) {
 
 						// Set Device Status Variable
 						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
@@ -284,7 +284,7 @@
 					}
 
 					// Timed Payload
-					if (_Pack_Type == Pack_Timed) {
+					if (_Pack_Type == Pack_Types::Timed) {
 
 						// Set Device Status Variable
 						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
@@ -295,7 +295,7 @@
 					}
 
 					// Interrupt Payload
-					if (_Pack_Type == Pack_Interrupt) {
+					if (_Pack_Type == Pack_Types::Interrupt) {
 
 						// Set Device Status Variable
 						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
@@ -306,7 +306,7 @@
 					}
 
 					// Alarm Payload
-					if (_Pack_Type == Pack_Alarm) {
+					if (_Pack_Type == Pack_Types::Alarm) {
 
 						// Set Device Status Variable
 						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
@@ -317,7 +317,7 @@
 					}
 
 					// Offline Payload
-					if (_Pack_Type == Pack_Offline) {
+					if (_Pack_Type == Pack_Types::Offline) {
 
 						// Set Device Status Variable
 						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
@@ -328,7 +328,7 @@
 					}
 
 					// FOTA Download Payload
-					if (_Pack_Type == FOTA_Download) {
+					if (_Pack_Type == Pack_Types::FOTA) {
 
 						// Set FOTA Status Variable
 						JSON_Payload[F("File_ID")] = this->JSON_Data.JSON_FOTA.File_ID;

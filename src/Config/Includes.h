@@ -31,23 +31,14 @@
 	#include <SPI.h>
 	#include "SD.h"
 
-
-
-
-
-
-
-
-
-
-
-
-	// Define Pack Type
-	#define Pack_Online 				(uint8_t)1
-	#define Pack_Timed 					(uint8_t)2
-	#define Pack_Interrupt 				(uint8_t)3
-	#define Pack_Alarm 					(uint8_t)4
-	#define Pack_Offline 				(uint8_t)5
-	#define FOTA_Download 				(uint8_t)99
+	// PostOffice Pack Types
+	enum Pack_Types {
+		Online		= 1,
+		Timed		= 2,
+		Interrupt	= 3,
+		Alarm		= 4,
+		Offline		= 5,
+		FOTA		= 99
+	};
 
 #endif

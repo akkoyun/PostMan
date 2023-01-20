@@ -77,5 +77,4 @@
 		#define FOTA_SD_FileName		"STF.hex"
 	#endif
 
-
 #endif
