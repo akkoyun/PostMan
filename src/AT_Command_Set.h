@@ -5042,6 +5042,8 @@
 				// Read UART Response
 				while (!Buffer.Response) {
 
+					delay(1);
+
 					// Read Serial Char
 					Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
 
@@ -5103,8 +5105,10 @@
 				// 16 - 120 - 8
 
 				// Get Data
-				for (uint8_t i = _HeaderSize - 1; i <= (_HeaderSize + _ReadSize); i++) {
-				
+				for (uint8_t i = _HeaderSize - 1; i < (_HeaderSize + _ReadSize - 1); i++) {
+
+					delay(1);
+
 					// Assign Char
 					_Data[_DataPosition] = Buffer_Variable[i];
 

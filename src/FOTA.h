@@ -313,7 +313,7 @@
 											// Print File
 											SD_File.flush();
 											SD_File.write(_Data);
-											delay(5);
+											delay(10);
 
 											_SD_Recieve_Size += _RecieveSize;
 
