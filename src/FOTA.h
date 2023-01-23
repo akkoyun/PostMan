@@ -50,6 +50,14 @@
 					bool Function					= true;
 				} Control;
 
+				// Declare SD File Object
+				File SD_File;
+
+				// Activate Mux
+				DDRC |= 0b00000001;
+				PORTC |= 0b00000001;
+				delay(10);
+
 				// FTPTO Command
 				#ifdef _AT_FTPTO_
 
@@ -235,8 +243,7 @@
 				#endif
 
 				#ifdef GSM_Debug
-					Terminal_GSM.Text(23, 110, GREEN, String(_File_ID + ".hex"));
-					Terminal_GSM.Text(23, 110, GREEN, String(Variables.File_Size));
+					Terminal_GSM.Text(23, 110, GREEN, String(_File_ID));
 				#endif
 
 				// FTPRECV Command
@@ -248,14 +255,6 @@
 						// Reset Control Variables
 						Control.Error_WD = 0;
 						Control.Response = false;
-
-						// Declare SD File Object
-						File SD_File;
-
-						// Activate Mux
-						DDRC |= 0b00000001;
-						PORTC |= 0b00000001;
-						delay(10);
 
 						// Start SD Card
 						if (SD.begin(53)) {
@@ -310,11 +309,13 @@
 
 										if (_RecieveSize > 0) {
 
-											// Print File
-											SD_File.flush();
-											SD_File.write(_Data);
-											delay(10);
+											// Write Data
+											delay(5);
+//											SD_File.flush();
+											SD_File.write(_Data, _RecieveSize);
+											delay(5);
 
+											// Handle Recieve Size
 											_SD_Recieve_Size += _RecieveSize;
 
 										}

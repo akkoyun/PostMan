@@ -5024,12 +5024,14 @@
 				// Declare Buffer Object
 				Serial_Buffer Buffer = {false, 0, 0, 500000};
 
-				// Declare Buffer
-				char Buffer_Variable[255];
-				memset(Buffer_Variable, '\0', 255);
+				// Clear Variable
+				_ReadSize = 0;
+				uint8_t _HeaderSize = 0;
 
-				// Command Chain Delay (Advice by Telit)
-				delay(20);
+				// Declare Variable
+				char _SizeChar[4];
+				memset(_SizeChar, '\0', 4);
+				uint8_t _SizeCharPos = 0;
 
 				// Send UART Command
 				GSM_Serial->print(F("AT#FTPRECV="));
@@ -5039,17 +5041,21 @@
 				// Read Current Time
 				const uint32_t Current_Time = millis();
 
+				// Command Chain Delay (Advice by Telit)
+				delay(10);
+
+				// Declare Buffer
+				char Buffer_Variable[255];
+				memset(Buffer_Variable, '\0', 255);
+
 				// Read UART Response
 				while (!Buffer.Response) {
-
-					delay(1);
 
 					// Read Serial Char
 					Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
 
 					// Control for <OK> Response
-					if (Buffer.Read_Order > 1 and Buffer_Variable[Buffer.Read_Order - 3] == 'O' and Buffer_Variable[Buffer.Read_Order - 2] == 'K') Buffer.Response = true;
-					if (Buffer_Variable[Buffer.Read_Order - 2] == 'C' and Buffer_Variable[Buffer.Read_Order - 1] == 'M' and Buffer_Variable[Buffer.Read_Order] == 'E') return(false);
+					if (Buffer_Variable[Buffer.Read_Order - 3] == 'O' and Buffer_Variable[Buffer.Read_Order - 2] == 'K') Buffer.Response = true;
 
 					// Increase Read Order
 					if (Buffer_Variable[Buffer.Read_Order] > 32 and Buffer_Variable[Buffer.Read_Order] < 127) Buffer.Read_Order += 1;
@@ -5071,16 +5077,6 @@
 				// rn#FTPRECV: 10rn
 				// rn#FTPRECV: 150rn
 
-				// Clear Variable
-				_ReadSize = 0;
-				uint8_t _HeaderSize = 0;
-				uint8_t _DataPosition = 0;
-
-				// Declare Variable
-				char _SizeChar[4];
-				memset(_SizeChar, '\0', 4);
-				uint8_t _SizeCharPos = 0;
-
 				// Handle Pack Size
 				for (uint8_t i = 0; i < 15; i++) {
 
@@ -5094,7 +5090,7 @@
 
 				// Set Size
 				_ReadSize = atoi(_SizeChar);
-				
+
 				// Calculate Header Size
 				if (_ReadSize >= 0 and _ReadSize <= 9) _HeaderSize = 15;
 				if (_ReadSize >= 10 and _ReadSize <= 99) _HeaderSize = 16;
@@ -5104,16 +5100,18 @@
 				// rn#FTPRECV: 120rn0E942C08C8010E9490rn:1012C0006E718FE892ECA1EBB1E48093E10490930Ern:1012D000E204A093E304B093E4048CEE91E5A5E06Ern:1012E000BrnrnOKrn
 				// 16 - 120 - 8
 
-				// Get Data
-				for (uint8_t i = _HeaderSize - 1; i < (_HeaderSize + _ReadSize - 1); i++) {
+				// Clear Variable
+				memset(_Data, '\0', 250);
+				uint16_t _DataPosition = 0;
 
-					delay(1);
+				// Get Data
+				for (uint16_t i = _HeaderSize - 1; i < (_HeaderSize + _ReadSize - 1); i++) {
 
 					// Assign Char
 					_Data[_DataPosition] = Buffer_Variable[i];
 
 					// Set Position
-					_DataPosition += 1;
+					_DataPosition++;
 
 				}
 
