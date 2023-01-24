@@ -1,9 +1,9 @@
-#define __Firmware__ "00.00.01"
+#define __Firmware__ "00.00.02"
 
 // Define Libraries
 #include <Arduino.h>
 #include "Terminal_Variables.h"
-#include <PostOffice.h>
+#include <PostMan.h>
 #include <ArduinoJson.h>
 #include <Console.h>
 
@@ -16,8 +16,7 @@ void CallBack_Command(uint16_t, char*);
 Console Terminal(Serial_Terminal);
 
 // Set PostOffice Cloud API
-//GSM Modem(Serial3);
-PostOffice Postoffice(Serial3);
+PostMan Postman(Serial3);
 FOTA Firmware(Serial3);
 
 
@@ -89,13 +88,13 @@ void CallBack_PackData(uint8_t _PackType) {
 	Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, YELLOW, "Device Data Updated");
 
 	// Set Device Data
-	Postoffice.Environment(22.22, 33.33);
-	Postoffice.Battery(1, 2, 3, 3, 11, 1200, 1000);
+	Postman.Environment(22.22, 33.33);
+	Postman.Battery(1, 2, 3, 3, 11, 1200, 1000);
 
 	// Set Payload Data
-	Postoffice.TimeStamp("2022-03-23 14:18:30");
+	Postman.TimeStamp("2022-03-23 14:18:30");
 
-	if (_PackType == 1)	Postoffice.SetStatus(240, 500);
+	if (_PackType == 1)	Postman.SetStatus(240, 500);
 
 	// Print Text
 	Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_X, YELLOW, "                      ");
@@ -148,7 +147,7 @@ void CallBack_Command(uint16_t _Command, char * _Pack) {
 
 	}
 
-	if (_Command == 262) Postoffice.Interrupt.Send = true;
+	if (_Command == 262) Postman.Interrupt.Send = true;
 
 
 
@@ -175,7 +174,7 @@ void CallBack_Command(uint16_t _Command, char * _Pack) {
 	_Response_JSON.toCharArray(JSON, _JSON_Length);
 
 	// Send Response
-	Postoffice.Response(200, JSON);
+	Postman.Response(200, JSON);
 
 	// Print JSON
 	Terminal.Text(26, 4, CYAN, String(_Response_JSON));
@@ -322,7 +321,7 @@ ISR(TIMER5_COMPA_vect) {
 	if (Timer_Control(1)) Timer_Display = true;
 
 	// Data Send Timer Interrupt
-	if (Timer_Control(120)) Postoffice.Interrupt.Send = true;
+	if (Timer_Control(120)) Postman.Interrupt.Send = true;
 
 }
 
@@ -333,7 +332,7 @@ ISR(PCINT1_vect) {
 	if ((PINJ & (1 << PINJ2)) == (1 << PINJ2)) {
 		
 		// Set Interrupt Variable
-		Postoffice.Interrupt.Ring = true;
+		Postman.Interrupt.Ring = true;
 
 		// Interrupt Delay
 		delay(75);
@@ -341,7 +340,7 @@ ISR(PCINT1_vect) {
 	} else {
 		
 		// Set Interrupt Variable
-		Postoffice.Interrupt.Ring = false;
+		Postman.Interrupt.Ring = false;
 
 	}
 
@@ -358,6 +357,13 @@ void setup() {
 	// Start Terminal
 	Serial.begin(115200);
 
+	// Start GSM Serial
+	Serial3.begin(115200);
+
+
+
+
+
 	// Start Console
 	Terminal.Begin();
 	Terminal.Telit_xE910();
@@ -365,26 +371,31 @@ void setup() {
 	// Print Version
 	Terminal.Text(2, 111, CYAN, String(__Firmware__));
 
+	// Print Version
+//	Terminal.Text(2, 85, CYAN, String(SERIAL_RX_BUFFER_SIZE));
+//	Terminal.Text(2, 30, CYAN, String(___Firmware___));
+
+
 
 
 
 
 	// Power OFF GSM Modem
-	Postoffice.Power(false);
+	Postman.Power(false);
 
 	// Set CallBacks
-	Postoffice.Event_PackData(CallBack_PackData);
-	Postoffice.Event_PackSend_Response(CallBack_Send_Response);
-	Postoffice.Event_Request(CallBack_Command);
+	Postman.Event_PackData(CallBack_PackData);
+	Postman.Event_PackSend_Response(CallBack_Send_Response);
+	Postman.Event_Request(CallBack_Command);
 
 	// Initialize Modem
-	Postoffice.Initialize();
+	Postman.Initialize();
 
 	// Connect to Cloud
-	Postoffice.Connect();
+	Postman.Connect();
 
-	// Set PostOffice
-	Postoffice.Subscribe("70A11D1D01000099");
+	// Set Postman
+	Postman.Subscribe("70A11D1D01000099");
 
 
 
@@ -409,14 +420,14 @@ void loop() {
 
 		Terminal.Beep();
 
-			Postoffice.Interrupt.Send = false;
+			Postman.Interrupt.Send = false;
 
 			bool _Download = Firmware.Download(_Firmware_ID);
 
 			// Send Download Status
-			Postoffice.SetStatus(999, 500);
-			Postoffice.FOTA(_Firmware_ID, _Download, Firmware.Variables.File_Size, Firmware.Variables.SD_File_Size, Firmware.Variables.Download_Time);
-			Postoffice.Publish(FOTA_Download);
+			Postman.SetStatus(999, 500);
+			Postman.FOTA(_Firmware_ID, _Download, Firmware.Variables.File_Size, Firmware.Variables.SD_File_Size, Firmware.Variables.Download_Time);
+			Postman.Publish(99);
 
 
 			Firmware_Download = false;
@@ -436,9 +447,9 @@ void loop() {
 	}
 
 	// Send Data Pack
-	if (Postoffice.Interrupt.Send) Postoffice.Publish(Pack_Online);
+	if (Postman.Interrupt.Send) Postman.Publish(1);
 
 	// Incoming Pack
-	if (Postoffice.Interrupt.Ring) Postoffice.Get();
+	if (Postman.Interrupt.Ring) Postman.Get();
 
 }

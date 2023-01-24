@@ -243,7 +243,8 @@
 				#endif
 
 				#ifdef GSM_Debug
-					Terminal_GSM.Text(23, 110, GREEN, String(_File_ID));
+					Terminal_GSM.Text(21, 112, GREEN, String(_File_ID));
+					Terminal_GSM.Text(23, 110, GREEN, String(Variables.File_Size));
 				#endif
 
 				// FTPRECV Command
@@ -311,7 +312,7 @@
 
 											// Write Data
 											delay(5);
-//											SD_File.flush();
+											SD_File.flush();
 											SD_File.write(_Data, _RecieveSize);
 											delay(5);
 
@@ -332,12 +333,6 @@
 
 										Terminal_GSM.Text(26, 109, CYAN, String("    "));
 										Terminal_GSM.Text(26, 109, CYAN, String(Variables.Download_Time));
-
-										Terminal_GSM.Text(29, 100, CYAN, String("        "));
-										Terminal_GSM.Text(29, 100, CYAN, String(_RecieveSize));
-
-										Terminal_GSM.Text(31, 100, CYAN, String("        "));
-										Terminal_GSM.Text(31, 100, CYAN, String(_SD_Recieve_Size));
 									#endif
 
 									// Control for File End

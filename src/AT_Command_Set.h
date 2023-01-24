@@ -12,6 +12,16 @@
 	// Modem AT Command Set Class
 	class AT_Command_Set {
 
+		private:
+
+		// Digit Counter Function
+		uint8_t CountDigits(uint16_t _Number) {
+   		
+			// Calculate Digit
+			return(1 + log10(_Number)) ;
+	
+		}
+
 		public:
 
             // GSM Serial Stream Definition
@@ -5026,12 +5036,6 @@
 
 				// Clear Variable
 				_ReadSize = 0;
-				uint8_t _HeaderSize = 0;
-
-				// Declare Variable
-				char _SizeChar[4];
-				memset(_SizeChar, '\0', 4);
-				uint8_t _SizeCharPos = 0;
 
 				// Send UART Command
 				GSM_Serial->print(F("AT#FTPRECV="));
@@ -5042,11 +5046,14 @@
 				const uint32_t Current_Time = millis();
 
 				// Command Chain Delay (Advice by Telit)
-				delay(10);
+				delay(20);
 
 				// Declare Buffer
 				char Buffer_Variable[255];
 				memset(Buffer_Variable, '\0', 255);
+
+				// Clear Variable
+				Buffer.Read_Order = 0;
 
 				// Read UART Response
 				while (!Buffer.Response) {
@@ -5055,12 +5062,23 @@
 					Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
 
 					// Control for <OK> Response
-					if (Buffer_Variable[Buffer.Read_Order - 3] == 'O' and Buffer_Variable[Buffer.Read_Order - 2] == 'K') Buffer.Response = true;
+					if (Buffer_Variable[Buffer.Read_Order - 3] == 'O' and Buffer_Variable[Buffer.Read_Order - 2] == 'K') break;
 
 					// Increase Read Order
-					if (Buffer_Variable[Buffer.Read_Order] > 32 and Buffer_Variable[Buffer.Read_Order] < 127) Buffer.Read_Order += 1;
-					if (Buffer_Variable[Buffer.Read_Order] == 13) Buffer.Read_Order += 1;
-					if (Buffer_Variable[Buffer.Read_Order] == 10) Buffer.Read_Order += 1;
+					if ((Buffer_Variable[Buffer.Read_Order] > 31 and Buffer_Variable[Buffer.Read_Order] < 127) or Buffer_Variable[Buffer.Read_Order] == 13 or Buffer_Variable[Buffer.Read_Order] == 10) {
+
+						// UART Delay
+						delayMicroseconds(10);
+
+						// Handle Data Orders
+						Buffer.Read_Order += 1;
+
+					} else {
+
+						// UART Delay
+						delayMicroseconds(50);
+
+					}
 
 					// Handle for timeout
 					if (millis() - Current_Time >= Buffer.Time_Out) return(false);
@@ -5075,43 +5093,48 @@
 				
 				// rn#FTPRECV: 1rn
 				// rn#FTPRECV: 10rn
-				// rn#FTPRECV: 150rn
+				// rn#FTPRECV: 150rn2710F93....
+
+				// Declare Size Array Variable
+				char _Header[20];
+				memset(_Header, '\0', 20);
 
 				// Handle Pack Size
-				for (uint8_t i = 0; i < 15; i++) {
+				for (uint8_t i = 0; i < 20; i++) _Header[i] = Buffer_Variable[i];
 
-					// Handle for Number
-					if (Buffer_Variable[i] >= '0' and Buffer_Variable[i] <= '9') {
-						_SizeChar[_SizeCharPos] = Buffer_Variable[i];
-						_SizeCharPos += 1;
-					}
-
-				}
-
-				// Set Size
-				_ReadSize = atoi(_SizeChar);
+				// Handle Variables
+				sscanf(_Header, "\r\n#FTPRECV: %03d\r\n", &_ReadSize);
 
 				// Calculate Header Size
-				if (_ReadSize >= 0 and _ReadSize <= 9) _HeaderSize = 15;
-				if (_ReadSize >= 10 and _ReadSize <= 99) _HeaderSize = 16;
-				if (_ReadSize >= 100 and _ReadSize <= 999) _HeaderSize = 17;
+				uint16_t _HeaderSize = 14 + this->CountDigits(_ReadSize);
 
 				// Size : 145
 				// rn#FTPRECV: 120rn0E942C08C8010E9490rn:1012C0006E718FE892ECA1EBB1E48093E10490930Ern:1012D000E204A093E304B093E4048CEE91E5A5E06Ern:1012E000BrnrnOKrn
-				// 16 - 120 - 8
+				// 17 - 120 - 8
 
 				// Clear Variable
 				memset(_Data, '\0', 250);
-				uint16_t _DataPosition = 0;
+				Buffer.Data_Order = 0;
 
 				// Get Data
-				for (uint16_t i = _HeaderSize - 1; i < (_HeaderSize + _ReadSize - 1); i++) {
+				for (uint16_t i = _HeaderSize; i < (Buffer.Read_Order - 7); i++) {
 
-					// Assign Char
-					_Data[_DataPosition] = Buffer_Variable[i];
+					// Delay
+					delayMicroseconds(10);
 
-					// Set Position
-					_DataPosition++;
+					// Set Buffer
+					if ((Buffer_Variable[i] > 31 and Buffer_Variable[i] < 127) or Buffer_Variable[i] == 13 or Buffer_Variable[i] == 10) {
+						
+						_Data[Buffer.Data_Order] = Buffer_Variable[i];
+
+						Buffer.Data_Order++;
+				
+					} else {
+
+						Buffer.Data_Order = 0;
+						i = _HeaderSize;
+
+					}
 
 				}
 
