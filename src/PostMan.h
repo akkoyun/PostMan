@@ -392,6 +392,7 @@
 			// Define Modem Interrupt Structure
 			struct Interrupt_Status {
 				bool 		Send				= false;
+				bool 		Download			= false;
 				bool 		Ring				= false;
 			} Interrupt;
 

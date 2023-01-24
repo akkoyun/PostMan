@@ -24,6 +24,7 @@
 
 			// Define Variables
 			struct Struct_FOTA {
+				uint32_t		File_ID				= 0;
 				uint32_t		Download_Time		= 0;
 				uint32_t		File_Size			= 0;
 				uint32_t		SD_File_Size		= 0;
