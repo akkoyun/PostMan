@@ -30,6 +30,16 @@
 			// Define JSON Status Structure
 			struct JSON_Device_Structure {
 
+				// Define JSON Time Structure
+				struct JSON_Time_Structure {
+					uint8_t			Year				= 0;
+					uint8_t			Month				= 0;
+					uint8_t			Day					= 0;
+					uint8_t			Hour				= 0;
+					uint8_t			Minute				= 0;
+					uint8_t			Second				= 0;
+				} JSON_Time;
+
 				// Define JSON Status Structure
 				struct JSON_Info_Structure {
 					char * 		Device_ID;
@@ -63,9 +73,6 @@
 					uint32_t		SD_Size				= 0;
 				} JSON_FOTA;
 
-				// Time Stamp
-				char * Time_Stamp;
-
 				// Define JSON
 				String JSON_Pack;
 
@@ -89,7 +96,7 @@
 				while (!_Response) {
 
 					// Process Command
-					_Response = AT_Command_Set::MONIZIP(GSM::Modem.Operator, GSM::Modem.LAC, GSM::Modem.Cell_ID, GSM::Modem.dBm);
+					_Response = AT_Command_Set::MONIZIP();
 
 					// Set WD Variable
 					_Error_WD++;
@@ -101,8 +108,8 @@
 
 				// Print Command State
 				#ifdef GSM_Debug
-					Terminal_GSM.Text(GSM_CellLAC_X, GSM_CellLAC_Y, CYAN, String(GSM::Modem.LAC));
-					Terminal_GSM.Text(GSM_CellID_X, GSM_CellID_Y, CYAN, String(GSM::Modem.Cell_ID));
+					Terminal_GSM.Text(GSM_CellLAC_X, GSM_CellLAC_Y, CYAN, String(GSM::Modem.LAC, HEX));
+					Terminal_GSM.Text(GSM_CellID_X, GSM_CellID_Y, CYAN, String(GSM::Modem.Cell_ID, HEX));
 					Terminal_GSM.Text(GSM_Operator_X, GSM_Operator_Y, CYAN, String(GSM::Modem.Operator));
 					Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y, CYAN, String(GSM::Modem.dBm));
 				#endif
@@ -230,13 +237,19 @@
 					// Get GSM Parameters
 					if (_Pack_Type == Pack_Types::Online) {
 
+						// Declare Variable
+						char _Firmware[10];
+
+						// Handle TimeStamp
+						sprintf(_Firmware, "%02d.%02d.%03d", GSM::Modem.Firmware.Segment_1, GSM::Modem.Firmware.Segment_2, GSM::Modem.Firmware.Segment_3);
+
 						// Define IoT Module
 						JsonObject JSON_Module = JSON_GSM.createNestedObject(F("Module"));
 
 						// Set IoT Parameters
 						JSON_Module[F("Manufacturer")] = GSM::Modem.Manufacturer;
 						JSON_Module[F("Model")] = GSM::Modem.Model;
-						JSON_Module[F("Firmware")] = GSM::Modem.Firmware;
+						JSON_Module[F("Firmware")] = _Firmware;
 						JSON_Module[F("Serial")] = GSM::Modem.Serial_ID;
 						JSON_Module[F("IMEI")] = GSM::Modem.IMEI;
 
@@ -266,11 +279,18 @@
 				// Parse Payload Segment
 				#ifdef JSON_Segment_Payload
 
+					// Declare TimeStamp Variable
+					char _TimeStamp[25];
+					memset(_TimeStamp, '\0', 25);
+
+					// Handle TimeStamp
+					sprintf(_TimeStamp, "20%02hhu-%02hhu-%02hhu %02hhu:%02hhu:%02hhu", this->JSON_Data.JSON_Time.Year, this->JSON_Data.JSON_Time.Month, this->JSON_Data.JSON_Time.Day, this->JSON_Data.JSON_Time.Hour, this->JSON_Data.JSON_Time.Minute, this->JSON_Data.JSON_Time.Second);
+
 					// Define Data Section
 					JsonObject JSON_Payload = JSON.createNestedObject(F("Payload"));
 
 					// Set Device Time Variable
-					JSON_Payload[F("TimeStamp")] = this->JSON_Data.Time_Stamp;
+					JSON_Payload[F("TimeStamp")] = _TimeStamp;
 
 					// Online Payload
 					if (_Pack_Type == Pack_Types::Online) {
@@ -826,10 +846,15 @@
 			// ************************************************************
 
 			// Set TimeStamp
-			void TimeStamp(char * _TimeStamp) {
+			void TimeStamp(const uint8_t _Year, const uint8_t _Month, const uint8_t _Day, const uint8_t _Hour, const uint8_t _Minute, const uint8_t _Second) {
 
-				// Set Time Stamp
-				this->JSON_Data.Time_Stamp = _TimeStamp;
+				// Set Variables
+				this->JSON_Data.JSON_Time.Year = _Year;
+				this->JSON_Data.JSON_Time.Month = _Month;
+				this->JSON_Data.JSON_Time.Day = _Day;
+				this->JSON_Data.JSON_Time.Hour = _Hour;
+				this->JSON_Data.JSON_Time.Minute = _Minute;
+				this->JSON_Data.JSON_Time.Second = _Second;
 
 			}
 

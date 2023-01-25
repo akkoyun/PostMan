@@ -257,14 +257,14 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CPIN(Modem.PIN)) this->Status.Initialize = false;
+							if (!AT_Command_Set::CPIN()) this->Status.Initialize = false;
 
 							// Print Command State
 							#ifdef GSM_Debug
-								if (Modem.PIN == 0) Terminal_GSM.Text(GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 20, RED, F("NO SIM"));
-								if (Modem.PIN == 1) Terminal_GSM.Text(GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 20, GREEN, F("READY "));
-								if (Modem.PIN == 2) Terminal_GSM.Text(GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 20, RED, F("PIN?  "));
-								if (Modem.PIN == 3) Terminal_GSM.Text(GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 20, RED, F("PUK?  "));
+								if (AT_Command_Set::Modem.PIN == 0) Terminal_GSM.Text(GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 20, RED, F("NO SIM"));
+								if (AT_Command_Set::Modem.PIN == 1) Terminal_GSM.Text(GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 20, GREEN, F("READY "));
+								if (AT_Command_Set::Modem.PIN == 2) Terminal_GSM.Text(GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 20, RED, F("PIN?  "));
+								if (AT_Command_Set::Modem.PIN == 3) Terminal_GSM.Text(GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 20, RED, F("PUK?  "));
 								Terminal_GSM.OK_Decide(this->Status.Initialize, GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 29);
 							#endif
 
@@ -310,12 +310,12 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GSN(Modem.Serial_ID)) this->Status.Initialize = false;
+							if (!AT_Command_Set::GSN()) this->Status.Initialize = false;
 
 							// Print Command State
 							#ifdef GSM_Debug
 								Terminal_GSM.OK_Decide(this->Status.Initialize, GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 29);
-								Terminal_GSM.Text(GSM_Serial_X, GSM_Serial_Y, CYAN, String(Modem.Serial_ID));
+								Terminal_GSM.Text(GSM_Serial_X, GSM_Serial_Y, CYAN, String(AT_Command_Set::Modem.Serial_ID));
 							#endif
 						
 							// Set Variable
@@ -356,12 +356,12 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GMI(Modem.Manufacturer)) this->Status.Initialize = false;
+							if (!AT_Command_Set::GMI()) this->Status.Initialize = false;
 
 							// Print Command State
 							#ifdef GSM_Debug
 								Terminal_GSM.OK_Decide(this->Status.Initialize, GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 29);
-								Terminal_GSM.Text(GSM_Manufacturer_X, GSM_Manufacturer_Y, CYAN, String(Modem.Manufacturer));
+								Terminal_GSM.Text(GSM_Manufacturer_X, GSM_Manufacturer_Y, CYAN, String(AT_Command_Set::Modem.Manufacturer));
 							#endif
 
 							// Set Variable
@@ -379,12 +379,12 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GMM(Modem.Model)) this->Status.Initialize = false;
+							if (!AT_Command_Set::GMM()) this->Status.Initialize = false;
 
 							// Print Command State
 							#ifdef GSM_Debug
 								Terminal_GSM.OK_Decide(this->Status.Initialize, GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 29);
-								Terminal_GSM.Text(GSM_Model_X, GSM_Model_Y, CYAN, String(Modem.Model));
+								Terminal_GSM.Text(GSM_Model_X, GSM_Model_Y, CYAN, String(AT_Command_Set::Modem.Model));
 							#endif
 						
 							// Set Variable
@@ -402,12 +402,19 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GMR(Modem.Firmware)) this->Status.Initialize = false;
+							if (!AT_Command_Set::GMR()) this->Status.Initialize = false;
 
 							// Print Command State
 							#ifdef GSM_Debug
+
+								// Declare Variable
+								char _Firmware[10];
+
+								// Handle TimeStamp
+								sprintf(_Firmware, "%02d.%02d.%03d", AT_Command_Set::Modem.Firmware.Segment_1, AT_Command_Set::Modem.Firmware.Segment_2, AT_Command_Set::Modem.Firmware.Segment_3);
+
 								Terminal_GSM.OK_Decide(this->Status.Initialize, GSM_Console_Initialize_ROW, GSM_Console_Initialize_Y + 29);
-								Terminal_GSM.Text(GSM_Firmware_X, GSM_Firmware_Y, CYAN, String(Modem.Firmware));
+								Terminal_GSM.Text(GSM_Firmware_X, GSM_Firmware_Y, CYAN, String(_Firmware));
 							#endif
 						
 							// Set Variable
@@ -962,11 +969,18 @@
 								#endif
 
 								// Send Command
-								if (!AT_Command_Set::Set_SGACT(1, 1, this->Modem.IP_Address)) this->Status.Connection = false;
+								if (!AT_Command_Set::Set_SGACT(1, 1)) this->Status.Connection = false;
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(GSM_IP_X, GSM_IP_Y, CYAN, String(Modem.IP_Address));
+
+									// Declare Variable
+									char _IP[16];
+
+									// Handle TimeStamp
+									sprintf(_IP, "%03d.%03d.%03d.%03d", AT_Command_Set::Modem.IP_Address.Segment_1, AT_Command_Set::Modem.IP_Address.Segment_2, AT_Command_Set::Modem.IP_Address.Segment_3, AT_Command_Set::Modem.IP_Address.Segment_4);
+
+									Terminal_GSM.Text(GSM_IP_X, GSM_IP_Y, CYAN, String(_IP));
 									Terminal_GSM.OK_Decide(this->Status.Connection, GSM_Console_Connect_ROW, GSM_Console_Connect_Y + 31);
 								#endif
 
@@ -1180,12 +1194,12 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(GSM_Console_Connect_ROW, GSM_Console_Connect_Y, WHITE, F("AT#ICMP=1"));
+									Terminal_GSM.Text(GSM_Console_Connect_ROW, GSM_Console_Connect_Y, WHITE, F("AT#ICMP=2"));
 									Terminal_GSM.Text(GSM_Console_Connect_ROW, GSM_Console_Connect_Y + 31, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
-								if (!AT_Command_Set::ICMP(1)) this->Status.Connection = false;
+								if (!AT_Command_Set::ICMP(2)) this->Status.Connection = false;
 
 								// Print Command State
 								#ifdef GSM_Debug
@@ -1212,14 +1226,14 @@
 								#endif
 
 								// Send Command
-								if (!AT_Command_Set::MONIZIP(this->Modem.Operator, this->Modem.LAC, this->Modem.Cell_ID, this->Modem.dBm)) this->Status.Connection = false;
+								if (!AT_Command_Set::MONIZIP()) this->Status.Connection = false;
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(GSM_CellLAC_X, GSM_CellLAC_Y, CYAN, String(Modem.LAC));
-									Terminal_GSM.Text(GSM_CellID_X, GSM_CellID_Y, CYAN, String(Modem.Cell_ID));
-									Terminal_GSM.Text(GSM_Operator_X, GSM_Operator_Y, CYAN, String(Modem.Operator));
-									Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y, CYAN, String(Modem.dBm));
+									Terminal_GSM.Text(GSM_CellLAC_X, GSM_CellLAC_Y, CYAN, String(AT_Command_Set::Modem.LAC, HEX));
+									Terminal_GSM.Text(GSM_CellID_X, GSM_CellID_Y, CYAN, String(AT_Command_Set::Modem.Cell_ID, HEX));
+									Terminal_GSM.Text(GSM_Operator_X, GSM_Operator_Y, CYAN, String(AT_Command_Set::Modem.Operator));
+									Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y, CYAN, String(AT_Command_Set::Modem.dBm));
 									Terminal_GSM.OK_Decide(this->Status.Connection, GSM_Console_Connect_ROW, GSM_Console_Connect_Y + 31);
 								#endif
 
