@@ -130,6 +130,47 @@
 
 			}
 
+			// LOG JSON Pack Function
+			void LOG(void) {
+
+				// Declare LOG File Object
+				File LOG_File;
+
+				// Activate Mux
+				DDRC |= 0b00000001;
+				PORTC |= 0b00000001;
+				delay(10);
+
+				// Start SD Card
+				if (SD.begin(53)) {
+
+					// Open File for Write
+					LOG_File = SD.open("LOG.txt", FILE_WRITE);
+
+					// Control for File Open
+					if (LOG_File) {
+
+						// Write Data
+						delay(5);
+						LOG_File.flush();
+						LOG_File.print(this->JSON_Data.JSON_Pack);
+						delay(5);
+
+						// Close File
+						delay(8);
+						LOG_File.close();
+
+						// Clear Pack
+						this->JSON_Data.JSON_Pack = "";
+					}
+
+				}
+
+				// Turn SD MUX Enable LOW
+				PORTC &= 0b11111110;
+
+			}
+
 			// Parse JSON Pack
 			uint16_t Parse_JSON(uint8_t _Pack_Type) {
 
@@ -485,10 +526,7 @@
 			// ************************************************************
 
 			// Connect Cloud
-			bool Subscribe(char * _Device_ID) {
-
-				// Set Device ID
-				this->JSON_Data.JSON_Info.Device_ID = _Device_ID;
+			bool Listen(void) {
 
 				// Control for Connection
 				if (GSM::Status.Connection) {
@@ -692,6 +730,9 @@
 								// Send Data CallBack
 								_Send_Response_CallBack(_Response_Command, 0);
 
+								// Log Data Pack
+								if (_Response_Command != 200) this->LOG();
+
 								// End Function
 								if (_Response_Command == 200) return(true);
 
@@ -699,6 +740,9 @@
 
 								// Send Data CallBack Error
 								_Send_Response_CallBack(0, 1);
+
+								// Log Data Pack
+								this->LOG();
 
 							}
 							
@@ -710,6 +754,9 @@
 							// Send Data CallBack Error
 							_Send_Response_CallBack(0, 2);
 
+							// Log Data Pack
+							this->LOG();
+
 						}
 
 					} else {
@@ -719,6 +766,9 @@
 
 						// Send Data CallBack Error
 						_Send_Response_CallBack(0, 3);
+
+						// Log Data Pack
+						this->LOG();
 
 					}
 
@@ -738,6 +788,9 @@
 						Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, YELLOW, F("                    "));
 						Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, F("No Connection       "));
 					#endif
+
+					// Log Data Pack
+					this->LOG();
 
 					// Clear Interrupt
 					this->Interrupt.Send = false;
@@ -849,40 +902,41 @@
 			// ************************************************************
 
 			// Set TimeStamp
-			void TimeStamp(const uint8_t _Year, const uint8_t _Month, const uint8_t _Day, const uint8_t _Hour, const uint8_t _Minute, const uint8_t _Second) {
+			void TimeStamp(Struct_Time * _Time) {
 
 				// Set Variables
-				this->JSON_Data.JSON_Time.Year = _Year;
-				this->JSON_Data.JSON_Time.Month = _Month;
-				this->JSON_Data.JSON_Time.Day = _Day;
-				this->JSON_Data.JSON_Time.Hour = _Hour;
-				this->JSON_Data.JSON_Time.Minute = _Minute;
-				this->JSON_Data.JSON_Time.Second = _Second;
+				this->JSON_Data.JSON_Time.Year = _Time->Year;
+				this->JSON_Data.JSON_Time.Month = _Time->Month;
+				this->JSON_Data.JSON_Time.Day = _Time->Day;
+				this->JSON_Data.JSON_Time.Hour = _Time->Hour;
+				this->JSON_Data.JSON_Time.Minute = _Time->Minute;
+				this->JSON_Data.JSON_Time.Second = _Time->Second;
 
 			}
 
-			// Set Environment Variables
-			void Environment(float _Temperature, float _Humidity) {
+			// Set Device Data
+			void Device(Struct_Device * _Device) {
 
-				// Set Environment
-				this->JSON_Data.JSON_Info.Temperature = _Temperature;
-				this->JSON_Data.JSON_Info.Humidity = _Humidity;
+				// Set Device Parameters
+				this->JSON_Data.JSON_Info.Device_ID = _Device->Device_ID;
 
-			}
-
-			// Set Battery Variables
-			void Battery(float _IV, float _AC, float _SOC, uint8_t _Charge, float _T = 0, uint16_t _FB = 0, uint16_t _IB = 0) {
+				// Set Environment Parameters
+				this->JSON_Data.JSON_Info.Temperature = _Device->Temperature;
+				this->JSON_Data.JSON_Info.Humidity = _Device->Humidity;
 
 				// Set Battery Parameters
-				this->JSON_Data.JSON_Battery.IV = _IV;
-				this->JSON_Data.JSON_Battery.AC = _AC;
-				this->JSON_Data.JSON_Battery.SOC = _SOC;
-				this->JSON_Data.JSON_Battery.Charge = _Charge;
-				this->JSON_Data.JSON_Battery.T = _T;			// Optional
-				this->JSON_Data.JSON_Battery.FB = _FB;			// Optional
-				this->JSON_Data.JSON_Battery.IB = _IB;			// Optional
+				this->JSON_Data.JSON_Battery.IV = _Device->IV;
+				this->JSON_Data.JSON_Battery.AC = _Device->AC;
+				this->JSON_Data.JSON_Battery.SOC = _Device->SOC;
+				this->JSON_Data.JSON_Battery.Charge = _Device->Charge;
+				this->JSON_Data.JSON_Battery.T = _Device->Charge_Temp;			// Optional
+				this->JSON_Data.JSON_Battery.FB = _Device->Full_Cap;			// Optional
+				this->JSON_Data.JSON_Battery.IB = _Device->Instant_Cap;			// Optional
 
 			}
+
+
+
 
 			// Set Status
 			void SetStatus(uint16_t _Device, uint16_t _Fault) {

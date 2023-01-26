@@ -34,18 +34,10 @@
 			} Status;
 
 			// Define Time Structure
-			struct Struct_Time {
-				bool		Time_Update			= false;
-				uint8_t 	Year				= 0;
-				uint8_t 	Month				= 0;
-				uint8_t 	Day					= 0;
-				uint8_t 	Hour				= 0;
-				uint8_t 	Minute				= 0;
-				uint8_t 	Second				= 0;
-			} Time;
+			Struct_Time Time;
 
 			// GSM Constructor
-			GSM(Stream &_Serial) : AT_Command_Set(_Serial), Hardware() {
+			GSM(Stream &_Serial) : AT_Command_Set(_Serial) {
 
 			}
 
@@ -1275,12 +1267,9 @@
 								// Send Command
 								if (!AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second)) this->Status.Connection = false;
 
-								// Set Control Parameter
-								this->Time.Time_Update = this->Status.Connection;
-
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Time.Time_Update, GSM_Console_Connect_ROW, GSM_Console_Connect_Y + 31);
+									Terminal_GSM.OK_Decide(this->Status.Connection, GSM_Console_Connect_ROW, GSM_Console_Connect_Y + 31);
 								#endif
 
 								// Set Variable

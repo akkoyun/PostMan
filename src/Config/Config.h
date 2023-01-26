@@ -77,4 +77,9 @@
 		#define FOTA_SD_FileName		"STF.hex"
 	#endif
 
+	// Define LOG SD Parameters
+	#ifndef LOG_SD_File_Name
+		#define LOG_SD_File_Name		"LOG.txt"
+	#endif
+
 #endif

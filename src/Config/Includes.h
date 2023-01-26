@@ -31,6 +31,37 @@
 	#include <SPI.h>
 	#include "SD.h"
 
+	// Define Time Structure
+	typedef struct {
+		uint8_t 	Year				= 0;
+		uint8_t 	Month				= 0;
+		uint8_t 	Day					= 0;
+		uint8_t 	Hour				= 0;
+		uint8_t 	Minute				= 0;
+		uint8_t 	Second				= 0;
+	} Struct_Time;
+
+	// Define Battery Structure
+	typedef struct {
+
+		// Device ID
+		char * 		Device_ID;
+
+		// Environment
+		float		Temperature			= 0;
+		float		Humidity			= 0;
+
+		// Battery
+		float		IV					= 0;
+		float		AC					= 0;
+		float		SOC					= 0;
+		uint8_t		Charge				= 0;
+		float		Charge_Temp			= 0;
+		uint16_t	Full_Cap			= 0;
+		uint16_t	Instant_Cap			= 0;
+
+	} Struct_Device;
+
 	// PostOffice Pack Types
 	enum Pack_Types {
 		Online		= 1,
