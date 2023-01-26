@@ -11,6 +11,13 @@
 		#include "Config/Includes.h"
 	#endif
 
+	// Define LED Colors
+	#define	__WHITE__								(uint8_t) 0
+	#define	__RED__									(uint8_t) 1
+	#define	__GREEN__								(uint8_t) 2
+	#define	__BLUE__								(uint8_t) 3
+	#define	__PURPLE__								(uint8_t) 4
+
 	// Hardware Functions
 	class Hardware {
 
@@ -233,6 +240,23 @@
 				bool 		Power 				= false;
 			} Status;
 
+			// Constractor
+			Hardware(void) {
+
+				/*  PORT D
+					PD0 - SCL
+					PD1 - SDA
+					PD2 - RXD1
+					PD3 - TXD1
+					PD4 - Output / Pull Down [NC] 			- ICP1		- [85]
+					PD5 - Output / Pull Down [MCU LED Blue]	- XCK1		- [84]
+					PD6 - Output / Pull Down [MCU LED Green]- T1		- [83]
+					PD7 - Output / Pull Down [MCU LED Red]	- T0		- [82]
+				*/
+				DDRD |= 0b11110000; PORTD &= 0b00001111;
+
+			}
+
 			// Get Power Monitor
 			bool PowerMonitor(void) {
 
@@ -262,6 +286,124 @@
 
 				// End Function
 				return(this->PowerMonitor());
+
+			}
+
+			// LED Functions
+			void MCU_LED(const uint8_t _Color, const uint8_t _Blink, const uint16_t _Interval) {
+
+				// Red Color
+				if (_Color == __RED__) {
+
+					// Blink
+					for (size_t i = 0; i < _Blink; i++) {
+
+						// Turn ON Red LED
+						PORTD |= 0b10000000;
+
+						// Delay
+						delay(_Interval);
+
+						// Turn OFF Red LED
+						PORTD &= 0b01111111;
+
+						// Delay
+						delay(_Interval);
+
+					}
+
+				}
+				
+				// Green Color
+				if (_Color == __GREEN__) {
+
+					// Blink
+					for (size_t i = 0; i < _Blink; i++) {
+
+						// Turn ON Green LED
+						PORTD |= 0b01000000;
+
+						// Delay
+						delay(_Interval);
+
+						// Turn OFF Green LED
+						PORTD &= 0b10111111;
+
+						// Delay
+						delay(_Interval);
+
+					}
+
+				}
+
+				// Green Color
+				if (_Color == __BLUE__) {
+
+					// Blink
+					for (size_t i = 0; i < _Blink; i++) {
+
+						// Turn ON Blue LED
+						PORTD |= 0b00100000;
+
+						// Delay
+						delay(_Interval);
+
+						// Turn OFF Blue LED
+						PORTD &= 0b11011111;
+
+						// Delay
+						delay(_Interval);
+
+					}
+
+				}
+
+				// Purple Color
+				if (_Color == __PURPLE__) {
+
+					// Blink
+					for (size_t i = 0; i < _Blink; i++) {
+
+						// Turn ON Purple LED
+						PORTD |= 0b10100000;
+
+						// Delay
+						delay(_Interval);
+
+						// Turn OFF Purple LED
+						PORTD &= 0b01011111;
+
+						// Delay
+						delay(_Interval);
+
+					}
+
+				}
+
+				// White Color
+				if (_Color == __WHITE__) {
+
+					// Blink
+					for (size_t i = 0; i < _Blink; i++) {
+
+						// Turn ON White LED
+						PORTD |= 0b11100000;
+
+						// Delay
+						delay(_Interval);
+
+						// Turn OFF White LED
+						PORTD &= 0b01111111;
+
+						// Delay
+						delay(_Interval);
+
+					}
+
+				}
+
+				// Turn OFF all LED
+				PORTD &= 0b00011111;
 
 			}
 

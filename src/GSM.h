@@ -45,7 +45,7 @@
 			} Time;
 
 			// GSM Constructor
-			GSM(Stream &_Serial) : AT_Command_Set(_Serial) {
+			GSM(Stream &_Serial) : AT_Command_Set(_Serial), Hardware() {
 
 			}
 
@@ -1230,11 +1230,27 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(GSM_CellLAC_X, GSM_CellLAC_Y, CYAN, String(AT_Command_Set::Modem.LAC, HEX));
-									Terminal_GSM.Text(GSM_CellID_X, GSM_CellID_Y, CYAN, String(AT_Command_Set::Modem.Cell_ID, HEX));
-									Terminal_GSM.Text(GSM_Operator_X, GSM_Operator_Y, CYAN, String(AT_Command_Set::Modem.Operator));
-									Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y, CYAN, String(AT_Command_Set::Modem.dBm));
+
+									// Print Signal Level Value
+									Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y - 12, WHITE, F("[-   ]"));
+									Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y - 10, CYAN, String(GSM::Modem.dBm));
+
+									// Print Signal Level Bar
+									Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y - 3, GRAY, F("_____"));
+									for (uint8_t i = 1; i <= GSM::Modem.Signal; i++) Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y + i - 4, CYAN, F("X"));
+
+									// Print Operator Value
+									Terminal_GSM.Text(GSM_Operator_X, GSM_Operator_Y, CYAN, String(GSM::Modem.Operator));
+
+									// Print Modem LAC Value
+									Terminal_GSM.Text(GSM_CellLAC_X, GSM_CellLAC_Y, CYAN, String(GSM::Modem.LAC, HEX));
+
+									// Print Modem Cell ID Value
+									Terminal_GSM.Text(GSM_CellID_X, GSM_CellID_Y, CYAN, String(GSM::Modem.Cell_ID, HEX));
+
+									// Command Status
 									Terminal_GSM.OK_Decide(this->Status.Connection, GSM_Console_Connect_ROW, GSM_Console_Connect_Y + 31);
+
 								#endif
 
 								// Set Variable

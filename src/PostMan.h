@@ -108,10 +108,24 @@
 
 				// Print Command State
 				#ifdef GSM_Debug
-					Terminal_GSM.Text(GSM_CellLAC_X, GSM_CellLAC_Y, CYAN, String(GSM::Modem.LAC, HEX));
-					Terminal_GSM.Text(GSM_CellID_X, GSM_CellID_Y, CYAN, String(GSM::Modem.Cell_ID, HEX));
+
+					// Print Signal Level Value
+					Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y - 12, WHITE, F("[-   ]"));
+					Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y - 10, CYAN, String(GSM::Modem.dBm));
+
+					// Print Signal Level Bar
+					Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y - 3, GRAY, F("_____"));
+					for (uint8_t i = 1; i <= GSM::Modem.Signal; i++) Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y + i - 4, CYAN, F("X"));
+
+					// Print Operator Value
 					Terminal_GSM.Text(GSM_Operator_X, GSM_Operator_Y, CYAN, String(GSM::Modem.Operator));
-					Terminal_GSM.Text(GSM_RSSI_X, GSM_RSSI_Y, CYAN, String(GSM::Modem.dBm));
+
+					// Print Modem LAC Value
+					Terminal_GSM.Text(GSM_CellLAC_X, GSM_CellLAC_Y, CYAN, String(GSM::Modem.LAC, HEX));
+
+					// Print Modem Cell ID Value
+					Terminal_GSM.Text(GSM_CellID_X, GSM_CellID_Y, CYAN, String(GSM::Modem.Cell_ID, HEX));
+
 				#endif
 
 			}
@@ -468,41 +482,6 @@
 
 			}
 
-			// Get Time
-			uint8_t Get_Time(uint8_t _Detail) {
-
-				// Return Time Detail
-				switch (_Detail) {
-
-					case 1:
-						return(GSM::Time.Year);
-						break;
-					case 2:
-						return(GSM::Time.Month);
-						break;
-					case 3:
-						return(GSM::Time.Day);
-						break;
-					case 4:
-						return(GSM::Time.Hour);
-						break;
-					case 5:
-						return(GSM::Time.Minute);
-						break;
-					case 6:
-						return(GSM::Time.Second);
-						break;
-					default:
-						return(0);
-						break;
-
-				}
-
-				// End Function
-				return(0);
-
-			}
-
 			// ************************************************************
 
 			// Connect Cloud
@@ -513,6 +492,9 @@
 
 				// Control for Connection
 				if (GSM::Status.Connection) {
+
+					// Blink
+					Hardware::MCU_LED(__WHITE__, 1, 200);
 
 					// Listen Port
 					bool _Response = GSM::Listen(true);
@@ -526,6 +508,9 @@
 					return(true);
 
 				} else {
+
+					// Blink
+					Hardware::MCU_LED(__RED__, 1, 200);
 
 					// Print Command State
 					#ifdef GSM_Debug
@@ -550,6 +535,9 @@
 
 					// Open Connection
 					if (AT_Command_Set::SocketDial(3, 0, 80, 255, 88, 1, PostOffice_Server)) {
+
+						// Blink
+						Hardware::MCU_LED(__GREEN__, 1, 200);
 
 						// Print Command State
 						#ifdef GSM_Debug
@@ -664,6 +652,9 @@
 						// Get Ring Port
 						if (AT_Command_Set::Send_SRING(_Length)) {
 
+							// Blink
+							Hardware::MCU_LED(__GREEN__, 1, 200);
+
 							// Declare Response Status
 							char _Response[32];
 							uint16_t _Response_Command;
@@ -713,12 +704,18 @@
 							
 						} else {
 
+							// Blink
+							Hardware::MCU_LED(__RED__, 1, 200);
+
 							// Send Data CallBack Error
 							_Send_Response_CallBack(0, 2);
 
 						}
 
 					} else {
+
+						// Blink
+						Hardware::MCU_LED(__RED__, 1, 200);
 
 						// Send Data CallBack Error
 						_Send_Response_CallBack(0, 3);
@@ -770,6 +767,9 @@
 					// Handle Ring
 					if (Receive_SRING()) {
 
+						// Blink
+						Hardware::MCU_LED(__BLUE__, 1, 200);
+
 						// Print Command State
 						#ifdef GSM_Debug
 							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Ring             "));
@@ -807,6 +807,9 @@
 
 				// Send Socket Answer
 				if (SSEND(2, 1, _Response_Code, "", "", _Data)) {
+
+					// Blink
+					Hardware::MCU_LED(__PURPLE__, 1, 200);
 
 					#ifdef GSM_Debug
 						Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Response Sended  "));

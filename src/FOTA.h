@@ -297,6 +297,12 @@
 								uint32_t _SD_Recieve_Size = 0;
 								uint16_t _RecieveSize = 0;
 
+								// SD Message
+								#ifdef GSM_Debug
+									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("                               "));
+									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Downloading"));
+								#endif
+
 								// Get Pack
 								while (!Control.Response) {
 
@@ -334,7 +340,12 @@
 
 										Terminal_GSM.Text(26, 109, CYAN, String("    "));
 										Terminal_GSM.Text(26, 109, CYAN, String(Variables.Download_Time));
+
+										Terminal_GSM.Text(24, 110, WHITE, F("       "));
+										Terminal_GSM.Text(24, 110, WHITE, String(_SD_Recieve_Size));
+
 									#endif
+
 
 									// Control for File End
 									if (_SD_Recieve_Size == Variables.File_Size) Control.Response = true;
