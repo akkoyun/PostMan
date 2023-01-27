@@ -30,16 +30,6 @@
 			// Define JSON Status Structure
 			struct JSON_Device_Structure {
 
-				// Define JSON Time Structure
-				struct JSON_Time_Structure {
-					uint8_t			Year				= 0;
-					uint8_t			Month				= 0;
-					uint8_t			Day					= 0;
-					uint8_t			Hour				= 0;
-					uint8_t			Minute				= 0;
-					uint8_t			Second				= 0;
-				} JSON_Time;
-
 				// Define JSON Status Structure
 				struct JSON_Info_Structure {
 					char  		Device_ID[17];
@@ -158,7 +148,7 @@
 				String(uint64ToString(_Serial)).toCharArray(this->JSON_Data.JSON_Info.Device_ID, 17);
 
 			}
-			
+
 			// Update GSM Parameters
 			void Update_Connection_Variables(void) {
 
@@ -387,12 +377,18 @@
 				// Parse Payload Segment
 				#ifdef JSON_Segment_Payload
 
+					// Detect RTC
+					I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
+
+					// RTC Object Definitions	
+					RV3028 RTC(true, 1);
+
 					// Declare TimeStamp Variable
 					char _TimeStamp[25];
 					memset(_TimeStamp, '\0', 25);
 
 					// Handle TimeStamp
-					sprintf(_TimeStamp, "20%02hhu-%02hhu-%02hhu %02hhu:%02hhu:%02hhu", this->JSON_Data.JSON_Time.Year, this->JSON_Data.JSON_Time.Month, this->JSON_Data.JSON_Time.Day, this->JSON_Data.JSON_Time.Hour, this->JSON_Data.JSON_Time.Minute, this->JSON_Data.JSON_Time.Second);
+					sprintf(_TimeStamp, "20%02hhu-%02hhu-%02hhu %02hhu:%02hhu:%02hhu", RTC.Get_Year(), RTC.Get_Month(), RTC.Get_Date(), RTC.Get_Hour(), RTC.Get_Minute(), RTC.Get_Second());
 
 					// Define Data Section
 					JsonObject JSON_Payload = JSON.createNestedObject(F("Payload"));
@@ -568,6 +564,17 @@
 				// Get Serial ID
 				this->Get_Serial_ID();
 
+				// Detect RTC
+				I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
+
+				// RTC Object Definitions	
+				RV3028 RTC(true, 1);
+
+				// Set RTC Parameters
+				RTC.Disable_Trickle_Charger();
+				RTC.Set_24h_Clock();
+				RTC.Clear_UNIX_Time();
+
 				// Initialize Modem
 				GSM::Initialize();
 
@@ -577,6 +584,15 @@
 			void Connect(void) {
 
 				GSM::Connect();
+
+				// Detect RTC
+				I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
+
+				// RTC Object Definitions	
+				RV3028 RTC(true, 1);
+
+				// Update Time
+				RTC.Set_Time(GSM::Time.Second, GSM::Time.Minute, GSM::Time.Hour, GSM::Time.Day, GSM::Time.Month, GSM::Time.Year);
 
 			}
 
@@ -989,19 +1005,6 @@
 			}
 
 			// ************************************************************
-
-			// Set TimeStamp
-			void TimeStamp(Struct_Time * _Time) {
-
-				// Set Variables
-				this->JSON_Data.JSON_Time.Year = _Time->Year;
-				this->JSON_Data.JSON_Time.Month = _Time->Month;
-				this->JSON_Data.JSON_Time.Day = _Time->Day;
-				this->JSON_Data.JSON_Time.Hour = _Time->Hour;
-				this->JSON_Data.JSON_Time.Minute = _Time->Minute;
-				this->JSON_Data.JSON_Time.Second = _Time->Second;
-
-			}
 
 			// Set Device Data
 			void Device(Struct_Device * _Device) {

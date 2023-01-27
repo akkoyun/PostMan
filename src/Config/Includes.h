@@ -27,8 +27,15 @@
 	// Define JSON Handler
 	#include <ArduinoJson.h>
 
-	// Include Environment Library
-	#include <Environment.h>
+	// Define Environment Library
+	#ifndef __Environment__
+		#include <Environment.h>
+	#endif
+
+	// Define RTC Library
+	#ifndef __RV3028__
+		#include <RV3028.h>
+	#endif
 
 	// SD Library
 	#include <SPI.h>
