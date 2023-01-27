@@ -30,21 +30,8 @@
 			// Define JSON Status Structure
 			struct JSON_Device_Structure {
 
-				// Define JSON Status Structure
-				struct JSON_Info_Structure {
-					char  		Device_ID[17];
-				} JSON_Info;
-
-				// Define JSON Battery Structure
-				struct JSON_Battery_Structure {
-					float IV;
-					float AC;
-					float SOC;
-					uint8_t Charge;
-					float T;
-					uint16_t FB;
-					uint16_t IB;
-				} JSON_Battery;
+				// Define JSON Device ID
+				char Device_ID[17];
 
 				// Define JSON Status Structure
 				struct JSON_Status_Structure {
@@ -71,6 +58,7 @@
 			void (*_Send_Response_CallBack)(uint16_t, uint8_t);
 			void (*_Command_CallBack)(uint16_t, char*);
 
+			// uint64 to String Converter Function
 			String uint64ToString(uint64_t input) {
 				
 				String result = "";
@@ -93,6 +81,8 @@
 				return result;
 
 			}
+
+			// Serial ID Read Function
 			void Get_Serial_ID(void) {
 				
 				// Define Variable
@@ -145,7 +135,7 @@
 				_Serial |= (uint64_t)_Read_Byte;
 
 				// Set Array
-				String(uint64ToString(_Serial)).toCharArray(this->JSON_Data.JSON_Info.Device_ID, 17);
+				String(uint64ToString(_Serial)).toCharArray(this->JSON_Data.Device_ID, 17);
 
 			}
 
@@ -277,7 +267,7 @@
 					JsonObject JSON_Info = JSON_Device.createNestedObject(F("Info"));
 
 					// Set Device ID Variable
-					JSON_Info[F("ID")] = this->JSON_Data.JSON_Info.Device_ID;
+					JSON_Info[F("ID")] = this->JSON_Data.Device_ID;
 					
 					// Set Device Hardware Version Variable
 					if (_Pack_Type == Pack_Types::Online) JSON_Info[F("Hardware")] = F(__Hardware__);
@@ -300,23 +290,29 @@
 					// Define Power Section
 					JsonObject JSON_Battery = JSON_Device["Power"].createNestedObject("Battery");
 
-					// Set Battery Variables
-					JSON_Battery[F("IV")] = this->JSON_Data.JSON_Battery.IV;
-					JSON_Battery[F("AC")] = this->JSON_Data.JSON_Battery.AC;
-					JSON_Battery[F("SOC")] = this->JSON_Data.JSON_Battery.SOC;
-					JSON_Battery[F("Charge")] = this->JSON_Data.JSON_Battery.Charge;
-					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("T")] = this->JSON_Data.JSON_Battery.T;
-					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("FB")] = this->JSON_Data.JSON_Battery.FB;
-					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("IB")] = this->JSON_Data.JSON_Battery.IB;
+					// Battery Object
+					I2C_Functions I2C_MAX17055(__I2C_Addr_MAX17055__, true, 4);
 
-					// Clear Battery Variables
-					this->JSON_Data.JSON_Battery.IV = 0;
-					this->JSON_Data.JSON_Battery.AC = 0;
-					this->JSON_Data.JSON_Battery.SOC = 0;
-					this->JSON_Data.JSON_Battery.Charge = 0;
-					this->JSON_Data.JSON_Battery.T = 0;
-					this->JSON_Data.JSON_Battery.FB = 0;
-					this->JSON_Data.JSON_Battery.IB = 0;
+					// Create Charger Object
+					MAX17055 Battery_Gauge(true, 4);
+
+					// Set Battery Variables
+					JSON_Battery[F("IV")] = Battery_Gauge.Instant_Voltage();
+					JSON_Battery[F("AC")] = Battery_Gauge.Average_Current();
+					JSON_Battery[F("SOC")] = Battery_Gauge.State_Of_Charge();
+					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("T")] = Battery_Gauge.Temperature();
+					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("FB")] = Battery_Gauge.Design_Capacity();
+					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("IB")] = Battery_Gauge.Instant_Capacity();
+
+					// Charger
+					I2C_Functions I2C_BQ24298(__I2C_Addr_BQ24298__, true, 5);
+
+					// Create Charger Object
+					BQ24298 Charger(false, true, 5);
+
+					// Set Battery Variables
+					JSON_Battery[F("Charge")] = Charger.Charge_Status();
+
 
 				#endif
 
@@ -1005,20 +1001,6 @@
 			}
 
 			// ************************************************************
-
-			// Set Device Data
-			void Device(Struct_Device * _Device) {
-
-				// Set Battery Parameters
-				this->JSON_Data.JSON_Battery.IV = _Device->IV;
-				this->JSON_Data.JSON_Battery.AC = _Device->AC;
-				this->JSON_Data.JSON_Battery.SOC = _Device->SOC;
-				this->JSON_Data.JSON_Battery.Charge = _Device->Charge;
-				this->JSON_Data.JSON_Battery.T = _Device->Charge_Temp;			// Optional
-				this->JSON_Data.JSON_Battery.FB = _Device->Full_Cap;			// Optional
-				this->JSON_Data.JSON_Battery.IB = _Device->Instant_Cap;			// Optional
-
-			}
 
 			// Set Status
 			void SetStatus(uint16_t _Device, uint16_t _Fault) {

@@ -37,6 +37,16 @@
 		#include <RV3028.h>
 	#endif
 
+	// Define Battery Charger Library
+	#ifndef __BQ24298__
+		#include <BQ24298.h>
+	#endif
+
+	// Define Battery Gauge Library
+	#ifndef __MAX17055__
+		#include <MAX17055.h>
+	#endif
+
 	// SD Library
 	#include <SPI.h>
 	#include "SD.h"
@@ -50,20 +60,6 @@
 		uint8_t 	Minute				= 0;
 		uint8_t 	Second				= 0;
 	} Struct_Time;
-
-	// Define Battery Structure
-	typedef struct {
-
-		// Battery
-		float		IV					= 0;
-		float		AC					= 0;
-		float		SOC					= 0;
-		uint8_t		Charge				= 0;
-		float		Charge_Temp			= 0;
-		uint16_t	Full_Cap			= 0;
-		uint16_t	Instant_Cap			= 0;
-
-	} Struct_Device;
 
 	// PostOffice Pack Types
 	enum Pack_Types {
