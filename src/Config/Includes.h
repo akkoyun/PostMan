@@ -27,6 +27,9 @@
 	// Define JSON Handler
 	#include <ArduinoJson.h>
 
+	// Include Environment Library
+	#include <Environment.h>
+
 	// SD Library
 	#include <SPI.h>
 	#include "SD.h"
@@ -43,13 +46,6 @@
 
 	// Define Battery Structure
 	typedef struct {
-
-		// Device ID
-		char * 		Device_ID;
-
-		// Environment
-		float		Temperature			= 0;
-		float		Humidity			= 0;
 
 		// Battery
 		float		IV					= 0;

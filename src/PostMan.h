@@ -42,9 +42,7 @@
 
 				// Define JSON Status Structure
 				struct JSON_Info_Structure {
-					char * 		Device_ID;
-					float 		Temperature;
-					float 		Humidity;
+					char  		Device_ID[17];
 				} JSON_Info;
 
 				// Define JSON Battery Structure
@@ -83,6 +81,84 @@
 			void (*_Send_Response_CallBack)(uint16_t, uint8_t);
 			void (*_Command_CallBack)(uint16_t, char*);
 
+			String uint64ToString(uint64_t input) {
+				
+				String result = "";
+				uint8_t base = 16;
+
+				do {
+					
+					char c = input % base;
+					input /= base;
+
+					if (c < 10)
+						c +='0';
+					else
+						c += 'A' - 10;
+				
+					result = c + result;
+
+				} while (input);
+
+				return result;
+
+			}
+			void Get_Serial_ID(void) {
+				
+				// Define Variable
+				uint64_t _Serial = 0x00;
+				uint8_t _Read_Byte;
+
+				// Define I2C Device
+				I2C_Functions I2C_DS28C(__I2C_Addr_DS28C__, true, 2);
+
+				// Set DS28C to I2C Mode
+				I2C_DS28C.Write_Register(0x08, 0x01, false);
+
+				// Send CRC  Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x07);
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 40-47 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x06);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 32-39 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x05);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 24-31 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x04);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 16-23 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x03);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 08-15 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x02);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 00-07 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x01);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send Device Family bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x00);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Set Array
+				String(uint64ToString(_Serial)).toCharArray(this->JSON_Data.JSON_Info.Device_ID, 17);
+
+			}
+			
 			// Update GSM Parameters
 			void Update_Connection_Variables(void) {
 
@@ -127,47 +203,6 @@
 					Terminal_GSM.Text(GSM_CellID_X, GSM_CellID_Y, CYAN, String(GSM::Modem.Cell_ID, HEX));
 
 				#endif
-
-			}
-
-			// LOG JSON Pack Function
-			void LOG(void) {
-
-				// Declare LOG File Object
-				File LOG_File;
-
-				// Activate Mux
-				DDRC |= 0b00000001;
-				PORTC |= 0b00000001;
-				delay(10);
-
-				// Start SD Card
-				if (SD.begin(53)) {
-
-					// Open File for Write
-					LOG_File = SD.open("LOG.txt", FILE_WRITE);
-
-					// Control for File Open
-					if (LOG_File) {
-
-						// Write Data
-						delay(5);
-						LOG_File.flush();
-						LOG_File.print(this->JSON_Data.JSON_Pack);
-						delay(5);
-
-						// Close File
-						delay(8);
-						LOG_File.close();
-
-						// Clear Pack
-						this->JSON_Data.JSON_Pack = "";
-					}
-
-				}
-
-				// Turn SD MUX Enable LOW
-				PORTC &= 0b11111110;
 
 			}
 
@@ -260,9 +295,12 @@
 					// Set Device Firmware Version Variable
 					if (_Pack_Type == Pack_Types::Online) JSON_Info[F("Firmware")] = F(__Firmware__);
 
+					// Define Sensor Object
+					HDC2010 _Sensor(true, 3, 10, true);
+
 					// Set Device Environment Variable
-					JSON_Info[F("Temperature")] = this->JSON_Data.JSON_Info.Temperature;
-					JSON_Info[F("Humidity")] = this->JSON_Data.JSON_Info.Humidity;
+					JSON_Info[F("Temperature")] = _Sensor.Temperature();
+					JSON_Info[F("Humidity")] = _Sensor.Humidity();
 
 				#endif
 
@@ -280,6 +318,15 @@
 					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("T")] = this->JSON_Data.JSON_Battery.T;
 					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("FB")] = this->JSON_Data.JSON_Battery.FB;
 					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("IB")] = this->JSON_Data.JSON_Battery.IB;
+
+					// Clear Battery Variables
+					this->JSON_Data.JSON_Battery.IV = 0;
+					this->JSON_Data.JSON_Battery.AC = 0;
+					this->JSON_Data.JSON_Battery.SOC = 0;
+					this->JSON_Data.JSON_Battery.Charge = 0;
+					this->JSON_Data.JSON_Battery.T = 0;
+					this->JSON_Data.JSON_Battery.FB = 0;
+					this->JSON_Data.JSON_Battery.IB = 0;
 
 				#endif
 
@@ -328,6 +375,12 @@
 					JSON_Operator[F("dBm")] = GSM::Modem.dBm;
 					JSON_Operator[F("LAC")] = GSM::Modem.LAC;
 					JSON_Operator[F("Cell_ID")] = GSM::Modem.Cell_ID;
+
+					// Clear IoT Variables
+					GSM::Modem.Operator = 0;
+					GSM::Modem.dBm = 0;
+					GSM::Modem.LAC = 0;
+					GSM::Modem.Cell_ID = 0;
 
 				#endif
 
@@ -512,6 +565,10 @@
 			// Initialize GSM Modem
 			void Initialize(void) {
 
+				// Get Serial ID
+				this->Get_Serial_ID();
+
+				// Initialize Modem
 				GSM::Initialize();
 
 			}
@@ -520,6 +577,53 @@
 			void Connect(void) {
 
 				GSM::Connect();
+
+			}
+
+			// LOG JSON Pack Function
+			void LOG(void) {
+
+				// Declare LOG File Object
+				File LOG_File;
+
+				// Activate Mux
+				DDRC |= 0b00000001;
+				PORTC |= 0b00000001;
+				delay(10);
+
+				// Start SD Card
+				if (SD.begin(53)) {
+
+					// Open File for Write
+					LOG_File = SD.open("LOG.txt", FILE_WRITE);
+
+					// Control for File Open
+					if (LOG_File) {
+
+						// Write Data
+						delay(5);
+						LOG_File.flush();
+						LOG_File.println(this->JSON_Data.JSON_Pack);
+						LOG_File.println("");
+						delay(5);
+
+						// Close File
+						delay(8);
+						LOG_File.close();
+
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, F("                               "));
+							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, F("Error : Pack Writen to SD Card."));
+						#endif
+
+						// Clear Pack
+						this->JSON_Data.JSON_Pack = "";
+					}
+
+				}
+
+				// Turn SD MUX Enable LOW
+				PORTC &= 0b11111110;
 
 			}
 
@@ -730,9 +834,6 @@
 								// Send Data CallBack
 								_Send_Response_CallBack(_Response_Command, 0);
 
-								// Log Data Pack
-								if (_Response_Command != 200) this->LOG();
-
 								// End Function
 								if (_Response_Command == 200) return(true);
 
@@ -740,9 +841,6 @@
 
 								// Send Data CallBack Error
 								_Send_Response_CallBack(0, 1);
-
-								// Log Data Pack
-								this->LOG();
 
 							}
 							
@@ -754,9 +852,6 @@
 							// Send Data CallBack Error
 							_Send_Response_CallBack(0, 2);
 
-							// Log Data Pack
-							this->LOG();
-
 						}
 
 					} else {
@@ -766,9 +861,6 @@
 
 						// Send Data CallBack Error
 						_Send_Response_CallBack(0, 3);
-
-						// Log Data Pack
-						this->LOG();
 
 					}
 
@@ -788,9 +880,6 @@
 						Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, YELLOW, F("                    "));
 						Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, F("No Connection       "));
 					#endif
-
-					// Log Data Pack
-					this->LOG();
 
 					// Clear Interrupt
 					this->Interrupt.Send = false;
@@ -917,13 +1006,6 @@
 			// Set Device Data
 			void Device(Struct_Device * _Device) {
 
-				// Set Device Parameters
-				this->JSON_Data.JSON_Info.Device_ID = _Device->Device_ID;
-
-				// Set Environment Parameters
-				this->JSON_Data.JSON_Info.Temperature = _Device->Temperature;
-				this->JSON_Data.JSON_Info.Humidity = _Device->Humidity;
-
 				// Set Battery Parameters
 				this->JSON_Data.JSON_Battery.IV = _Device->IV;
 				this->JSON_Data.JSON_Battery.AC = _Device->AC;
@@ -934,9 +1016,6 @@
 				this->JSON_Data.JSON_Battery.IB = _Device->Instant_Cap;			// Optional
 
 			}
-
-
-
 
 			// Set Status
 			void SetStatus(uint16_t _Device, uint16_t _Fault) {
