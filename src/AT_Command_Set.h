@@ -4696,7 +4696,7 @@
 				Buffer.Data_Order = 0;
 
 				// Get Data
-				for (uint16_t i = _HeaderSize; i < (Buffer.Read_Order - 7); i++) {
+				for (uint8_t i = _HeaderSize; i < (Buffer.Read_Order - 7); i++) {
 
 					// Delay
 					delayMicroseconds(10);
