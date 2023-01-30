@@ -22,7 +22,7 @@
 	#endif
 
 	// Cloud Functions
-	class PostMan : public GSM {
+	class PostMan : private GSM {
 
 		// Private Functions
 		private:
@@ -79,6 +79,134 @@
 				} while (input);
 
 				return result;
+
+			}
+
+			// Clear Interrupt Function
+			void Clear_Interrupt(uint8_t _Pack_Type) {
+
+				// Clear Interrupt
+				switch (_Pack_Type) {
+
+					// Clear Online Interrupt
+					case Pack_Types::Online: {
+
+						// Clear Interrupt
+						this->Interrupt.Online = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear Timed Interrupt
+					case Pack_Types::Timed: {
+
+						// Clear Interrupt
+						this->Interrupt.Timed = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear Update Interrupt
+					case Pack_Types::Update: {
+
+						// Clear Interrupt
+						this->Interrupt.Update = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear Interrupt Interrupt
+					case Pack_Types::Interrupt: {
+
+						// Clear Interrupt
+						this->Interrupt.Interrupt = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear Alarm Interrupt
+					case Pack_Types::Alarm: {
+
+						// Clear Interrupt
+						this->Interrupt.Alarm = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear Offline Interrupt
+					case Pack_Types::Offline: {
+
+						// Clear Interrupt
+						this->Interrupt.Offline = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear FOTA_Info Interrupt
+					case Pack_Types::FOTA_Info: {
+
+						// Clear Interrupt
+						this->Interrupt.FOTA_Info = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear FOTA_Download Interrupt
+					case Pack_Types::FOTA_Download: {
+
+						// Clear Interrupt
+						this->Interrupt.FOTA_Download = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear FOTA_Burn Interrupt
+					case Pack_Types::FOTA_Burn: {
+
+						// Clear Interrupt
+						this->Interrupt.FOTA_Burn = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear Other Interrupt
+					default: {
+
+						// Clear All Interrupts
+						this->Interrupt.Online = false;
+						this->Interrupt.Update = false;
+						this->Interrupt.Timed = false;
+						this->Interrupt.Interrupt = false;
+						this->Interrupt.Alarm = false;
+						this->Interrupt.Offline = false;
+						this->Interrupt.FOTA_Info = false;
+						this->Interrupt.FOTA_Download = false;
+						this->Interrupt.FOTA_Burn = false;
+
+						// End Case
+						break;
+
+					}
+
+				}
 
 			}
 
@@ -210,6 +338,15 @@
 					// Get Data
 					_Send_Data_CallBack(Pack_Types::Online);
 
+				} else if (_Pack_Type == Pack_Types::Update) {
+
+					// Set Command
+					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Update"));
+
+					// Get Data
+					_Send_Data_CallBack(Pack_Types::Update);
+
+
 				} else if (_Pack_Type == Pack_Types::Timed) {
 
 					// Set Command
@@ -270,10 +407,10 @@
 					JSON_Info[F("ID")] = this->JSON_Data.Device_ID;
 					
 					// Set Device Hardware Version Variable
-					if (_Pack_Type == Pack_Types::Online) JSON_Info[F("Hardware")] = F(__Hardware__);
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Info[F("Hardware")] = F(__Hardware__);
 
 					// Set Device Firmware Version Variable
-					if (_Pack_Type == Pack_Types::Online) JSON_Info[F("Firmware")] = F(__Firmware__);
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Info[F("Firmware")] = F(__Firmware__);
 
 					// Define Sensor Object
 					HDC2010 _Sensor(true, 3, 10, true);
@@ -300,9 +437,9 @@
 					JSON_Battery[F("IV")] = Battery_Gauge.Instant_Voltage();
 					JSON_Battery[F("AC")] = Battery_Gauge.Average_Current();
 					JSON_Battery[F("SOC")] = Battery_Gauge.State_Of_Charge();
-					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("T")] = Battery_Gauge.Temperature();
-					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("FB")] = Battery_Gauge.Design_Capacity();
-					if (_Pack_Type == Pack_Types::Online) JSON_Battery[F("IB")] = Battery_Gauge.Instant_Capacity();
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("T")] = Battery_Gauge.Temperature();
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("FB")] = Battery_Gauge.Design_Capacity();
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("IB")] = Battery_Gauge.Instant_Capacity();
 
 					// Charger
 					I2C_Functions I2C_BQ24298(__I2C_Addr_BQ24298__, true, 5);
@@ -323,7 +460,7 @@
 					JsonObject JSON_GSM = JSON_Device["IoT"].createNestedObject(F("GSM"));
 
 					// Get GSM Parameters
-					if (_Pack_Type == Pack_Types::Online) {
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) {
 
 						// Declare Variable
 						char _Firmware[10];
@@ -394,6 +531,17 @@
 
 					// Online Payload
 					if (_Pack_Type == Pack_Types::Online) {
+
+						// Set Device Status Variable
+						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
+
+						// Set Device Fault Variable
+						JSON_Payload[F("Fault")] = this->JSON_Data.JSON_Status.Fault;
+
+					}
+
+					// Update Payload
+					if (_Pack_Type == Pack_Types::Update) {
 
 						// Set Device Status Variable
 						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
@@ -506,22 +654,36 @@
 
 			}
 
+			// Reset Function
+			void(* Reset) (void) = 0;
+
 		// Public Functions
 		public:
 
 			// Define Modem Interrupt Structure
 			struct Interrupt_Status {
-				bool 		Send				= false;
-				bool 		Download			= false;
+
+				// Send Interrupt
+				bool 		Online				= false;
+				bool 		Update				= false;
+				bool 		Timed				= false;
+				bool 		Interrupt			= false;
+				bool 		Alarm				= false;
+				bool 		Offline				= false;
+				bool 		FOTA_Info			= false;
+				bool 		FOTA_Download		= false;
+				bool 		FOTA_Burn			= false;
+
+				// Ring Interrupt
 				bool 		Ring				= false;
+
 			} Interrupt;
 
 			// PostMan Constructor
 			PostMan(Stream &_Serial) : GSM(_Serial) {
 
 				// Clear Interrupt
-				this->Interrupt.Send = false;
-				this->Interrupt.Ring = false;
+				this->Clear_Interrupt(0);
 
 			}
 
@@ -589,6 +751,9 @@
 
 				// Update Time
 				RTC.Set_Time(GSM::Time.Second, GSM::Time.Minute, GSM::Time.Hour, GSM::Time.Day, GSM::Time.Month, GSM::Time.Year);
+
+				// Publish Interrupt Status
+				this->Interrupt.Online = true;
 
 			}
 
@@ -684,6 +849,9 @@
 			// Send Data Batch Function
 			bool Publish(const uint8_t _Pack_Type) {
 
+				// Parse JSON
+				uint16_t _JSON_Size = this->Parse_JSON(_Pack_Type);
+
 				// Control for Connection
 				if (GSM::Status.Connection) {
 
@@ -698,9 +866,6 @@
 							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, YELLOW, F("                    "));
 							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, YELLOW, F("JSON Pack           "));
 						#endif
-
-						// Parse JSON
-						uint16_t _JSON_Size = this->Parse_JSON(_Pack_Type);
 
 						// Clear UART Buffer
 						AT_Command_Set::Clear_UART_Buffer();
@@ -841,7 +1006,7 @@
 								GSM::Listen(true);
 
 								// Clear Interrupt
-								this->Interrupt.Send = false;
+								this->Clear_Interrupt(_Pack_Type);
 
 								// Send Data CallBack
 								_Send_Response_CallBack(_Response_Command, 0);
@@ -880,7 +1045,7 @@
 					GSM::Listen(true);
 
 					// Clear Interrupt
-					this->Interrupt.Send = false;
+					this->Clear_Interrupt(_Pack_Type);
 
 					// End Function
 					return(true);
@@ -893,8 +1058,11 @@
 						Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, F("No Connection       "));
 					#endif
 
+					// Send Data CallBack Error
+					_Send_Response_CallBack(0, 4);
+
 					// Clear Interrupt
-					this->Interrupt.Send = false;
+					this->Clear_Interrupt(_Pack_Type);
 
 					// End Function
 					return(false);
@@ -947,8 +1115,145 @@
 						// Clear Interrupt
 						this->Interrupt.Ring = false;
 
-						// Send Data CallBack
-						_Command_CallBack(_Event, _JSON_Data);
+						// Declare Response
+						uint8_t _Response = Command_NOK;
+
+						// Handle Command
+						if (_Event == Command_Reset) {
+
+							// Declare Response JSON Variable
+							String _Response_JSON;
+
+							// Declare JSON Object
+							StaticJsonDocument<32> Response_JSON;
+
+							// Declare JSON Data
+							Response_JSON[F("Response")] = Command_OK;
+
+							// Clear Unused Data
+							Response_JSON.garbageCollect();
+
+							// Serialize JSON	
+							uint8_t _JSON_Length = serializeJson(Response_JSON, _Response_JSON) + 1;
+
+							// Declare Response Array
+							char JSON[_JSON_Length];
+
+							// Convert Response
+							_Response_JSON.toCharArray(JSON, _JSON_Length);
+
+							// Send Response
+							this->Response(200, JSON);
+
+							// Reset
+							Reset();
+
+						} else if (_Event == Command_Update) {
+
+							// Set Response
+							_Response = Command_OK;
+
+							// Set Command Interrupt
+							this->Interrupt.Update = true;
+
+						} else if (_Event == Command_Current_Ratio) {
+
+							// Declare JSON Object
+							StaticJsonDocument<64> Incoming_JSON;
+
+							// Deserialize the JSON document
+							deserializeJson(Incoming_JSON, _JSON_Data);
+
+							// Handle JSON
+							uint8_t _Current_Ratio = Incoming_JSON["Request"]["Ratio"];
+
+							// RTC Object Definitions	
+							I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
+							RV3028 RTC(true, 1);
+
+							// Set Response Code
+							if (RTC.Write_EEPROM(EEPROM_Current_Ratio, _Current_Ratio)) _Response = Command_OK;
+
+						} else if (_Event == Command_Interval) {
+
+							// Declare JSON Object
+							StaticJsonDocument<64> Incoming_JSON;
+
+							// Deserialize the JSON document
+							deserializeJson(Incoming_JSON, _JSON_Data);
+
+							// Handle JSON
+							uint8_t _Online = Incoming_JSON["Request"]["Online"];
+							uint8_t _Offline = Incoming_JSON["Request"]["Offline"];
+
+							// RTC Object Definitions	
+							I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
+							RV3028 RTC(true, 1);
+
+							// Set Response Code
+							if (RTC.Write_EEPROM(EEPROM_Online_Interval, _Online) and RTC.Write_EEPROM(EEPROM_Offline_Interval, _Offline)) _Response = Command_OK;
+
+
+						} else if (_Event == Command_FOTA_Download) {
+
+							// Declare JSON Object
+							StaticJsonDocument<64> Incoming_JSON;
+
+							// Deserialize the JSON document
+							deserializeJson(Incoming_JSON, _JSON_Data);
+
+							// Handle JSON
+							this->JSON_Data.JSON_FOTA.File_ID = Incoming_JSON["Request"]["Firmware"];
+
+							// Set Response
+							_Response = Command_OK;
+
+							// Set Command Interrupt
+							this->Interrupt.FOTA_Download = true;
+
+						} else if (_Event == Command_FOTA_Burn) {
+
+							// Set Response
+							_Response = Command_OK;
+
+							// Set Command Interrupt
+							this->Interrupt.FOTA_Burn = true;
+
+						}
+
+						// Send Response
+						if ((_Event == Command_Update) or (_Event == Command_Current_Ratio) or (_Event == Command_FOTA_Download) or (_Event == Command_FOTA_Burn) or (_Event == Command_Interval)) {
+
+							// Declare Response JSON Variable
+							String _Response_JSON;
+
+							// Declare JSON Object
+							StaticJsonDocument<32> Response_JSON;
+
+							// Declare JSON Data
+							Response_JSON[F("Response")] = _Response;
+
+							// Clear Unused Data
+							Response_JSON.garbageCollect();
+
+							// Serialize JSON	
+							uint8_t _JSON_Length = serializeJson(Response_JSON, _Response_JSON) + 1;
+
+							// Declare Response Array
+							char JSON[_JSON_Length];
+
+							// Convert Response
+							_Response_JSON.toCharArray(JSON, _JSON_Length);
+
+							// Send Response
+							this->Response(200, JSON);
+
+						} else {
+
+							// Send Data CallBack
+							_Command_CallBack(_Event, _JSON_Data);
+
+						}
 
 					}
 
@@ -1021,6 +1326,11 @@
 				this->JSON_Data.JSON_FOTA.SD_Size = _SD_Size;
 				this->JSON_Data.JSON_FOTA.Download_Time = _Time;
 
+			}
+
+			// Fota File ID
+			uint8_t FOTA_ID(void) {
+				return(this->JSON_Data.JSON_FOTA.File_ID);
 			}
 
 	};

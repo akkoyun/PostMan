@@ -63,12 +63,30 @@
 
 	// PostOffice Pack Types
 	enum Pack_Types {
-		Online		= 1,
-		Timed		= 2,
-		Interrupt	= 3,
-		Alarm		= 4,
-		Offline		= 5,
-		FOTA_Info	= 99
+		Online			= 1,
+		Update			= 2,
+		Timed			= 3,
+		Interrupt		= 4,
+		Alarm			= 5,
+		Offline			= 6,
+		FOTA_Info		= 90,
+		FOTA_Download	= 91,
+		FOTA_Burn		= 99
 	};
+
+	// Define Commands
+	#define Command_OK					200
+	#define Command_NOK					201
+	#define Command_Update				262
+	#define Command_Interval			301
+	#define Command_Current_Ratio		801
+	#define Command_FOTA_Download		900
+	#define Command_FOTA_Burn			901
+	#define Command_Reset				999
+
+	// EEPROM Address Table
+	#define EEPROM_Current_Ratio		0x00
+	#define EEPROM_Online_Interval		0x01
+	#define EEPROM_Offline_Interval		0x02
 
 #endif
