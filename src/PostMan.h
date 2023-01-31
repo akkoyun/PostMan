@@ -654,6 +654,38 @@
 
 			}
 
+			// Send Response Function
+			bool Send_Response(const uint16_t _Response) {
+
+				// Declare Response JSON Variable
+				String _Response_JSON;
+
+				// Declare JSON Object
+				StaticJsonDocument<32> Response_JSON;
+
+				// Declare JSON Data
+				Response_JSON[F("Response")] = _Response;
+
+				// Clear Unused Data
+				Response_JSON.garbageCollect();
+
+				// Serialize JSON	
+				uint8_t _JSON_Length = serializeJson(Response_JSON, _Response_JSON) + 1;
+
+				// Declare Response Array
+				char JSON[_JSON_Length];
+
+				// Convert Response
+				_Response_JSON.toCharArray(JSON, _JSON_Length);
+
+				// Send Response
+				bool _Res = this->Response(200, JSON);
+
+				// End Function
+				return(_Res);
+
+			}
+
 			// Reset Function
 			void(* Reset) (void) = 0;
 
@@ -704,6 +736,27 @@
 
 				// Set CallBack Functions
 				this->_Command_CallBack = _Command_CallBack;
+
+			}
+
+			// ************************************************************
+
+			// Read EEPROM Function
+			uint16_t Get_EEPROM(uint8_t _Address) {
+
+				// RTC Object Definitions	
+				I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
+				RV3028 RTC(true, 1);
+
+				// Read Registers
+				uint8_t _High_Byte = (RTC.Read_EEPROM(_Address));
+				uint8_t _Low_Byte = (RTC.Read_EEPROM(_Address + 0x01));
+
+				// Combine Bytes
+				uint16_t _Byte = (_High_Byte << 8) | _Low_Byte;
+
+				// End Function
+				return(_Byte);
 
 			}
 
@@ -1112,51 +1165,51 @@
 							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, String(_Event));
 						#endif
 
-						// Clear Interrupt
-						this->Interrupt.Ring = false;
-
 						// Declare Response
 						uint8_t _Response = Command_NOK;
 
 						// Handle Command
 						if (_Event == Command_Reset) {
 
-							// Declare Response JSON Variable
-							String _Response_JSON;
+							// Blink
+							Hardware::MCU_LED(__RED__, 1, 200);
 
-							// Declare JSON Object
-							StaticJsonDocument<32> Response_JSON;
-
-							// Declare JSON Data
-							Response_JSON[F("Response")] = Command_OK;
-
-							// Clear Unused Data
-							Response_JSON.garbageCollect();
-
-							// Serialize JSON	
-							uint8_t _JSON_Length = serializeJson(Response_JSON, _Response_JSON) + 1;
-
-							// Declare Response Array
-							char JSON[_JSON_Length];
-
-							// Convert Response
-							_Response_JSON.toCharArray(JSON, _JSON_Length);
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Reset"));
+							#endif
 
 							// Send Response
-							this->Response(200, JSON);
+							this->Send_Response(Command_OK);
 
 							// Reset
 							Reset();
 
 						} else if (_Event == Command_Update) {
 
-							// Set Response
-							_Response = Command_OK;
+							// Blink
+							Hardware::MCU_LED(__RED__, 1, 200);
+
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Update Request"));
+							#endif
+
+							// Send Response
+							this->Send_Response(Command_OK);
 
 							// Set Command Interrupt
 							this->Interrupt.Update = true;
 
-						} else if (_Event == Command_Current_Ratio) {
+						} else if (_Event == Command_Parameter) {
+
+							// Blink
+							Hardware::MCU_LED(__RED__, 1, 200);
+
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Parameter Update"));
+							#endif
 
 							// Declare JSON Object
 							StaticJsonDocument<64> Incoming_JSON;
@@ -1165,36 +1218,50 @@
 							deserializeJson(Incoming_JSON, _JSON_Data);
 
 							// Handle JSON
-							uint8_t _Current_Ratio = Incoming_JSON["Request"]["Ratio"];
+							uint8_t _Address = Incoming_JSON["Request"]["Address"];
+							uint16_t _Value = Incoming_JSON["Request"]["Value"];
 
-							// RTC Object Definitions	
-							I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
-							RV3028 RTC(true, 1);
+							// Control for Address
+							if ((_Address & 0x01) == 0) {
 
-							// Set Response Code
-							if (RTC.Write_EEPROM(EEPROM_Current_Ratio, _Current_Ratio)) _Response = Command_OK;
+								// 0x1234
+								// HB   LB
+								// 0x12 0x34
 
-						} else if (_Event == Command_Interval) {
+								// Handle Low & High Byte
+								uint8_t _Low_Byte = lowByte(_Value);
+								uint8_t _High_Byte = highByte(_Value);
 
-							// Declare JSON Object
-							StaticJsonDocument<64> Incoming_JSON;
+								// RTC Object Definitions	
+								I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
+								RV3028 RTC(true, 1);
 
-							// Deserialize the JSON document
-							deserializeJson(Incoming_JSON, _JSON_Data);
+								// Update EEPROM
+								bool _Response_High = RTC.Write_EEPROM(_Address, _High_Byte);
+								bool _Response_Low = RTC.Write_EEPROM(_Address + 0x01, _Low_Byte);
 
-							// Handle JSON
-							uint8_t _Online = Incoming_JSON["Request"]["Online"];
-							uint8_t _Offline = Incoming_JSON["Request"]["Offline"];
+								// Set Response Code
+								if (_Response_High and _Response_Low) _Response = Command_OK;
 
-							// RTC Object Definitions	
-							I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
-							RV3028 RTC(true, 1);
+							} else {
 
-							// Set Response Code
-							if (RTC.Write_EEPROM(EEPROM_Online_Interval, _Online) and RTC.Write_EEPROM(EEPROM_Offline_Interval, _Offline)) _Response = Command_OK;
+								// Declare Response
+								_Response = Command_NOK;
 
+							}
+
+							// Send Response
+							this->Send_Response(_Response);
 
 						} else if (_Event == Command_FOTA_Download) {
+
+							// Blink
+							Hardware::MCU_LED(__RED__, 1, 200);
+
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("FOTA Download"));
+							#endif
 
 							// Declare JSON Object
 							StaticJsonDocument<64> Incoming_JSON;
@@ -1205,48 +1272,27 @@
 							// Handle JSON
 							this->JSON_Data.JSON_FOTA.File_ID = Incoming_JSON["Request"]["Firmware"];
 
-							// Set Response
-							_Response = Command_OK;
-
 							// Set Command Interrupt
 							this->Interrupt.FOTA_Download = true;
 
+							// Send Response
+							this->Send_Response(Command_OK);
+
 						} else if (_Event == Command_FOTA_Burn) {
 
-							// Set Response
-							_Response = Command_OK;
+							// Blink
+							Hardware::MCU_LED(__RED__, 1, 200);
+
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("FOTA Burn"));
+							#endif
 
 							// Set Command Interrupt
 							this->Interrupt.FOTA_Burn = true;
 
-						}
-
-						// Send Response
-						if ((_Event == Command_Update) or (_Event == Command_Current_Ratio) or (_Event == Command_FOTA_Download) or (_Event == Command_FOTA_Burn) or (_Event == Command_Interval)) {
-
-							// Declare Response JSON Variable
-							String _Response_JSON;
-
-							// Declare JSON Object
-							StaticJsonDocument<32> Response_JSON;
-
-							// Declare JSON Data
-							Response_JSON[F("Response")] = _Response;
-
-							// Clear Unused Data
-							Response_JSON.garbageCollect();
-
-							// Serialize JSON	
-							uint8_t _JSON_Length = serializeJson(Response_JSON, _Response_JSON) + 1;
-
-							// Declare Response Array
-							char JSON[_JSON_Length];
-
-							// Convert Response
-							_Response_JSON.toCharArray(JSON, _JSON_Length);
-
 							// Send Response
-							this->Response(200, JSON);
+							this->Send_Response(Command_OK);
 
 						} else {
 
@@ -1255,7 +1301,18 @@
 
 						}
 
+						// Print Command State
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("                 "));
+						#endif
+
 					}
+
+					// Clear Interrupt
+					this->Interrupt.Ring = false;
+
+					// Port Control
+					GSM::Listen(true);
 
 				}
 

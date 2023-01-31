@@ -78,6 +78,8 @@
 	#define Command_OK					200
 	#define Command_NOK					201
 	#define Command_Update				262
+	#define Command_Parameter			500
+
 	#define Command_Interval			301
 	#define Command_Current_Ratio		801
 	#define Command_FOTA_Download		900
@@ -85,8 +87,19 @@
 	#define Command_Reset				999
 
 	// EEPROM Address Table
-	#define EEPROM_Current_Ratio		0x00
-	#define EEPROM_Online_Interval		0x01
+	#define EEPROM_Online_Interval		0x00
 	#define EEPROM_Offline_Interval		0x02
+	#define EEPROM_Alarm_Duration		0x04
+	#define EEPROM_V_Min				0x0A
+	#define EEPROM_V_Max				0x0C
+	#define EEPROM_I_Max				0x0E
+	#define EEPROM_FQ_Min				0x10
+	#define EEPROM_FQ_Max				0x12
+	#define EEPROM_VIMB_Max				0x14
+	#define EEPROM_IIMB_Max				0x16
+	#define EEPROM_P_Regression			0x1E
+	#define EEPROM_PMAX					0x20
+	#define EEPROM_Current_Ratio		0x28
+	#define EEPROM_Fault_Control		0x2A
 
 #endif
