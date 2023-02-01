@@ -27,32 +27,6 @@
 		// Private Functions
 		private:
 
-			// Define JSON Status Structure
-			struct JSON_Device_Structure {
-
-				// Define JSON Device ID
-				char Device_ID[17];
-
-				// Define JSON Status Structure
-				struct JSON_Status_Structure {
-					uint16_t Device;
-					uint16_t Fault;
-				} JSON_Status;
-
-				// Define JSON FOTA Structure
-				struct JSON_FOTA_Structure {
-					uint16_t		File_ID				= 0;
-					bool 			DownloadStatus		= false;
-					uint32_t		Download_Time		= 0;
-					uint32_t		FTP_Size			= 0;
-					uint32_t		SD_Size				= 0;
-				} JSON_FOTA;
-
-				// Define JSON
-				String JSON_Pack;
-
-			} JSON_Data;
-
 			// Define CallBack Functions
 			void (*_Send_Data_CallBack)(uint8_t);
 			void (*_Send_Response_CallBack)(uint16_t, uint8_t);
@@ -691,6 +665,32 @@
 
 		// Public Functions
 		public:
+
+			// Define JSON Status Structure
+			struct JSON_Device_Structure {
+
+				// Define JSON Device ID
+				char Device_ID[17];
+
+				// Define JSON Status Structure
+				struct JSON_Status_Structure {
+					uint16_t Device;
+					uint16_t Fault;
+				} JSON_Status;
+
+				// Define JSON FOTA Structure
+				struct JSON_FOTA_Structure {
+					uint16_t		File_ID				= 0;
+					bool 			DownloadStatus		= false;
+					uint32_t		Download_Time		= 0;
+					uint32_t		FTP_Size			= 0;
+					uint32_t		SD_Size				= 0;
+				} JSON_FOTA;
+
+				// Define JSON
+				String JSON_Pack;
+
+			} JSON_Data;
 
 			// Define Modem Interrupt Structure
 			struct Interrupt_Status {
@@ -1383,11 +1383,6 @@
 				this->JSON_Data.JSON_FOTA.SD_Size = _SD_Size;
 				this->JSON_Data.JSON_FOTA.Download_Time = _Time;
 
-			}
-
-			// Fota File ID
-			uint8_t FOTA_ID(void) {
-				return(this->JSON_Data.JSON_FOTA.File_ID);
 			}
 
 	};
