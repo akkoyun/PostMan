@@ -59,6 +59,9 @@
 					// Control for Power Monitor
 					if (Hardware::Status.Power) {
 
+						// Set Control Variable
+						this->Status.Initialize = true;
+
 						// AT Command
 						#ifdef _AT_
 
@@ -498,9 +501,6 @@
 							GSM_Console_Initialize_ROW += 1;
 
 						#endif
-
-						// Set Control Variable
-						this->Status.Initialize = true;
 
 					} else {
 
