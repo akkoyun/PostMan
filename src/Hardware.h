@@ -12,11 +12,21 @@
 	#endif
 
 	// Define LED Colors
-	#define	__WHITE__								(uint8_t) 0
-	#define	__RED__									(uint8_t) 1
-	#define	__GREEN__								(uint8_t) 2
-	#define	__BLUE__								(uint8_t) 3
-	#define	__PURPLE__								(uint8_t) 4
+	#ifndef __WHITE__
+		#define	__WHITE__							(uint8_t) 0
+	#endif
+	#ifndef __RED__
+		#define	__RED__								(uint8_t) 1
+	#endif
+	#ifndef __GREEN__
+		#define	__GREEN__							(uint8_t) 2
+	#endif
+	#ifndef __BLUE__
+		#define	__BLUE__							(uint8_t) 3
+	#endif
+	#ifndef __PURPLE__
+		#define	__PURPLE__							(uint8_t) 4
+	#endif
 
 	// Hardware Functions
 	class Hardware {
