@@ -59,6 +59,17 @@
 					// Control for Power Monitor
 					if (Hardware::Status.Power) {
 
+						// Print Command State
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(14, 34, WHITE, F("[    ]"));
+						#endif
+
+						// Print Command State
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, CYAN, F("Initializing Modem"));
+						#endif
+
 						// Set Control Variable
 						this->Status.Initialize = true;
 
@@ -67,9 +78,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -77,7 +88,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 
 							// Set Variable
@@ -90,9 +101,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT#SEARCHLIM=100,100"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -100,7 +111,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
 							// Set Variable
@@ -113,9 +124,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT&F0"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -123,7 +134,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
 							// Set Variable
@@ -136,9 +147,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+CFUN=1,0"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -146,7 +157,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
 							// Set Variable
@@ -159,9 +170,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("ATE0"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -169,7 +180,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
 							// Set Variable
@@ -182,9 +193,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+CMEE=1"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -192,7 +203,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 
 							// Set Variable
@@ -205,9 +216,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+FCLASS=0"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -215,7 +226,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
 							// Set Variable
@@ -228,9 +239,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT&K0"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -238,7 +249,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
 							// Set Variable
@@ -251,9 +262,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+CPIN?"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -261,11 +272,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								if (AT_Command_Set::Modem.PIN == 0) Terminal_GSM.Text(14, 15, RED, F("NO SIM"));
-								if (AT_Command_Set::Modem.PIN == 1) Terminal_GSM.Text(14, 15, GREEN, F("READY "));
-								if (AT_Command_Set::Modem.PIN == 2) Terminal_GSM.Text(14, 15, RED, F("PIN?  "));
-								if (AT_Command_Set::Modem.PIN == 3) Terminal_GSM.Text(14, 15, RED, F("PUK?  "));
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 
 							// End Function
@@ -282,9 +289,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+CGSN"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -292,8 +299,8 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
-								Terminal_GSM.Text(20, 22, CYAN, String(Modem.IMEI));
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.Text(20, 24, CYAN, String(Modem.IMEI));
 							#endif
 						
 							// Set Variable
@@ -306,9 +313,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+GSN"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -316,8 +323,8 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
-								Terminal_GSM.Text(21, 27, CYAN, String(AT_Command_Set::Modem.Serial_ID));
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.Text(21, 29, CYAN, String(AT_Command_Set::Modem.Serial_ID));
 							#endif
 						
 							// Set Variable
@@ -330,9 +337,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+CCID"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -340,8 +347,8 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
-								Terminal_GSM.Text(22, 18, CYAN, String(Modem.ICCID));
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.Text(22, 20, CYAN, String(Modem.ICCID));
 							#endif
 						
 							// Set Variable
@@ -354,9 +361,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+GMI"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -364,8 +371,8 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14,73);
-								Terminal_GSM.Text(17, 36, CYAN, String(AT_Command_Set::Modem.Manufacturer));
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14,35);
+								Terminal_GSM.Text(17, 38, CYAN, String(AT_Command_Set::Modem.Manufacturer));
 							#endif
 
 							// Set Variable
@@ -378,9 +385,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+GMM"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -388,8 +395,8 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
-								Terminal_GSM.Text(18, 36, CYAN, String(AT_Command_Set::Modem.Model));
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.Text(18, 38, CYAN, String(AT_Command_Set::Modem.Model));
 							#endif
 						
 							// Set Variable
@@ -402,9 +409,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+GMR"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -419,8 +426,8 @@
 								// Handle TimeStamp
 								sprintf(_Firmware, "%02d.%02d.%03d", AT_Command_Set::Modem.Firmware.Segment_1, AT_Command_Set::Modem.Firmware.Segment_2, AT_Command_Set::Modem.Firmware.Segment_3);
 
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
-								Terminal_GSM.Text(19, 28, CYAN, String(_Firmware));
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.Text(19, 30, CYAN, String(_Firmware));
 							#endif
 						
 							// Set Variable
@@ -433,9 +440,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT#SLED=2"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -443,7 +450,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
 							// Set Variable
@@ -456,9 +463,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT#SLEDSAV"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -466,7 +473,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
 							// Set Variable
@@ -479,9 +486,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT#E2SLRI=50"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -489,7 +496,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
 							// Set Variable
@@ -502,9 +509,9 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT#TXMONMODE=1"));
-								Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
@@ -512,7 +519,7 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 73);
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
 							// Set Variable
@@ -555,6 +562,17 @@
 					// Control for Initialize
 					if (this->Status.Initialize) {
 
+						// Print Command State
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(14, 34, WHITE, F("[    ]"));
+						#endif
+
+						// Print Command State
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, CYAN, F("Connecting"));
+						#endif
+
 						// Set Control Variable
 						this->Status.Connection = true;
 
@@ -566,9 +584,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT#REGMODE=1"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -576,7 +594,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -594,9 +612,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT#AUTOBND=2"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -604,7 +622,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -622,9 +640,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT+COPS=0,2,28601"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -632,7 +650,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -653,9 +671,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT+CREG=0"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -663,7 +681,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -676,9 +694,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT+CREG?"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Set Connection WatchDog
@@ -697,8 +715,8 @@
 
 									// Print Command State
 									#ifdef GSM_Debug
-										Terminal_GSM.Text(14, 73, CYAN, F("    "));
-										Terminal_GSM.Text(14, 74, RED, String(_CREG_Connection_Stat));
+										Terminal_GSM.Text(14, 35, CYAN, F("    "));
+										Terminal_GSM.Text(14, 36, RED, String(_CREG_Connection_Stat));
 									#endif
 
 									// Control for Connection
@@ -782,7 +800,7 @@
 
 									// Print Command State
 									#ifdef GSM_Debug
-										Terminal_GSM.Text(17, 73, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+										Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 									#endif
 
 									// Set WD Variable
@@ -795,7 +813,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -813,9 +831,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT+CGREG=0"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -823,7 +841,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -836,9 +854,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT+CGREG?"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Set Connection WatchDog
@@ -857,8 +875,8 @@
 
 									// Print Command State
 									#ifdef GSM_Debug
-										Terminal_GSM.Text(14, 73, CYAN, F("    "));
-										Terminal_GSM.Text(14, 74, RED, String(_CGREG_Connection_Stat));
+										Terminal_GSM.Text(14, 35, CYAN, F("    "));
+										Terminal_GSM.Text(14, 36, RED, String(_CGREG_Connection_Stat));
 									#endif
 
 									// Control for Connection
@@ -923,7 +941,7 @@
 
 									// Print Command State
 									#ifdef GSM_Debug
-										Terminal_GSM.Text(17, 73, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+										Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 									#endif
 
 									// Set WD Variable
@@ -936,7 +954,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -954,9 +972,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT++CGDCONT=1,**,**,**,0,0"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -964,7 +982,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -982,9 +1000,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT#SGACT=1,1"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -999,8 +1017,8 @@
 									// Handle TimeStamp
 									sprintf(_IP, "%03d.%03d.%03d.%03d", AT_Command_Set::Modem.IP_Address.Segment_1, AT_Command_Set::Modem.IP_Address.Segment_2, AT_Command_Set::Modem.IP_Address.Segment_3, AT_Command_Set::Modem.IP_Address.Segment_4);
 
-									Terminal_GSM.Text(20, 61, CYAN, String(_IP));
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.Text(20, 64, CYAN, String(_IP));
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -1021,9 +1039,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFG=3,1,1500,90,300,50"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -1031,7 +1049,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -1049,9 +1067,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFGEXT=3,1,0,1,0,0"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -1059,7 +1077,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -1077,9 +1095,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFG=2,1,1500,90,300,50"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -1087,7 +1105,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -1105,9 +1123,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFGEXT=2,1,0,1,0,0"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -1115,7 +1133,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -1123,6 +1141,12 @@
 
 							}
 
+						#endif
+
+						// Print Command State
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, CYAN, F("Setting Firewall"));
 						#endif
 
 						// FRWL Command 1
@@ -1133,9 +1157,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT#FRWL=1,***"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -1143,7 +1167,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -1161,9 +1185,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT#FRWL=1,***"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -1171,7 +1195,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -1189,9 +1213,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT#FRWL=1,***"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -1199,7 +1223,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -1217,9 +1241,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT#ICMP=2"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -1227,7 +1251,7 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 								#endif
 
 								// Set Variable
@@ -1245,9 +1269,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 									Terminal_GSM.Text(14, 4, WHITE, F("AT#MONIZIP"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 								#endif
 
 								// Send Command
@@ -1257,53 +1281,25 @@
 								#ifdef GSM_Debug
 
 									// Print Signal Level Value
-									Terminal_GSM.Text(18, 64, WHITE, F("[-   ]"));
-									Terminal_GSM.Text(18, 66, CYAN, String(GSM::Modem.dBm));
+									Terminal_GSM.Text(18, 65, WHITE, F("[-   ]"));
+									Terminal_GSM.Text(18, 67, CYAN, String(GSM::Modem.dBm));
 
 									// Print Signal Level Bar
-									Terminal_GSM.Text(18, 72, GRAY, F("_____"));
-									for (uint8_t i = 1; i <= GSM::Modem.Signal; i++) Terminal_GSM.Text(18, 71 + i, CYAN, F("X"));
+									Terminal_GSM.Text(18, 74, GRAY, F("_____"));
+									for (uint8_t i = 1; i <= GSM::Modem.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
 
 									// Print Operator Value
-									Terminal_GSM.Text(19, 72, CYAN, String(GSM::Modem.Operator));
+									Terminal_GSM.Text(19, 74, CYAN, String(GSM::Modem.Operator));
 
 									// Print Modem LAC Value
-									Terminal_GSM.Text(21, 73, CYAN, String(GSM::Modem.LAC, HEX));
+									Terminal_GSM.Text(21, 75, CYAN, String(GSM::Modem.LAC, HEX));
 
 									// Print Modem Cell ID Value
-									Terminal_GSM.Text(22, 73, CYAN, String(GSM::Modem.Cell_ID, HEX));
+									Terminal_GSM.Text(22, 75, CYAN, String(GSM::Modem.Cell_ID, HEX));
 
 									// Command Status
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 
-								#endif
-
-								// Set Variable
-								GSM_Console_Connect_ROW += 1;
-
-							}
-
-						#endif
-
-						// Set CCLK Command
-						#ifdef _AT_CCLK_
-
-							// Control for Ex Commands
-							if (this->Status.Connection) {
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, WHITE, F("                              "));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT+CCLK"));
-									Terminal_GSM.Text(14, 73, BLUE, F(" .. "));
-								#endif
-
-								// Send Command
-								if (!AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second)) this->Status.Connection = false;
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 73);
 								#endif
 
 								// Set Variable
@@ -1315,7 +1311,48 @@
 
 						// Print Command State
 						#ifdef GSM_Debug
-							Terminal_GSM.Text(17, 73, CYAN, String(Modem.Connection_Time));
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, CYAN, F("Updating RTC"));
+						#endif
+
+						// Set CCLK Command
+						#ifdef _AT_CCLK_
+
+							// Control for Ex Commands
+							if (this->Status.Connection) {
+
+								// Print Command State
+								#ifdef GSM_Debug
+									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+									Terminal_GSM.Text(14, 4, WHITE, F("AT+CCLK"));
+									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								#endif
+
+								// Send Command
+								if (!AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second)) this->Status.Connection = false;
+
+								// Print Command State
+								#ifdef GSM_Debug
+									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								#endif
+
+								// Set Variable
+								GSM_Console_Connect_ROW += 1;
+
+							}
+
+						#endif
+
+						// Print Command State
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(17, 75, CYAN, String(Modem.Connection_Time));
+						#endif
+
+						// Print Command State
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(14, 4, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, CYAN, F("Connected"));
 						#endif
 
 					} else {

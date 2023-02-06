@@ -239,6 +239,11 @@
 				// Set Array
 				String(uint64ToString(_Serial)).toCharArray(this->JSON_Data.Device_ID, 17);
 
+				// Print Command State
+				#ifdef GSM_Debug
+					Terminal_GSM.Text(5, 63, GREEN, String(this->JSON_Data.Device_ID));
+				#endif
+
 			}
 
 			// Update GSM Parameters
@@ -268,21 +273,21 @@
 				#ifdef GSM_Debug
 
 					// Print Signal Level Value
-					Terminal_GSM.Text(18, 64, WHITE, F("[-   ]"));
-					Terminal_GSM.Text(18, 66, CYAN, String(GSM::Modem.dBm));
+					Terminal_GSM.Text(18, 65, WHITE, F("[-   ]"));
+					Terminal_GSM.Text(18, 67, CYAN, String(GSM::Modem.dBm));
 
 					// Print Signal Level Bar
-					Terminal_GSM.Text(18, 72, GRAY, F("_____"));
-					for (uint8_t i = 1; i <= GSM::Modem.Signal; i++) Terminal_GSM.Text(18, 71 + i, CYAN, F("X"));
+					Terminal_GSM.Text(18, 74, GRAY, F("_____"));
+					for (uint8_t i = 1; i <= GSM::Modem.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
 
 					// Print Operator Value
-					Terminal_GSM.Text(19, 72, CYAN, String(GSM::Modem.Operator));
+					Terminal_GSM.Text(19, 74, CYAN, String(GSM::Modem.Operator));
 
 					// Print Modem LAC Value
-					Terminal_GSM.Text(21, 73, CYAN, String(GSM::Modem.LAC, HEX));
+					Terminal_GSM.Text(21, 75, CYAN, String(GSM::Modem.LAC, HEX));
 
 					// Print Modem Cell ID Value
-					Terminal_GSM.Text(22, 73, CYAN, String(GSM::Modem.Cell_ID, HEX));
+					Terminal_GSM.Text(22, 75, CYAN, String(GSM::Modem.Cell_ID, HEX));
 
 				#endif
 
@@ -775,17 +780,6 @@
 				// Get Serial ID
 				this->Get_Serial_ID();
 
-				// Detect RTC
-				I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
-
-				// RTC Object Definitions	
-				RV3028 RTC(true, 1);
-
-				// Set RTC Parameters
-				RTC.Disable_Trickle_Charger();
-				RTC.Set_24h_Clock();
-				RTC.Clear_UNIX_Time();
-
 				// Initialize Modem
 				GSM::Initialize();
 
@@ -873,7 +867,9 @@
 
 					// Print Command State
 					#ifdef GSM_Debug
-						if (_Response) Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Cloud Online"));
+						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+						if (_Response) Terminal_GSM.Text(14, 44, GREEN, F("Cloud Online"));
+						if (!_Response) Terminal_GSM.Text(14, 44, RED, F("Cloud Offline"));
 					#endif
 
 					// End Function
@@ -886,7 +882,8 @@
 
 					// Print Command State
 					#ifdef GSM_Debug
-						Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, F("No GSM Connection"));
+						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+						if (_Response) Terminal_GSM.Text(14, 44, RED, F("No GSM Connection"));
 					#endif
 
 					// End Function
@@ -916,8 +913,8 @@
 
 						// Print Command State
 						#ifdef GSM_Debug
-							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, YELLOW, F("                    "));
-							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, YELLOW, F("JSON Pack           "));
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, YELLOW, F("JSON Pack"));
 						#endif
 
 						// Clear UART Buffer
@@ -935,8 +932,8 @@
 
 						// Print Command State
 						#ifdef GSM_Debug
-							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("                    "));
-							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Sending Pack...     "));
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, YELLOW, F("Sending Pack"));
 						#endif
 
 						// Send UART Command
@@ -1014,8 +1011,8 @@
 
 						// Print Command State
 						#ifdef GSM_Debug
-							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("                    "));
-							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Pack Sended...      "));
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, GREEN, F("Pack Sended"));
 						#endif
 
 						// Declare Ring Status
@@ -1044,9 +1041,9 @@
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Response --> [   ]"));
-									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y + 14, YELLOW, String(_Response_Command));
-									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("                    "));
+									Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+									Terminal_GSM.Text(14, 44, GREEN, F("Response --> [   ]"));
+									Terminal_GSM.Text(14, 58, YELLOW, String(_Response_Command));
 								#endif
 
 								// Command Delay
@@ -1107,8 +1104,8 @@
 
 					// Print Command State
 					#ifdef GSM_Debug
-						Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, YELLOW, F("                    "));
-						Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, F("No Connection       "));
+						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+						Terminal_GSM.Text(14, 44, RED, F("No Connection"));
 					#endif
 
 					// Send Data CallBack Error
@@ -1147,7 +1144,8 @@
 
 						// Print Command State
 						#ifdef GSM_Debug
-							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Ring             "));
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, GREEN, F("Ring.."));
 						#endif
 
 						// Answer Socket
@@ -1161,8 +1159,8 @@
 
 						// Print Command State
 						#ifdef GSM_Debug
-							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("                 "));
-							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, String(_Event));
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, GREEN, String(_Event));
 						#endif
 
 						// Declare Response
@@ -1176,7 +1174,8 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Reset"));
+								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+								Terminal_GSM.Text(14, 44, GREEN, F("Reset.."));
 							#endif
 
 							// Send Response
@@ -1192,7 +1191,8 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Update Request"));
+								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+								Terminal_GSM.Text(14, 44, GREEN, F("Update Request"));
 							#endif
 
 							// Send Response
@@ -1208,7 +1208,8 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Parameter Update"));
+								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+								Terminal_GSM.Text(14, 44, GREEN, F("Parameter Update"));
 							#endif
 
 							// Declare JSON Object
@@ -1260,7 +1261,8 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("FOTA Download"));
+								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+								Terminal_GSM.Text(14, 44, GREEN, F("FOTA Download Request"));
 							#endif
 
 							// Declare JSON Object
@@ -1285,7 +1287,8 @@
 
 							// Print Command State
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("FOTA Burn"));
+								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+								Terminal_GSM.Text(14, 44, GREEN, F("FOTA Burn Request"));
 							#endif
 
 							// Set Command Interrupt
@@ -1303,7 +1306,7 @@
 
 						// Print Command State
 						#ifdef GSM_Debug
-							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("                 "));
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
 						#endif
 
 					}
@@ -1327,8 +1330,10 @@
 					// Blink
 					Hardware::MCU_LED(__PURPLE__, 1, 200);
 
+					// Print Command State
 					#ifdef GSM_Debug
-						Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Response Sended  "));
+						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+						Terminal_GSM.Text(14, 44, GREEN, F("Response Sended"));
 					#endif
 
 					// Command Delay

@@ -73,14 +73,14 @@
 				PORTJ |= 0b01000000;
 
 				// Command Delay
-				for (uint8_t i = 0; i < 100; i++) {
+				for (uint8_t i = 0; i < 36; i++) {
 
 					// Calculate Delay (2000)
-					uint8_t _Delay = _Time / 100;
+					uint8_t _Delay = _Time / 37;
 
 					// Terminal Bar
 					#ifdef GSM_Debug
-						Terminal_GSM.Text(GSM_Console_Boot_X, GSM_Console_Boot_Y + i, WHITE, F("▒"));
+						Terminal_GSM.Text(14, 4 + i, WHITE, F("▒"));
 					#endif
 
 					// Wait
@@ -93,7 +93,7 @@
 
 				// Clear Bar
 				#ifdef GSM_Debug
-					for (uint8_t i = 0; i < 100; i++) Terminal_GSM.Text(GSM_Console_Boot_X, GSM_Console_Boot_Y + i, WHITE, F(" "));
+					for (uint8_t i = 0; i < 36; i++) Terminal_GSM.Text(14, 4 + i, WHITE, F(" "));
 				#endif
 
 			}
