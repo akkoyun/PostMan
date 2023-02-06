@@ -394,6 +394,12 @@
 					// Define Sensor Object
 					HDC2010 _Sensor(true, 3, 10, true);
 
+					// Print Command State
+					#ifdef GSM_Debug
+						Terminal_GSM.Text(8, 72, CYAN, String(_Sensor.Temperature(), 2));
+						Terminal_GSM.Text(9, 72, CYAN, String(_Sensor.Humidity(), 2));
+					#endif
+
 					// Set Device Environment Variable
 					JSON_Info[F("Temperature")] = _Sensor.Temperature();
 					JSON_Info[F("Humidity")] = _Sensor.Humidity();
@@ -419,6 +425,16 @@
 					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("T")] = Battery_Gauge.Temperature();
 					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("FB")] = Battery_Gauge.Design_Capacity();
 					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("IB")] = Battery_Gauge.Instant_Capacity();
+
+					// Print Command State
+					#ifdef GSM_Debug
+						Terminal_GSM.Text(5, 113, CYAN, String(Battery_Gauge.Instant_Voltage(), 2));
+						Terminal_GSM.Text(6, 112, CYAN, String(Battery_Gauge.Temperature(), 2));
+						Terminal_GSM.Text(7, 110, CYAN, String(Battery_Gauge.Average_Current(), 2));
+						Terminal_GSM.Text(8, 112, CYAN, String(Battery_Gauge.State_Of_Charge(), 2));
+						Terminal_GSM.Text(9, 112, CYAN, String(Battery_Gauge.Design_Capacity()));
+						Terminal_GSM.Text(10, 112, CYAN, String(Battery_Gauge.Instant_Capacity()));
+					#endif
 
 					// Charger
 					I2C_Functions I2C_BQ24298(__I2C_Addr_BQ24298__, true, 5);
@@ -883,7 +899,7 @@
 					// Print Command State
 					#ifdef GSM_Debug
 						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-						if (_Response) Terminal_GSM.Text(14, 44, RED, F("No GSM Connection"));
+						Terminal_GSM.Text(14, 44, RED, F("No GSM Connection"));
 					#endif
 
 					// End Function
