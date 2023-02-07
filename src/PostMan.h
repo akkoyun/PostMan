@@ -624,6 +624,17 @@
 				// Serialize JSON	
 				uint16_t _JSON_Size = serializeJson(JSON, this->JSON_Data.JSON_Pack);
 
+				// Print Command State
+				#ifdef GSM_Debug
+					Terminal_GSM.Text(25, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(0, 75));
+					Terminal_GSM.Text(26, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(75, 150));
+					Terminal_GSM.Text(27, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(150, 225));
+					Terminal_GSM.Text(28, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(225, 300));
+					Terminal_GSM.Text(29, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(300, 375));
+					Terminal_GSM.Text(30, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(375, 450));
+					Terminal_GSM.Text(31, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(450, 525));
+				#endif
+
 				// End Function
 				return(_JSON_Size);
 
@@ -852,8 +863,8 @@
 						LOG_File.close();
 
 						#ifdef GSM_Debug
-							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, F("                               "));
-							Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, F("Error : Pack Writen to SD Card."));
+							Terminal_GSM.Text(14, 44, RED, F("                               "));
+							Terminal_GSM.Text(14, 44, RED, F("Error : Pack Writen to SD Card."));
 						#endif
 
 						// Clear Pack
@@ -1076,6 +1087,19 @@
 
 								// Send Data CallBack
 								_Send_Response_CallBack(_Response_Command, 0);
+
+								// Clear JSON Print
+								#ifdef GSM_Debug
+									for (size_t i = 3; i < 79; i++) {
+										Terminal_GSM.Text(25, i, CYAN, F(" "));
+										Terminal_GSM.Text(26, i, CYAN, F(" "));
+										Terminal_GSM.Text(27, i, CYAN, F(" "));
+										Terminal_GSM.Text(28, i, CYAN, F(" "));
+										Terminal_GSM.Text(29, i, CYAN, F(" "));
+										Terminal_GSM.Text(30, i, CYAN, F(" "));
+										Terminal_GSM.Text(31, i, CYAN, F(" "));
+									}
+								#endif
 
 								// End Function
 								if (_Response_Command == 200) return(true);

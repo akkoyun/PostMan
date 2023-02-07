@@ -1351,8 +1351,8 @@
 						// Print Command State
 						#ifdef GSM_Debug
 							Terminal_GSM.Text(14, 4, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 4, CYAN, F("PostOffice Connected"));
 							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, CYAN, F("Connected"));
 						#endif
 
 					} else {

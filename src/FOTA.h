@@ -244,8 +244,8 @@
 				#endif
 
 				#ifdef GSM_Debug
-					Terminal_GSM.Text(21, 112, GREEN, String(_File_ID));
-					Terminal_GSM.Text(23, 110, GREEN, String(Variables.File_Size));
+					Terminal_GSM.Text(17, 113, GREEN, String(_File_ID));
+					Terminal_GSM.Text(19, 112, GREEN, String(Variables.File_Size));
 				#endif
 
 				// FTPRECV Command
@@ -283,8 +283,8 @@
 
 								// SD Message
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("                               "));
-									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("SD Opened"));
+									Terminal_GSM.Text(14, 44, GREEN, F("                               "));
+									Terminal_GSM.Text(14, 44, GREEN, F("SD Opened"));
 								#endif
 
 								// Get Time
@@ -299,8 +299,8 @@
 
 								// SD Message
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("                               "));
-									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("Downloading"));
+									Terminal_GSM.Text(14, 44, GREEN, F("                               "));
+									Terminal_GSM.Text(14, 44, GREEN, F("Downloading"));
 								#endif
 
 								// Get Pack
@@ -335,14 +335,14 @@
 
 									// SD Message
 									#ifdef GSM_Debug
-										Terminal_GSM.Text(25, 112, CYAN, String("   "));
-										Terminal_GSM.Text(25, 112, CYAN, String(map(_SD_Recieve_Size, 0, Variables.File_Size, 0, 100)));
+										Terminal_GSM.Text(21, 114, CYAN, String("   "));
+										Terminal_GSM.Text(21, 114, CYAN, String(map(_SD_Recieve_Size, 0, Variables.File_Size, 0, 100)));
 
-										Terminal_GSM.Text(26, 109, CYAN, String("    "));
-										Terminal_GSM.Text(26, 109, CYAN, String(Variables.Download_Time));
+										Terminal_GSM.Text(22, 111, CYAN, String("    "));
+										Terminal_GSM.Text(22, 111, CYAN, String(Variables.Download_Time));
 
-										Terminal_GSM.Text(24, 110, WHITE, F("       "));
-										Terminal_GSM.Text(24, 110, WHITE, String(_SD_Recieve_Size));
+										Terminal_GSM.Text(20, 112, WHITE, F("       "));
+										Terminal_GSM.Text(20, 112, WHITE, String(_SD_Recieve_Size));
 
 									#endif
 
@@ -360,16 +360,16 @@
 
 								// SD Message
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("                               "));
-									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("SD Closed"));
+									Terminal_GSM.Text(14, 44, GREEN, F("                               "));
+									Terminal_GSM.Text(14, 44, GREEN, F("SD Closed"));
 								#endif
 
 							} else {
 
 								// SD Message
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("                               "));
-									Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, F("File Not Opened"));
+									Terminal_GSM.Text(14, 44, GREEN, F("                               "));
+									Terminal_GSM.Text(14, 44, RED, F("File Not Opened"));
 								#endif
 
 							}
@@ -378,7 +378,8 @@
 
 							// SD Message
 							#ifdef GSM_Debug
-								Terminal_GSM.Text(GSM_Console_Boot_X, 50, RED, F("SD Can Not Open"));
+								Terminal_GSM.Text(14, 44, GREEN, F("                               "));
+								Terminal_GSM.Text(14, 44, RED, F("SD Can Not Open"));
 							#endif
 
 						}
@@ -444,8 +445,8 @@
 
 					// SD Message
 					#ifdef GSM_Debug
-						Terminal_GSM.OK_Decide(Control.Function, 22, 113);
-						Terminal_GSM.Text(24, 110, GREEN, String(this->Variables.SD_File_Size));
+						Terminal_GSM.OK_Decide(Control.Function, 18, 115);
+						Terminal_GSM.Text(19, 112, GREEN, String(this->Variables.SD_File_Size));
 					#endif
 
 				}
