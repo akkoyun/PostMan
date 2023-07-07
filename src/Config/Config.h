@@ -12,6 +12,15 @@
 		#define CONSOLE_TEMPLATE_GE910
 	#endif
 
+	// Define Operator Defaults
+	#define _Operator_
+	#ifdef _Operator_
+		#define _GSMSearchLimit_ 		100
+		#define _DCSPCSSearchLimit_		100
+		#define _PDP_Type_				"IP"
+		#define _PDP_APN_				"internet"
+	#endif
+
 	// Define Version Defaults
 	#ifndef __Hardware__
 		#define __Hardware__ 			"00.00.00"

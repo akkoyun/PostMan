@@ -246,6 +246,24 @@
 
 			}
 
+			// Environment Read Function
+			void Get_Environment(void) {
+				
+				// Define Sensor Object
+				HDC2010 _Sensor(true, 3, 10, true);
+
+				// Set Device Environment Variable
+				this->JSON_Data.JSON_Environment.Temperature = _Sensor.Temperature();
+				this->JSON_Data.JSON_Environment.Humidity = _Sensor.Humidity();
+
+				// Print Command State
+				#ifdef GSM_Debug
+					Terminal_GSM.Text(8, 72, CYAN, String(_Sensor.Temperature(), 2));
+					Terminal_GSM.Text(9, 72, CYAN, String(_Sensor.Humidity(), 2));
+				#endif
+
+			}
+
 			// Update GSM Parameters
 			void Update_Connection_Variables(void) {
 
@@ -391,19 +409,6 @@
 					// Set Device Firmware Version Variable
 					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Info[F("Firmware")] = F(__Firmware__);
 
-					// Define Sensor Object
-					HDC2010 _Sensor(true, 3, 10, true);
-
-					// Print Command State
-					#ifdef GSM_Debug
-						Terminal_GSM.Text(8, 72, CYAN, String(_Sensor.Temperature(), 2));
-						Terminal_GSM.Text(9, 72, CYAN, String(_Sensor.Humidity(), 2));
-					#endif
-
-					// Set Device Environment Variable
-					JSON_Info[F("Temperature")] = _Sensor.Temperature();
-					JSON_Info[F("Humidity")] = _Sensor.Humidity();
-
 				#endif
 
 				// Parse Battery Segment
@@ -473,13 +478,6 @@
 						JSON_Module[F("Serial")] = GSM::Modem.Serial_ID;
 						JSON_Module[F("IMEI")] = GSM::Modem.IMEI;
 
-						// Define SIM
-						JsonObject JSON_SIM = JSON_GSM.createNestedObject(F("SIM"));
-
-						// Set SIM Parameters
-						JSON_SIM[F("SIM_Type")] = 1;
-						JSON_SIM[F("ICCID")] = GSM::Modem.ICCID;
-
 					}
 
 					// Define GSM Operator Section
@@ -489,6 +487,8 @@
 					this->Update_Connection_Variables();
 
 					// Set Device GSM Connection Detail Section
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Operator[F("SIM_Type")] = 1;
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update)JSON_Operator[F("ICCID")] = GSM::Modem.ICCID;
 					JSON_Operator[F("Code")] = GSM::Modem.Operator;
 					JSON_Operator[F("dBm")] = GSM::Modem.dBm;
 					JSON_Operator[F("LAC")] = GSM::Modem.LAC;
@@ -524,97 +524,23 @@
 					// Set Device Time Variable
 					JSON_Payload[F("TimeStamp")] = _TimeStamp;
 
-					// Online Payload
-					if (_Pack_Type == Pack_Types::Online) {
+					// Get Environment
+					this->Get_Environment();
 
-						// Set Device Status Variable
-						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
+					// Set Device Environment Variable
+					JSON_Payload[F("PCBT")] = this->JSON_Data.JSON_Environment.Temperature;
+					JSON_Payload[F("PCBH")] = this->JSON_Data.JSON_Environment.Humidity;
 
-						// Set Device Fault Variable
-						JSON_Payload[F("Fault")] = this->JSON_Data.JSON_Status.Fault;
+					// Set Device Status Variable
+					JSON_Payload[F("Status")] = this->JSON_Data.JSON_Status.Device_State;
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Payload[F("Publish")] = this->JSON_Data.JSON_Status.Publish_Mask;
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Payload[F("Stop")] = this->JSON_Data.JSON_Status.Stop_Mask;
 
-					}
 
-					// Update Payload
-					if (_Pack_Type == Pack_Types::Update) {
 
-						// Set Device Status Variable
-						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
 
-						// Set Device Fault Variable
-						JSON_Payload[F("Fault")] = this->JSON_Data.JSON_Status.Fault;
 
-					}
 
-					// Timed Payload
-					if (_Pack_Type == Pack_Types::Timed) {
-
-						// Set Device Status Variable
-						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
-
-						// Set Device Fault Variable
-						JSON_Payload[F("Fault")] = this->JSON_Data.JSON_Status.Fault;
-
-					}
-
-					// Interrupt Payload
-					if (_Pack_Type == Pack_Types::Interrupt) {
-
-						// Set Device Status Variable
-						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
-
-						// Set Device Fault Variable
-						JSON_Payload[F("Fault")] = this->JSON_Data.JSON_Status.Fault;
-
-					}
-
-					// Alarm Payload
-					if (_Pack_Type == Pack_Types::Alarm) {
-
-						// Set Device Status Variable
-						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
-
-						// Set Device Fault Variable
-						JSON_Payload[F("Fault")] = this->JSON_Data.JSON_Status.Fault;
-
-					}
-
-					// Offline Payload
-					if (_Pack_Type == Pack_Types::Offline) {
-
-						// Set Device Status Variable
-						JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
-
-						// Set Device Fault Variable
-						JSON_Payload[F("Fault")] = this->JSON_Data.JSON_Status.Fault;
-
-					}
-
-					// FOTA Download Payload
-					if (_Pack_Type == Pack_Types::FOTA_Info) {
-
-						// Set FOTA Status Variable
-						JSON_Payload[F("File_ID")] = this->JSON_Data.JSON_FOTA.File_ID;
-
-						// Set FOTA Status Variable
-						JSON_Payload[F("Status")] = this->JSON_Data.JSON_FOTA.DownloadStatus;
-
-						// Set FOTA File Size Variable
-						JSON_Payload[F("FTP_Size")] = this->JSON_Data.JSON_FOTA.FTP_Size;
-
-						// Set FOTA SD File Size Variable
-						JSON_Payload[F("SD_Size")] = this->JSON_Data.JSON_FOTA.SD_Size;
-
-						// Set FOTA Download Time
-						JSON_Payload[F("DownloadTime")] = this->JSON_Data.JSON_FOTA.Download_Time;
-
-						// Clear Variables
-						this->JSON_Data.JSON_FOTA.DownloadStatus = false;
-						this->JSON_Data.JSON_FOTA.FTP_Size = 0;
-						this->JSON_Data.JSON_FOTA.SD_Size = 0;
-						this->JSON_Data.JSON_FOTA.Download_Time = 0;
-
-					}
 
 				#endif
 
@@ -701,13 +627,20 @@
 			// Define JSON Status Structure
 			struct JSON_Device_Structure {
 
-				// Define JSON Device ID
+				// Device ID
 				char Device_ID[17];
+
+				// Define JSON Environment Structure
+				struct JSON_Environment_Structure {
+					float Temperature;
+					float Humidity;
+				} JSON_Environment;
 
 				// Define JSON Status Structure
 				struct JSON_Status_Structure {
-					uint16_t Device;
-					uint16_t Fault;
+					uint32_t Device_State = 0;
+					uint32_t Publish_Mask = 0;
+					uint32_t Stop_Mask = 0;
 				} JSON_Status;
 
 				// Define JSON FOTA Structure
@@ -806,6 +739,9 @@
 
 				// Get Serial ID
 				this->Get_Serial_ID();
+
+				// Get Environment
+				this->Get_Environment();
 
 				// Initialize Modem
 				GSM::Initialize();
@@ -1413,8 +1349,6 @@
 			void SetStatus(uint16_t _Device, uint16_t _Fault) {
 
 				// Set Device Status Variables
-				this->JSON_Data.JSON_Status.Device = _Device;
-				this->JSON_Data.JSON_Status.Fault = _Fault;
 
 			}
 

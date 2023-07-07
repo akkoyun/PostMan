@@ -102,12 +102,12 @@
 							// Print Command State
 							#ifdef GSM_Debug
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#SEARCHLIM=100,100"));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#SEARCHLIM=**,**"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SEARCHLIM()) this->Status.Initialize = false;
+							if (!AT_Command_Set::SEARCHLIM(_GSMSearchLimit_, _DCSPCSSearchLimit_)) this->Status.Initialize = false;
 
 							// Print Command State
 							#ifdef GSM_Debug
@@ -978,7 +978,7 @@
 								#endif
 
 								// Send Command
-								if (!AT_Command_Set::CGDCONT(1, "IP", "mgbs", "0.0.0.0", 0, 0)) this->Status.Connection = false;
+								if (!AT_Command_Set::CGDCONT(1, _PDP_Type_, _PDP_APN_, "0.0.0.0", 1, 1)) this->Status.Connection = false;
 
 								// Print Command State
 								#ifdef GSM_Debug

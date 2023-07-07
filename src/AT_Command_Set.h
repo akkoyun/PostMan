@@ -109,7 +109,7 @@
 			 * @return true Function is success.
 			 * @return false Function fail.
 			 */
-			bool SEARCHLIM(void) {
+			bool SEARCHLIM(const uint8_t _GSMSearchLim, const uint8_t _DCSPCSSearchLim) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -125,7 +125,10 @@
 				delay(20);
 
 				// Send UART Command
-				GSM_Serial->print(F("AT#SEARCHLIM=100,100"));
+				GSM_Serial->print(F("AT#SEARCHLIM="));
+				GSM_Serial->print(_GSMSearchLim);
+				GSM_Serial->print(F(","));
+				GSM_Serial->print(_DCSPCSSearchLim);
 				GSM_Serial->print(F("\r\n"));
 
 				// Read Current Time
