@@ -18,7 +18,7 @@
 		#define _GSMSearchLimit_ 		100
 		#define _DCSPCSSearchLimit_		100
 		#define _PDP_Type_				"IP"
-		#define _PDP_APN_				"internet"
+		#define _PDP_APN_				"mgbs"
 	#endif
 
 	// Define Version Defaults

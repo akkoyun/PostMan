@@ -1,9 +1,17 @@
+// Definitions for AT Commands
 #define _AT_
-#define _AT_ATE_
 #define _AT_SEARCHLIM_
-//#define _AT_ATF_
+#define _AT_CFUN_
 #define _AT_CMEE_
 #define _AT_FCLASS_
+
+
+
+
+
+
+#define _AT_ATE_
+//#define _AT_ATF_
 #define _AT_K_
 #define _AT_SLED_
 #define _AT_SLEDSAV_
@@ -12,7 +20,6 @@
 //#define _AT_COPS_
 //#define _AT_AUTOBND_
 #define _AT_SCFG_Out_
-#define _AT_CFUN_
 #define _AT_SCFGEXT_Out_
 #define _AT_SCFG_In_
 #define _AT_SCFGEXT_In_

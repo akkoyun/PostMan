@@ -96,6 +96,29 @@
 
 						#endif
 
+						// ATE Command
+						#ifdef _AT_ATE_
+
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("ATE0"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
+
+							// Send Command
+							if (!AT_Command_Set::ATE(0)) this->Status.Initialize = false;
+
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+							#endif
+						
+							// Set Variable
+							GSM_Console_Initialize_ROW += 1;
+
+						#endif
+
 						// SEARCHLIM Command
 						#ifdef _AT_SEARCHLIM_
 
@@ -154,29 +177,6 @@
 
 							// Send Command
 							if (!AT_Command_Set::CFUN(1)) this->Status.Initialize = false;
-
-							// Print Command State
-							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
-							#endif
-						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
-						#endif
-
-						// ATE Command
-						#ifdef _AT_ATE_
-
-							// Print Command State
-							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("ATE0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-							#endif
-
-							// Send Command
-							if (!AT_Command_Set::ATE(0)) this->Status.Initialize = false;
 
 							// Print Command State
 							#ifdef GSM_Debug
