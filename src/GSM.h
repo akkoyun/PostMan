@@ -50,9 +50,6 @@
 				// Initialize Modem Parameters
 				while (!this->Status.Initialize) {
 
-					// Define Terminal Row Variable
-					uint8_t GSM_Console_Initialize_ROW = GSM_Console_Initialize_X;
-
 					// Get PowerMon
 					Hardware::Status.Power = Hardware::PowerMonitor();
 
@@ -91,10 +88,10 @@
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// ATE Command
 						#ifdef _AT_ATE_
@@ -114,10 +111,10 @@
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// SEARCHLIM Command
 						#ifdef _AT_SEARCHLIM_
@@ -137,10 +134,10 @@
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// ATF Command
 						#ifdef _AT_ATF_
@@ -160,10 +157,10 @@
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// CFUN Command
 						#ifdef _AT_CFUN_
@@ -182,11 +179,11 @@
 							#ifdef GSM_Debug
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
-						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
 
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// CMEE Command
 						#ifdef _AT_CMEE_
@@ -206,10 +203,10 @@
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// FCLASS Command
 						#ifdef _AT_FCLASS_
@@ -229,10 +226,10 @@
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// K Command
 						#ifdef _AT_K_
@@ -252,10 +249,10 @@
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// CPIN Command
 						#ifdef _AT_CPIN_
@@ -279,10 +276,10 @@
 							if (!this->Status.Initialize) return(false);
 							if (Modem.PIN != 1) return(false);
 
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// CGSN Command
 						#ifdef _AT_CGSN_
@@ -295,7 +292,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CGSN(Modem.IMEI)) this->Status.Initialize = false;
+							if (!AT_Command_Set::CGSN()) this->Status.Initialize = false;
 
 							// Print Command State
 							#ifdef GSM_Debug
@@ -303,10 +300,10 @@
 								Terminal_GSM.Text(20, 24, CYAN, String(Modem.IMEI));
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// GSN Command
 						#ifdef _AT_GSN_
@@ -327,10 +324,10 @@
 								Terminal_GSM.Text(21, 29, CYAN, String(AT_Command_Set::Modem.Serial_ID));
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// ICCID Command
 						#ifdef _AT_ICCID_
@@ -343,7 +340,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CCID(Modem.ICCID)) this->Status.Initialize = false;
+							if (!AT_Command_Set::CCID()) this->Status.Initialize = false;
 
 							// Print Command State
 							#ifdef GSM_Debug
@@ -351,10 +348,10 @@
 								Terminal_GSM.Text(22, 20, CYAN, String(Modem.ICCID));
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// GMI Command
 						#ifdef _AT_GMI_
@@ -375,10 +372,10 @@
 								Terminal_GSM.Text(17, 38, CYAN, String(AT_Command_Set::Modem.Manufacturer));
 							#endif
 
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// GMM Command
 						#ifdef _AT_GMM_
@@ -399,10 +396,10 @@
 								Terminal_GSM.Text(18, 38, CYAN, String(AT_Command_Set::Modem.Model));
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// GMR Command
 						#ifdef _AT_GMR_
@@ -430,10 +427,10 @@
 								Terminal_GSM.Text(19, 30, CYAN, String(_Firmware));
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// SLED Command
 						#ifdef _AT_SLED_
@@ -453,10 +450,10 @@
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// SLEDSAV Command
 						#ifdef _AT_SLEDSAV_
@@ -476,10 +473,10 @@
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// E2SLRI Command
 						#ifdef _AT_E2SLRI_
@@ -499,10 +496,10 @@
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 						// TXMONMODE Command
 						#ifdef _AT_TXMONMODE_
@@ -522,10 +519,10 @@
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 						
-							// Set Variable
-							GSM_Console_Initialize_ROW += 1;
-
 						#endif
+
+						// Control for Initialize
+						if (!this->Status.Initialize) return(false);
 
 					} else {
 
@@ -535,7 +532,7 @@
 					}
 
 					// Handle WatchDog
-					if (_WD > 4) return(false);
+					if (_WD > 2) return(false);
 
 					// Set WatchDog Variable
 					_WD++;

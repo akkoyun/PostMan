@@ -30,7 +30,7 @@
 #define _AT_CGDCONT_
 #define _AT_SGACT_
 #define _AT_ICMP_
-#define _AT_CPIN_
+//#define _AT_CPIN_
 #define _AT_CGSN_
 #define _AT_GSN_
 #define _AT_GMI_
