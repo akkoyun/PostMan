@@ -292,20 +292,20 @@
 
 					// Print Signal Level Value
 					Terminal_GSM.Text(18, 65, WHITE, F("[-   ]"));
-					Terminal_GSM.Text(18, 67, CYAN, String(GSM::Modem.dBm));
+					Terminal_GSM.Text(18, 67, CYAN, String(GSM::GSM_Operator.dBm));
 
 					// Print Signal Level Bar
 					Terminal_GSM.Text(18, 74, GRAY, F("_____"));
-					for (uint8_t i = 1; i <= GSM::Modem.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
+					for (uint8_t i = 1; i <= GSM::GSM_Operator.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
 
 					// Print Operator Value
-					Terminal_GSM.Text(19, 74, CYAN, String(GSM::Modem.Operator));
+					Terminal_GSM.Text(19, 74, CYAN, String(GSM::GSM_Operator.Operator));
 
 					// Print Modem LAC Value
-					Terminal_GSM.Text(21, 75, CYAN, String(GSM::Modem.LAC, HEX));
+					Terminal_GSM.Text(21, 75, CYAN, String(GSM::GSM_Operator.LAC, HEX));
 
 					// Print Modem Cell ID Value
-					Terminal_GSM.Text(22, 75, CYAN, String(GSM::Modem.Cell_ID, HEX));
+					Terminal_GSM.Text(22, 75, CYAN, String(GSM::GSM_Operator.Cell_ID, HEX));
 
 				#endif
 
@@ -466,17 +466,17 @@
 						char _Firmware[10];
 
 						// Handle TimeStamp
-						sprintf(_Firmware, "%02d.%02d.%03d", GSM::Modem.Firmware.Segment_1, GSM::Modem.Firmware.Segment_2, GSM::Modem.Firmware.Segment_3);
+						sprintf(_Firmware, "%02d.%02d.%03d", GSM::GSM_Module.Firmware.Segment_1, GSM::GSM_Module.Firmware.Segment_2, GSM::GSM_Module.Firmware.Segment_3);
 
 						// Define IoT Module
 						JsonObject JSON_Module = JSON_GSM.createNestedObject(F("Module"));
 
 						// Set IoT Parameters
-						JSON_Module[F("Manufacturer")] = GSM::Modem.Manufacturer;
-						JSON_Module[F("Model")] = GSM::Modem.Model;
+						JSON_Module[F("Manufacturer")] = GSM::GSM_Module.Manufacturer;
+						JSON_Module[F("Model")] = GSM::GSM_Module.Model;
 						JSON_Module[F("Firmware")] = _Firmware;
-						JSON_Module[F("Serial")] = GSM::Modem.Serial_ID;
-						JSON_Module[F("IMEI")] = GSM::Modem.IMEI;
+						JSON_Module[F("Serial")] = GSM::GSM_Module.Serial_ID;
+						JSON_Module[F("IMEI")] = GSM::GSM_Module.IMEI;
 
 					}
 
@@ -488,17 +488,17 @@
 
 					// Set Device GSM Connection Detail Section
 					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Operator[F("SIM_Type")] = 1;
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update)JSON_Operator[F("ICCID")] = GSM::Modem.ICCID;
-					JSON_Operator[F("Code")] = GSM::Modem.Operator;
-					JSON_Operator[F("dBm")] = GSM::Modem.dBm;
-					JSON_Operator[F("LAC")] = GSM::Modem.LAC;
-					JSON_Operator[F("Cell_ID")] = GSM::Modem.Cell_ID;
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update)JSON_Operator[F("ICCID")] = GSM::GSM_Operator.ICCID;
+					JSON_Operator[F("Code")] = GSM::GSM_Operator.Operator;
+					JSON_Operator[F("dBm")] = GSM::GSM_Operator.dBm;
+					JSON_Operator[F("LAC")] = GSM::GSM_Operator.LAC;
+					JSON_Operator[F("Cell_ID")] = GSM::GSM_Operator.Cell_ID;
 
 					// Clear IoT Variables
-					GSM::Modem.Operator = 0;
-					GSM::Modem.dBm = 0;
-					GSM::Modem.LAC = 0;
-					GSM::Modem.Cell_ID = 0;
+					GSM::GSM_Operator.Operator = 0;
+					GSM::GSM_Operator.dBm = 0;
+					GSM::GSM_Operator.LAC = 0;
+					GSM::GSM_Operator.Cell_ID = 0;
 
 				#endif
 
@@ -869,7 +869,7 @@
 				if (GSM::Status.Connection) {
 
 					// Open Connection
-					if (AT_Command_Set::SocketDial(3, 0, 80, 255, 88, 1, PostOffice_Server)) {
+					if (AT_Command_Set::ATSD(3, 0, 80, 255, 88, 1, PostOffice_Server)) {
 
 						// Blink
 						Hardware::MCU_LED(__GREEN__, 1, 200);
@@ -884,11 +884,17 @@
 						AT_Command_Set::Clear_UART_Buffer();
 
 						// Declare Buffer Object
-						Serial_Buffer Buffer_Set = {false, 0, 0, 2000};
+						Serial_Buffer Buffer_Set = {
+							false, 	// Response State
+							0, 		// Read Order
+							0, 		// Data Order
+							5000, 	// Time Out
+							255		// Buffer Size
+						};
 
 						// Declare Buffer
-						char Buffer_Variable[255];
-						memset(Buffer_Variable, '\0', 255);
+						char Buffer_Variable[Buffer_Set.Size];
+						memset(Buffer_Variable, '\0', Buffer_Set.Size);
 
 						// Command Chain Delay (Advice by Telit)
 						delay(20);
@@ -901,7 +907,8 @@
 
 						// Send UART Command
 						GSM_Serial->print(F("AT#SSEND=3"));
-						GSM_Serial->print(F("\r\n"));
+						GSM_Serial->write(0x0D);
+						GSM_Serial->write(0x0A);
 
 						// Read Current Time
 						uint32_t Current_Time = millis();
@@ -959,10 +966,10 @@
 							Buffer_Variable[Buffer_Get.Read_Order] = GSM_Serial->read();
 
 							// Control for <OK> Response
-							if (Buffer_Variable[Buffer_Get.Read_Order - 1] == 'O' and Buffer_Variable[Buffer_Get.Read_Order] == 'K') Buffer_Get.Response = true;
+							Buffer_Get.Response = this->Find_OK(Buffer_Variable, Buffer_Get.Read_Order);
 
 							// Increase Read Order
-							if (Buffer_Variable[Buffer_Get.Read_Order] > 31 and Buffer_Variable[Buffer_Get.Read_Order] < 127) Buffer_Get.Read_Order += 1;
+							if (isAscii(Buffer_Variable[Buffer_Get.Read_Order])) Buffer_Get.Read_Order++;
 
 							// Handle for timeout
 							if (millis() - Current_Time >= Buffer_Get.Time_Out) return(false);
@@ -1045,6 +1052,12 @@
 								// Send Data CallBack Error
 								_Send_Response_CallBack(0, 1);
 
+								// Port Control
+								GSM::Listen(true);
+
+								// End Function
+								return(false);
+					
 							}
 							
 						} else {
@@ -1054,6 +1067,12 @@
 
 							// Send Data CallBack Error
 							_Send_Response_CallBack(0, 2);
+
+							// Port Control
+							GSM::Listen(true);
+
+							// End Function
+							return(false);
 
 						}
 
@@ -1065,13 +1084,16 @@
 						// Send Data CallBack Error
 						_Send_Response_CallBack(0, 3);
 
+						// Port Control
+						GSM::Listen(true);
+
+						// Clear Interrupt
+						this->Clear_Interrupt(_Pack_Type);
+
+						// End Function
+						return(false);
+
 					}
-
-					// Port Control
-					GSM::Listen(true);
-
-					// Clear Interrupt
-					this->Clear_Interrupt(_Pack_Type);
 
 					// End Function
 					return(true);
@@ -1094,9 +1116,6 @@
 					return(false);
 
 				}
-
-				// End Function
-				return(false);
 
 			}
 
@@ -1125,10 +1144,10 @@
 						#endif
 
 						// Answer Socket
-						SA(2, 1, _Request_Length);
+						AT_Command_Set::SA(2, 1, _Request_Length);
 
 						// Get Request Data
-						SRECV(2, _Request_Length, _JSON_Data);
+						AT_Command_Set::SRECV(2, _Request_Length, _JSON_Data);
 
 						// Handle JSON Data
 						uint16_t _Event = this->Handle_JSON_Request(_JSON_Data);

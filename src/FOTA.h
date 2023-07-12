@@ -51,202 +51,12 @@
 					bool Function					= true;
 				} Control;
 
+				// Activate Mux
+				DDRC |= 0b00000001; PORTC |= 0b00000001;
+				delay(200);
+
 				// Declare SD File Object
 				File SD_File;
-
-				// Activate Mux
-				DDRC |= 0b00000001;
-				PORTC |= 0b00000001;
-				delay(10);
-
-				// FTPTO Command
-				#ifdef _AT_FTPTO_
-
-					// Reset Control Variables
-					Control.Error_WD = 0;
-					Control.Response = false;
-
-					// Process Command
-					while (!Control.Response) {
-
-						// Send Command
-						Control.Response = AT_Command_Set::FTPTO(FTP_TimeOut);
-
-						// Set WD Variable
-						Control.Error_WD++;
-
-						// Control for WD
-						if (Control.Error_WD > 4) break;
-
-					}
-				
-					// End Function
-					if (!Control.Response) return (false);
-
-					// Set Function Variable
-					if (!Control.Response) Control.Function = false;
-
-				#endif
-
-				// FTPOPEN Command
-				#ifdef _AT_FTPOPEN_
-
-					// Chain Control
-					if (Control.Function) {
-
-						// Reset Control Variables
-						Control.Error_WD = 0;
-						Control.Response = false;
-
-						// Process Command
-						while (!Control.Response) {
-
-							// Send Command
-							Control.Response = AT_Command_Set::FTPOPEN(FOTA_Server, FOTA_UserName, FOTA_PassWord, FTP_OpenMode);
-
-							// Set WD Variable
-							Control.Error_WD++;
-
-							// Control for WD
-							if (Control.Error_WD > 4) break;
-
-						}
-
-						// Set Function Variable
-						if (!Control.Response) Control.Function = false;
-
-					}
-
-				#endif
-
-				// FTPTYPE Command
-				#ifdef _AT_FTPTYPE_
-
-					// Chain Control
-					if (Control.Function) {
-
-						// Reset Control Variables
-						Control.Error_WD = 0;
-						Control.Response = false;
-
-						// Process Command
-						while (!Control.Response) {
-
-							// Send Command
-							Control.Response = AT_Command_Set::FTPTYPE(FTP_TransferType);
-
-							// Set WD Variable
-							Control.Error_WD++;
-
-							// Control for WD
-							if (Control.Error_WD > 4) break;
-
-						}
-
-						// Set Function Variable
-						if (!Control.Response) Control.Function = false;
-
-					}
-
-				#endif
-
-				// FTPCWD Command
-				#ifdef _AT_FTPCWD_
-
-					// Chain Control
-					if (Control.Function) {
-
-						// Reset Control Variables
-						Control.Error_WD = 0;
-						Control.Response = false;
-
-						// Process Command
-						while (!Control.Response) {
-
-							// Send Command
-							Control.Response = AT_Command_Set::FTPCWD(FOTA_Folder);
-
-							// Set WD Variable
-							Control.Error_WD++;
-
-							// Control for WD
-							if (Control.Error_WD > 4) break;
-
-						}
-
-						// Set Function Variable
-						if (!Control.Response) Control.Function = false;
-
-					}				
-
-				#endif
-
-				// FTPSFIZE Command
-				#ifdef _AT_FTPFSIZE_
-
-					// Chain Control
-					if (Control.Function) {
-
-						// Reset Control Variables
-						Control.Error_WD = 0;
-						Control.Response = false;
-
-						// Process Command
-						while (!Control.Response) {
-
-							// Send Command
-							Control.Response = AT_Command_Set::FTPFSIZE(_File_ID, Variables.File_Size);
-
-							// Set WD Variable
-							Control.Error_WD++;
-
-							// Control for WD
-							if (Control.Error_WD > 4) break;
-
-						}
-
-						// Set Function Variable
-						if (!Control.Response) Control.Function = false;
-
-					}
-
-				#endif
-
-				// FTPGETPKT Command
-				#ifdef _AT_FTPGETPKT_
-
-					// Chain Control
-					if (Control.Function) {
-
-						// Reset Control Variables
-						Control.Error_WD = 0;
-						Control.Response = false;
-
-						// Process Command
-						while (!Control.Response) {
-
-							// Send Command
-							Control.Response = AT_Command_Set::FTPGETPKT(_File_ID, FTP_ViewMode);
-
-							// Set WD Variable
-							Control.Error_WD++;
-
-							// Control for WD
-							if (Control.Error_WD > 4) break;
-
-						}
-
-						// Set Function Variable
-						if (!Control.Response) Control.Function = false;
-
-					}				
-
-				#endif
-
-				#ifdef GSM_Debug
-					Terminal_GSM.Text(17, 113, GREEN, String(_File_ID));
-					Terminal_GSM.Text(19, 112, GREEN, String(Variables.File_Size));
-				#endif
 
 				// FTPRECV Command
 				#ifdef _AT_FTPRECV_
@@ -281,6 +91,277 @@
 							// Control for File Open
 							if (SD_File) {
 
+								// FTPTO Command
+								#ifdef _AT_FTPTO_
+
+									// Reset Control Variables
+									Control.Error_WD = 0;
+									Control.Response = false;
+
+									// Print Command State
+									#ifdef GSM_Debug
+										Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+										Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPTO=500"));
+										Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+									#endif
+
+									// Process Command
+									while (!Control.Response) {
+
+										// Send Command
+										Control.Response = AT_Command_Set::FTPTO(FTP_TimeOut);
+
+										// Set WD Variable
+										Control.Error_WD++;
+
+										// Control for WD
+										if (Control.Error_WD > 4) break;
+
+									}
+								
+									// Print Command State
+									#ifdef GSM_Debug
+										Terminal_GSM.OK_Decide(Control.Response, 14, 35);
+									#endif
+
+									// End Function
+									if (!Control.Response) return (false);
+
+									// Set Function Variable
+									if (!Control.Response) Control.Function = false;
+
+								#endif
+
+								// FTPOPEN Command
+								#ifdef _AT_FTPOPEN_
+
+									// Chain Control
+									if (Control.Function) {
+
+										// Reset Control Variables
+										Control.Error_WD = 0;
+										Control.Response = false;
+
+										// Print Command State
+										#ifdef GSM_Debug
+											Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+											Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPOPEN=***,***,***"));
+											Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+										#endif
+
+										// AT#FTPOPEN="165.227.154.147","fota","123456",1\r\n
+
+										// Process Command
+										while (!Control.Response) {
+
+											// Send Command
+											Control.Response = AT_Command_Set::FTPOPEN(FOTA_Server, FOTA_UserName, FOTA_PassWord, FTP_OpenMode);
+
+											// Set WD Variable
+											Control.Error_WD++;
+
+											// Control for WD
+											if (Control.Error_WD > 4) break;
+
+										}
+
+										// Print Command State
+										#ifdef GSM_Debug
+											Terminal_GSM.OK_Decide(Control.Response, 14, 35);
+										#endif
+
+										// Set Function Variable
+										if (!Control.Response) Control.Function = false;
+
+									}
+
+								#endif
+
+								// FTPTYPE Command
+								#ifdef _AT_FTPTYPE_
+
+									// Chain Control
+									if (Control.Function) {
+
+										// Reset Control Variables
+										Control.Error_WD = 0;
+										Control.Response = false;
+
+										// Print Command State
+										#ifdef GSM_Debug
+											Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+											Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPTYPE=0"));
+											Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+										#endif
+
+										// AT#FTPTYPE=0\r\n
+
+										// Process Command
+										while (!Control.Response) {
+
+											// Send Command
+											Control.Response = AT_Command_Set::FTPTYPE(FTP_TransferType);
+
+											// Set WD Variable
+											Control.Error_WD++;
+
+											// Control for WD
+											if (Control.Error_WD > 4) break;
+
+										}
+
+										// Print Command State
+										#ifdef GSM_Debug
+											Terminal_GSM.OK_Decide(Control.Response, 14, 35);
+										#endif
+
+										// Set Function Variable
+										if (!Control.Response) Control.Function = false;
+
+									}
+
+								#endif
+
+								// FTPCWD Command
+								#ifdef _AT_FTPCWD_
+
+									// Chain Control
+									if (Control.Function) {
+
+										// Reset Control Variables
+										Control.Error_WD = 0;
+										Control.Response = false;
+
+										// Print Command State
+										#ifdef GSM_Debug
+											Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+											Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPCWD=\"firmware\""));
+											Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+										#endif
+
+										// AT#FTPCWD="firmware"\r\n
+
+										// Process Command
+										while (!Control.Response) {
+
+											// Send Command
+											Control.Response = AT_Command_Set::FTPCWD(FOTA_Folder);
+
+											// Set WD Variable
+											Control.Error_WD++;
+
+											// Control for WD
+											if (Control.Error_WD > 4) break;
+
+										}
+
+										// Print Command State
+										#ifdef GSM_Debug
+											Terminal_GSM.OK_Decide(Control.Response, 14, 35);
+										#endif
+
+										// Set Function Variable
+										if (!Control.Response) Control.Function = false;
+
+									}				
+
+								#endif
+
+								// FTPSFIZE Command
+								#ifdef _AT_FTPFSIZE_
+
+									// Chain Control
+									if (Control.Function) {
+
+										// Reset Control Variables
+										Control.Error_WD = 0;
+										Control.Response = false;
+
+										// Print Command State
+										#ifdef GSM_Debug
+											Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+											Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPFSIZE=\"xxx.hex\""));
+											Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+										#endif
+
+										// AT#FTPFSIZE="6.hex"\r\n
+
+										// Process Command
+										while (!Control.Response) {
+
+											// Send Command
+											Control.Response = AT_Command_Set::FTPFSIZE(_File_ID, this->Variables.File_Size);
+
+											// Set WD Variable
+											Control.Error_WD++;
+
+											// Control for WD
+											if (Control.Error_WD > 4) break;
+
+										}
+
+										// Print Command State
+										#ifdef GSM_Debug
+											Terminal_GSM.OK_Decide(Control.Response, 14, 35);
+										#endif
+
+										// Set Function Variable
+										if (!Control.Response) Control.Function = false;
+
+									}
+
+								#endif
+
+								// FTPGETPKT Command
+								#ifdef _AT_FTPGETPKT_
+
+									// Chain Control
+									if (Control.Function) {
+
+										// Reset Control Variables
+										Control.Error_WD = 0;
+										Control.Response = false;
+
+										// Print Command State
+										#ifdef GSM_Debug
+											Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+											Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPGETPKT=\"xxx.hex\",0"));
+											Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+										#endif
+
+										// AT#FTPGETPKT="6.hex",0\r\n
+
+										// Process Command
+										while (!Control.Response) {
+
+											// Send Command
+											Control.Response = AT_Command_Set::FTPGETPKT(_File_ID, FTP_ViewMode);
+
+											// Set WD Variable
+											Control.Error_WD++;
+
+											// Control for WD
+											if (Control.Error_WD > 4) break;
+
+										}
+
+										// Print Command State
+										#ifdef GSM_Debug
+											Terminal_GSM.OK_Decide(Control.Response, 14, 35);
+										#endif
+
+										// Set Function Variable
+										if (!Control.Response) Control.Function = false;
+
+									}				
+
+								#endif
+
+								#ifdef GSM_Debug
+									Terminal_GSM.Text(17, 113, GREEN, String(_File_ID));
+									Terminal_GSM.Text(19, 112, GREEN, String(Variables.File_Size));
+								#endif
+
 								// SD Message
 								#ifdef GSM_Debug
 									Terminal_GSM.Text(14, 44, GREEN, F("                               "));
@@ -303,6 +384,9 @@
 									Terminal_GSM.Text(14, 44, GREEN, F("Downloading"));
 								#endif
 
+								// Reset Control Variables
+								Control.Response = false;
+
 								// Get Pack
 								while (!Control.Response) {
 
@@ -319,7 +403,7 @@
 
 											// Write Data
 											delay(5);
-											SD_File.flush();
+											//SD_File.flush();
 											SD_File.write(_Data, _RecieveSize);
 											delay(5);
 
@@ -364,6 +448,35 @@
 									Terminal_GSM.Text(14, 44, GREEN, F("SD Closed"));
 								#endif
 
+								// FTPCLOSE Command
+								#ifdef _AT_FTPCLOSE_
+
+									// Reset Control Variables
+									Control.Error_WD = 0;
+									Control.Response = false;
+
+									// Process Command
+									while (!Control.Response) {
+
+										// Send Command
+										Control.Response = AT_Command_Set::FTPCLOSE();
+
+										// Set WD Variable
+										Control.Error_WD++;
+
+										// Control for WD
+										if (Control.Error_WD > 4) break;
+
+									}
+								
+									// End Function
+									if (!Control.Response) return (false);
+
+									// Set Function Variable
+									if (!Control.Response) Control.Function = false;
+
+								#endif
+
 							} else {
 
 								// SD Message
@@ -384,49 +497,12 @@
 
 						}
 
-						// Turn SD MUX Enable LOW
-						PORTC &= 0b11111110;
-
 						// Set Function Variable
 						if (!Control.Response) Control.Function = false;
 
 					}
 
 				#endif
-
-				// FTPCLOSE Command
-				#ifdef _AT_FTPCLOSE_
-
-					// Reset Control Variables
-					Control.Error_WD = 0;
-					Control.Response = false;
-
-					// Process Command
-					while (!Control.Response) {
-
-						// Send Command
-						Control.Response = AT_Command_Set::FTPCLOSE();
-
-						// Set WD Variable
-						Control.Error_WD++;
-
-						// Control for WD
-						if (Control.Error_WD > 4) break;
-
-					}
-				
-					// End Function
-					if (!Control.Response) return (false);
-
-					// Set Function Variable
-					if (!Control.Response) Control.Function = false;
-
-				#endif
-
-				// Activate Mux
-				DDRC |= 0b00000001;
-				PORTC |= 0b00000001;
-				delay(10);
 
 				// Declare SD File Object
 				File Firmware_File;
