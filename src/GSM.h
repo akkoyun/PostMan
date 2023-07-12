@@ -152,12 +152,12 @@
 							// Print Command State
 							#ifdef GSM_Debug
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#SEARCHLIM=**,**"));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#SEARCHLIM=100,100"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SEARCHLIM(_GSMSearchLimit_, _DCSPCSSearchLimit_)) this->Status.Initialize = false;
+							if (!AT_Command_Set::SEARCHLIM(100, 100)) this->Status.Initialize = false;
 
 							// Print Command State
 							#ifdef GSM_Debug
@@ -1010,7 +1010,7 @@
 								#endif
 
 								// Send Command
-								if (!AT_Command_Set::CGDCONT(1, _PDP_Type_, _PDP_APN_)) this->Status.Connection = false;
+								if (!AT_Command_Set::CGDCONT(1, "IP", _PDP_APN_)) this->Status.Connection = false;
 
 								// Print Command State
 								#ifdef GSM_Debug
@@ -1214,7 +1214,7 @@
 						#endif
 
 						// FRWL Command 1
-						#ifdef _AT_FRWL_1_
+						#ifdef _AT_FRWL_1_IP_
 
 							// Control for Ex Commands
 							if (this->Status.Connection) {
@@ -1239,7 +1239,7 @@
 						#endif
 
 						// FRWL Command 2
-						#ifdef _AT_FRWL_2_
+						#ifdef _AT_FRWL_2_IP_
 
 							// Control for Ex Commands
 							if (this->Status.Connection) {
@@ -1264,7 +1264,7 @@
 						#endif
 
 						// FRWL Command 3
-						#ifdef _AT_FRWL_3_
+						#ifdef _AT_FRWL_3_IP_
 
 							// Control for Ex Commands
 							if (this->Status.Connection) {

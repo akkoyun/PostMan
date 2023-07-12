@@ -7,17 +7,12 @@
 	#define GSM_Comm_Switch
 
 	// Define Terminal Defaults
-	#define GSM_Debug
-	#ifdef GSM_Debug
+	#ifndef GSM_Debug
 		#define CONSOLE_TEMPLATE_GE910
 	#endif
 
 	// Define Operator Defaults
-	#define _Operator_
-	#ifdef _Operator_
-		#define _GSMSearchLimit_ 		100
-		#define _DCSPCSSearchLimit_		100
-		#define _PDP_Type_				"IP"
+	#ifndef _PDP_APN_
 		#define _PDP_APN_				"mgbs"
 	#endif
 
@@ -38,57 +33,54 @@
 	#endif
 
 	// Define Cloud Parameters
-	#ifndef PostOffice_Server
-		#define PostOffice_Server 		"165.227.154.147"
+	#ifndef _BackEnd_Server_
+		#define _BackEnd_Server_ 		"165.227.154.147"
 	#endif
-	#ifndef PostOffice_EndPoint
-		#define PostOffice_EndPoint 	"/"
+	#ifndef _BackEnd_EndPoint_
+		#define _BackEnd_EndPoint_ 	"/"
 	#endif
 
 	// Firewall Parameters
-	#define _AT_FRWL_1_
-	#ifdef _AT_FRWL_1_
+	#ifndef _AT_FRWL_1_IP_
 		#define _AT_FRWL_1_IP_			"213.14.250.214"
 	#endif
 
-	#define _AT_FRWL_2_
-	#ifdef _AT_FRWL_2_
+	#ifndef _AT_FRWL_2_IP_
 		#define _AT_FRWL_2_IP_			"167.99.137.254"
 	#endif
 
-	#define _AT_FRWL_3_
-	#ifdef _AT_FRWL_3_
+	#ifndef _AT_FRWL_3_IP_
 		#define _AT_FRWL_3_IP_			"176.240.98.205"
 	#endif
 
 	// Define Server Address
-	#ifndef FOTA_Server
+	#ifndef _FOTA_Server_
 		#define FOTA_Server 			"165.227.154.147"
 	#endif
 
 	// Define Server Folder
-	#ifndef FOTA_Folder
+	#ifndef _FOTA_Folder_
 		#define FOTA_Folder 			"firmware"
 	#endif
 
 	// Define Server UserName
-	#ifndef FOTA_UserName
+	#ifndef _FOTA_UserName_
 		#define FOTA_UserName 			"fota"
 	#endif
 
 	// Define Server Password
-	#ifndef FOTA_PassWord
+	#ifndef _FOTA_PassWord_
 		#define FOTA_PassWord 			"123456"
 	#endif
 
 	// Define FTP SD Parameters
-	#ifndef FOTA_SD_FileName
-		#define FOTA_SD_FileName		"STF.hex"
+	#ifndef _FOTA_SD_FileName_
+		#define FOTA_SD_FileName		"firmware.hex"
 	#endif
 
 	// Define LOG SD Parameters
-	#ifndef LOG_SD_File_Name
-		#define LOG_SD_File_Name		"LOG.txt"
+	#ifndef _LOG_SD_File_Name_
+		#define _LOG_SD_File_Name_		"LOG.txt"
 	#endif
 
 #endif

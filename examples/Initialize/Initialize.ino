@@ -1,16 +1,14 @@
-#define __Firmware__ "00.00.02"
-
 // Define Libraries
 #include <Arduino.h>
+#include "Definitions.h"
+#include "B100BC.h"
 #include "Terminal_Variables.h"
 #include <PostMan.h>
 #include <ArduinoJson.h>
-#include <Console.h>
+//#include <Console.h>
 
-// Define CallBack Functions
-void CallBack_PackData(uint8_t);
-void CallBack_Send_Response(uint16_t, uint8_t);
-void CallBack_Command(uint16_t, char*);
+// Define Hardware
+B100BC B100_BC;
 
 // Define Console
 Console Terminal(Serial_Terminal);
@@ -19,108 +17,67 @@ Console Terminal(Serial_Terminal);
 PostMan Postman(Serial3);
 FOTA Firmware(Serial3);
 
-
-
-
-
+// Define CallBack Functions
+void CallBack_PackData(uint8_t);
+void CallBack_Send_Response(uint16_t, uint8_t);
+void CallBack_Command(uint16_t, char*);
 
 // Declare Global Variable
-uint32_t Timer_Counter = 0;
+bool Timer_Measure_Pressure = false;
 bool Timer_Display = false;
-bool Firmware_Download = false;
-uint16_t _Firmware_ID = 0;
-
-// Timer Functions
-void Timer_Count(void) {
-
-	// Set Timer Counter
-	Timer_Counter += 1;
-
-	// Handle Max
-	if (Timer_Counter == 65534) Timer_Counter = 0;
-
-}
-bool Timer_Control(const uint16_t _Interval) {
-
-	// Timer Counter
-	if (Timer_Counter % _Interval == 0) {
-
-		// End Function
-		return(true);
-
-	} else {
-
-		// End Function
-		return(false);
-
-	}
-
-}
-
-// AVR 1sec Timer
-void AVR_Timer_1sn(void) {
-
-	// Clear Registers
-	TCCR5A = 0x00;
-	TCCR5B = 0x00;
-
-	// Clear Counter
-	TCNT5 = 0;
-
-	// Set Counter Value
-	OCR5A = (F_CPU / (1024)) - 1;
-
-	// Set CTC Mod
-	TCCR5B |= (1 << WGM52);
-
-	// Set Rescale (1024)
-	TCCR5B |= (1 << CS52) | (1 << CS50);
-
-	// Start Timer
-	TIMSK5 |= (1 << OCIE5A);
-
-}
 
 // PostOffice Call Back Functions
 void CallBack_PackData(uint8_t _PackType) { 
 
-	// Print Text
-	Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, YELLOW, "Device Data Updated");
+	Postman.JSON_Data.JSON_Status.Device_State = 200;
 
-	// Set Device Data
-	Postman.Environment(22.22, 33.33);
-	Postman.Battery(1, 2, 3, 3, 11, 1200, 1000);
-
-	// Set Payload Data
-	Postman.TimeStamp("2022-03-23 14:18:30");
-
-	if (_PackType == 1)	Postman.SetStatus(240, 500);
-
-	// Print Text
-	Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_X, YELLOW, "                      ");
+	// Print Status
+	B100_BC.Terminal_Text(14, 111, Terminal_CYAN, String(Postman.JSON_Data.JSON_Status.Device_State, HEX));
 
 }
 void CallBack_Send_Response(uint16_t _Response, uint8_t _Error) {
 
-	// Terminal Beep
-	Terminal.Beep();
-
 	// Control for Error
 	if (_Error == 0) {
 
+		// Buzzer Beep
+		B100_BC.Buzzer(S_MODE2);
+
 		// Control for Command
-		if (_Response == 200) Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, "Pack Sended");
-		if (_Response != 200) Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, "Pack Send Failed");
-		Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_X, YELLOW, "                      ");
+		if (_Response == 200) {
+
+			// Print Command State
+			B100_BC.Terminal_Text(14, 44, Terminal_CYAN, F("                                    "));
+			B100_BC.Terminal_Text(14, 44, Terminal_CYAN, F("Pack Sended"));
+
+		}
+		if (_Response != 200) {
+
+			// Print Command State
+			B100_BC.Terminal_Text(14, 44, Terminal_CYAN, F("                                    "));
+			B100_BC.Terminal_Text(14, 44, Terminal_CYAN, F("Pack Send Failed"));
+
+		}
+
+		// Print Command State
+		B100_BC.Terminal_Text(14, 44, Terminal_CYAN, F("                                    "));
 
 	} else {
+
+		// Buzzer Beep
+		B100_BC.Buzzer(S_SAD);
 
 		if (_Error == 1) Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, "Dial Fail");
 		if (_Error == 2) Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, "Response Fail");
 		if (_Error == 3) Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, RED, "Dial1 Fail");
 		Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_X, YELLOW, "                      ");
 
+		if (_Error != 1) Postman.LOG();
+
 	}
+
+	// Set RTC Timer
+	B100_BC.Set_Timer(B100_BC.Variables.Interval.Online);
 
 }
 void CallBack_Command(uint16_t _Command, char * _Pack) {
@@ -128,31 +85,28 @@ void CallBack_Command(uint16_t _Command, char * _Pack) {
 	// Terminal Beep
 	Terminal.Beep();
 
-	Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_X, YELLOW, String(_Command));
-	Terminal.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_X, GREEN, "                         ");
+	// Print Command State
+	B100_BC.Terminal_Text(14, 44, Terminal_CYAN, F("                                    "));
+	B100_BC.Terminal_Text(14, 44, Terminal_CYAN, String(_Command));
 
-	if (_Command == 999) {
+	// Declare Response Code
+	uint16_t _Response_Code = 0;
 
-		// Declare JSON Object
-		StaticJsonDocument<64> Incoming_JSON;
+	// Select Command
+	switch (_Command) {
 
-		// Deserialize the JSON document
-		DeserializationError Error = deserializeJson(Incoming_JSON, _Pack);
+		// Unknown Command
+		default: {
 
-		// Handle JSON
-		if (!Error) _Firmware_ID = Incoming_JSON["Request"]["Firmware"];
+			// Set Response Code
+			_Response_Code = 201;
 
-		// Set Interrupt
-		Firmware_Download = true;
+			// End Case
+			break;
+
+		}
 
 	}
-
-	if (_Command == 262) Postman.Interrupt.Send = true;
-
-
-
-
-
 
 	// Declare Response JSON Variable
 	String _Response_JSON;
@@ -161,7 +115,7 @@ void CallBack_Command(uint16_t _Command, char * _Pack) {
 	StaticJsonDocument<32> Response_JSON;
 
 	// Declare JSON Data
-	Response_JSON[F("Response")] = 200;
+	Response_JSON[F("Response")] = _Response_Code;
 
 	// Clear Unused Data
 	Response_JSON.garbageCollect();
@@ -169,145 +123,152 @@ void CallBack_Command(uint16_t _Command, char * _Pack) {
 	// Serialize JSON	
 	uint8_t _JSON_Length = serializeJson(Response_JSON, _Response_JSON) + 1;
 
-	// String to Char Convert
+	// Declare Response Array
 	char JSON[_JSON_Length];
+
+	// Convert Response
 	_Response_JSON.toCharArray(JSON, _JSON_Length);
 
 	// Send Response
 	Postman.Response(200, JSON);
 
-	// Print JSON
-	Terminal.Text(26, 4, CYAN, String(_Response_JSON));
-	delay(1000);
-	Terminal.Text(26, 4, CYAN, "                                                  ");
+	// Clear Response Code
+	_Response_Code = 0;
+
+	// Print Command State
+	B100_BC.Terminal_Text(14, 44, Terminal_CYAN, F("                                    "));
+	B100_BC.Terminal_Text(14, 44, Terminal_CYAN, String(_Response_JSON));
+
+	// Set RTC Timer
+	B100_BC.Set_Timer(B100_BC.Variables.Interval.Online);
 
 }
 
-// Hardware Functions
-inline void Set_Pinout(void) {
+// PostOffice Interrupt Routine
+void Interrupt_Routine(void) {
 
-	/*  PORT A
-		PA0 - Output / Pull Down [NC] 			- AD0		- [22]
-		PA1 - Output / Pull Down [NC] 			- AD1		- [23]
-		PA2 - Output / Pull Down [NC] 			- AD2		- [24]
-		PA3 - Output / Pull Down [NC] 			- AD3		- [25]
-		PA4 - Output / Pull Down [NC] 			- AD4		- [26]
-		PA5 - Output / Pull Down [NC] 			- AD5		- [27]
-		PA6 - Output / Pull Down [NC] 			- AD6		- [28]
-		PA7 - Output / Pull Down [NC] 			- AD7		- [29]
-	*/
-	DDRA = 0b11111111; PORTA = 0b00000000;
+	// Incoming Pack
+	if (Postman.Interrupt.Ring) Postman.Get();
 
-	/*  PORT B
-		PB0 - SS
-		PB1 - SCK
-		PB2 - MOSI
-		PB3 - MISO
-		PB4 - Input / Pull Up [RTC Interrupt] 	- PCINT4 	- [10]
-		PB5 - Output / Pull Down [NC] 			- PCINT5 	- [11]
-		PB6 - Output / Pull Down [NC] 			- PCINT6 	- [12]
-		PB7 - Output / Pull Down [NC] 			- PCINT7 	- [13]
-	*/
-	DDRB |= 0b11100000; PORTB &= 0b00011111;
-	DDRB &= 0b11101111; PORTB |= 0b00010000;
+	// Send Pack Routine
+	if (Postman.Interrupt.Online) Postman.Publish(Online);
+	if (Postman.Interrupt.Update) Postman.Publish(Update);
+	if (Postman.Interrupt.Timed) Postman.Publish(Timed);
+	if (Postman.Interrupt.Interrupt) Postman.Publish(Interrupt);
+	if (Postman.Interrupt.Alarm) Postman.Publish(Alarm);
+	if (Postman.Interrupt.Offline) Postman.Publish(Offline);
+	if (Postman.Interrupt.FOTA_Info) Postman.Publish(FOTA_Info);
 
-	/*  PORT C
-		PC0 - Output / Pull Down [SD Mux Dir.]	- AD8		- [37]
-		PC1 - Input / Pull Down [SD Card Det.]	- AD9		- [36]
-		PC2 - Output / Pull Down [NC] 			- AD10		- [35]
-		PC3 - Output / Pull Down [NC] 			- AD11		- [34]
-		PC4 - Output / Pull Down [NC] 			- AD12		- [33]
-		PC5 - Output / Pull Down [NC] 			- AD13		- [32]
-		PC6 - Output / Pull Down [NC] 			- AD14		- [31]
-		PC7 - Output / Pull Down [NC] 			- AD15		- [30]
-	*/
-	DDRC |= 0b00000001;	PORTC &= 0b11111110;
-	DDRC &= 0b11111101;	PORTC &= 0b11111101;
-	DDRC |= 0b11111100;	PORTC &= 0b00000011;
+	// FOTA Routine
+	if (Postman.Interrupt.FOTA_Download) {
 
-	/*  PORT D
-		PD0 - SCL
-		PD1 - SDA
-		PD2 - RXD1
-		PD3 - TXD1
-		PD4 - Output / Pull Down [NC] 			- ICP1		- [85]
-		PD5 - Output / Pull Down [MCU LED Blue]	- XCK1		- [84]
-		PD6 - Output / Pull Down [MCU LED Green]- T1		- [83]
-		PD7 - Output / Pull Down [MCU LED Red]	- T0		- [82]
-	*/
-	DDRD |= 0b11110000; PORTD &= 0b00001111;
+		// Terminal Beep
+		Terminal.Beep();
 
-	/*  PORT E
-		PE0 - RXD0
-		PE1 - TXD0
-		PE2 - Output / Pull Down [NC]			- AIN0		- [-]
-		PE3 - Output / Pull Down [Buzzer EN1]	- AIN1		- [5]
-		PE4 - Output / Pull Down [Buzzer EN2]	- INT4		- [2]
-		PE5 - Output / Pull Down [PWM Buzzer]	- INT5		- [3]
-		PE6 - Output / Pull Down [NC]			- INT6		- [-]
-		PE7 - Output / Pull Down [NC]			- INT7		- [-]
-	*/
-	DDRE |= 0b11111100; PORTE &= 0b11000000;
+		// Download Firmware
+		bool _Download = Firmware.Download(Postman.JSON_Data.JSON_FOTA.File_ID);
 
-	/*  PORT F
-		PF0 - Input / Pull Down [Sns 1 Sense]	- ADC0		- [A0]
-		PF1 - Sensor Data 1						- ADC1		- [A1]
-		PF2 - Sensor Data 2						- ADC2		- [A2]
-		PF3 - Input / Pull Down [Sns 2 Sense]	- ADC3		- [A3]
-		PF4 - Output / Pull Down [NC]			- ADC4		- [A4]
-		PF5 - Output / Pull Down [NC]			- ADC5		- [A5]
-		PF6 - Output / Pull Down [NC]			- ADC6		- [A6]
-		PF7 - Output / Pull Down [NC]			- ADC7		- [A7]
-	*/
-	DDRF &= 0b11110000; PORTF &= 0b11110110;
-	DDRF |= 0b11110000; PORTF &= 0b00001111;
+		// Set Download Parameters
+		Postman.FOTA(Postman.JSON_Data.JSON_FOTA.File_ID, _Download, Firmware.Variables.File_Size, Firmware.Variables.SD_File_Size, Firmware.Variables.Download_Time);
 
-	/*  PORT G
-		PG0 - Output / Pull Down [FOTA Pwr En]	- WR		- [41]
-		PG1 - Output / Pull Down [NC] 			- RD		- [40]
-		PG2 - Output / Pull Down [NC] 			- ALE		- [39]
-		PG3 - Output / Pull Down [NC] 			- TOSC2		- [-]
-		PG4 - Output / Pull Down [NC] 			- TOSC1		- [-]
-		PG5 - Output / Pull Down [NC] 			- OC0B		- [4]
-	*/
-	DDRG |= 0b00111111; PORTG &= 0b11000000;
+		// Publish Download Status
+		Postman.Interrupt.FOTA_Download = false;
+		Postman.Interrupt.Timed = false;
+		Postman.Interrupt.FOTA_Info = true;
 
-	/*  PORT J
-		PJ0 - RXD3
-		PJ1 - TXD3
-		PJ2 - Input / Pull Down [GSM Ring]		- PCINT11	- [-]
-		PJ3 - Input / Pull Down [GSM PwrMon]	- PCINT12	- [-]
-		PJ4 - Output / Pull Down [GSM Communication Enable]	- PCINT13	- [-]
-		PJ5 - Output / Pull Down [GSM ShtDwn]	- PCINT14	- [-]
-		PJ6 - Output / Pull Down [GSM On Off]	- PCINT15	- [-]
-		PJ7 - Output / Pull Down [NC]			-  			- [-]
-	*/
-	DDRJ &= 0b11110011; PORTJ |= 0b00000100;
-	DDRJ |= 0b11110000; PORTJ &= 0b00000111;
+	}
+	if (Postman.Interrupt.FOTA_Burn) {
 
-	/*  PORT K
-		PK0 - Input / Pull Down [220V Sense 1]  - PCINT16	- [89]
-		PK1 - Input / Pull Down [220V Sense 2]  - PCINT17	- [88]
-		PK2 - Input / Pull Down [220V Sense 3]  - PCINT18	- [87]
-		PK3 - Input / Pull Down [220V Sense 4]  - PCINT19	- [86]
-		PK4 - Input / Pull Down [220V Sense 5]  - PCINT20	- [85]
-		PK5 - Input / Pull Down [220V Sense 6]  - PCINT21	- [84]
-		PK6 - Input / Pull Down [220V Sense 7]  - PCINT22	- [83]
-		PK7 - Input / Pull Down [220V Sense 8]  - PCINT23	- [82]
-	*/
-	DDRK = 0b00000000; PORTK = 0b00000000;
+		// Terminal Beep
+		Terminal.Beep();
 
-	/*  PORT L
-		PL0 - Output / Pull Down [Start Relay]	- ICP4		- [49]
-		PL1 - Output / Pull Down [Stop Relay]	- ICP5		- [48]
-		PL2 - Output / Pull Down [Alarm Relay]	- T5		- [47]
-		PL3 - Output / Pull Down [Res. Relay]	- OC5A		- [46]
-		PL4 - Output / Pull Down [NC]			- OC5B		- [45]
-		PL5 - Output / Pull Down [NC]			- OC5C		- [44]
-		PL6 - Output / Pull Down [NC]			- 			- [43]
-		PL7 - Output / Pull Down [NC]			- 			- [42]
-	*/
-	DDRL |= 0b11111111; PORTL &= 0b00000000;
+		// Turn FOTA Power Off
+		PORTG |= 0b00000001;
+
+	}
+
+}
+
+void setup() {
+
+	// Define Hardware
+	B100_BC.Begin();
+
+	// Activate Mux
+	DDRC |= 0b00000001; PORTC |= 0b00000001;
+	delay(200);
+
+	// Start SD Card
+	SD.begin(53);
+
+	// Turn SD MUX Enable LOW
+	PORTC &= 0b11111110;
+
+	// Print Version
+	B100_BC.Terminal_Text(6, 71, Terminal_CYAN, String(__Firmware__));
+	B100_BC.Terminal_Text(7, 71, Terminal_CYAN, String(__Hardware__));
+	B100_BC.Terminal_Text(10, 72, Terminal_CYAN, String(B100_BC.Variables.Interval.Online / 60));
+	B100_BC.Terminal_Text(11, 72, Terminal_CYAN, String(B100_BC.Variables.Interval.Offline / 60));
+
+	// Set CallBacks
+	Postman.Event_PackData(CallBack_PackData);
+	Postman.Event_PackSend_Response(CallBack_Send_Response);
+	Postman.Event_Request(CallBack_Command);
+
+	// Power OFF GSM Modem
+	Postman.Power(false);
+
+	// Initialize Modem
+	Postman.Initialize();
+
+	// Connect to Cloud
+	Postman.Connect();
+
+	// Set Postman
+	Postman.Listen();
+
+	// Enable Interrupts
+	B100_BC.AVR_Enable_Interrupt();
+
+}
+
+void loop() {
+
+	// Interrupt Routine
+	Interrupt_Routine();
+
+	// Update Timer
+	if (Timer_Display) {
+
+		// Update Timer
+		Terminal.Text(2, 13, BLUE, String(B100_BC.Variables.Timer_Counter));
+
+		// Release Interrupt
+		Timer_Display = false;
+
+	}
+
+	// Pressure Measurement
+	if (Timer_Measure_Pressure) {
+
+		// Blink
+		B100_BC.LED(__BLUE__, 1, 200);
+
+		// Measure Pressure
+		B100_BC.Measure_Pressure();
+
+		// Print Version
+		Terminal.Text(25, 110, CYAN, String(B100_BC.Variables.Pressure.Value, 3));
+		Terminal.Text(26, 110, CYAN, String(B100_BC.Variables.Pressure.Min, 3));
+		Terminal.Text(27, 110, CYAN, String(B100_BC.Variables.Pressure.Max, 3));
+		Terminal.Text(28, 110, CYAN, String(B100_BC.Variables.Pressure.Average, 3));
+		Terminal.Text(29, 110, BLUE, String(B100_BC.Variables.Pressure.Deviation, 3));
+		Terminal.Text(31, 116, CYAN, String(B100_BC.Variables.Pressure.Data_Count));
+
+		// Release Interrupt
+		Timer_Measure_Pressure = false;
+
+	}
 
 }
 
@@ -315,13 +276,18 @@ inline void Set_Pinout(void) {
 ISR(TIMER5_COMPA_vect) {
 
 	// Set Timer Counter
-	Timer_Count();
+	B100_BC.Timer_Count();
 
 	// Activate Timer Interrupt
-	if (Timer_Control(1)) Timer_Display = true;
+	if (B100_BC.Timer_Control(1)) Timer_Display = true;
 
-	// Data Send Timer Interrupt
-	if (Timer_Control(120)) Postman.Interrupt.Send = true;
+	// Measure Pressure
+	if (B100_BC.Timer_Control(3)) Timer_Measure_Pressure = true;
+
+}
+
+// Pin Interrupt
+ISR(PCINT2_vect) {
 
 }
 
@@ -346,110 +312,13 @@ ISR(PCINT1_vect) {
 
 }
 
-void setup() {
+// RTC Timer Interrupt
+ISR(PCINT0_vect) {
 
-	// Pin Definitions
-	Set_Pinout();
+	// Control RTC Interrupt [PB4]
+	if ((PINB & (1 << PINB4)) == (1 << PINB4)) Postman.Interrupt.Timed = true;
 
-	// Turn FOTA Power Off
-	PORTG &= 0b11111110;
-
-	// Start Terminal
-	Serial.begin(115200);
-
-	// Start GSM Serial
-	Serial3.begin(115200);
-
-
-
-
-
-	// Start Console
-	Terminal.Begin();
-	Terminal.Telit_xE910();
-
-	// Print Version
-	Terminal.Text(2, 111, CYAN, String(__Firmware__));
-
-	// Print Version
-//	Terminal.Text(2, 85, CYAN, String(SERIAL_RX_BUFFER_SIZE));
-//	Terminal.Text(2, 30, CYAN, String(___Firmware___));
-
-
-
-
-
-
-	// Power OFF GSM Modem
-	Postman.Power(false);
-
-	// Set CallBacks
-	Postman.Event_PackData(CallBack_PackData);
-	Postman.Event_PackSend_Response(CallBack_Send_Response);
-	Postman.Event_Request(CallBack_Command);
-
-	// Initialize Modem
-	Postman.Initialize();
-
-	// Connect to Cloud
-	Postman.Connect();
-
-	// Set Postman
-	Postman.Subscribe("70A11D1D01000099");
-
-
-
-
-
-	// Set Pin Change Interrupt Mask 1
-	PCICR |= (1 << PCIE1);
-	PCMSK1 |= (1 << PCINT11) | (1 << PCINT12);
-
-	// Set 1sec Timer
-	AVR_Timer_1sn();
-
-	// Start Interrupts
-	sei();
-
-}
-
-void loop() {
-
-	// Firmware Download
-	if (Firmware_Download) {
-
-		Terminal.Beep();
-
-			Postman.Interrupt.Send = false;
-
-			bool _Download = Firmware.Download(_Firmware_ID);
-
-			// Send Download Status
-			Postman.SetStatus(999, 500);
-			Postman.FOTA(_Firmware_ID, _Download, Firmware.Variables.File_Size, Firmware.Variables.SD_File_Size, Firmware.Variables.Download_Time);
-			Postman.Publish(99);
-
-
-			Firmware_Download = false;
-			_Firmware_ID = 0;
-
-	}
-
-	// Update Timer
-	if (Timer_Display) {
-
-		// Update Timer
-		Terminal.Text(2, 13, BLUE, String(Timer_Counter));
-
-		// Release Interrupt
-		Timer_Display = false;
-
-	}
-
-	// Send Data Pack
-	if (Postman.Interrupt.Send) Postman.Publish(1);
-
-	// Incoming Pack
-	if (Postman.Interrupt.Ring) Postman.Get();
+	// Interrupt Delay
+	delay(50);
 
 }

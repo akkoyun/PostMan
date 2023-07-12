@@ -774,38 +774,41 @@
 				File LOG_File;
 
 				// Activate Mux
-				DDRC |= 0b00000001;
-				PORTC |= 0b00000001;
-				delay(10);
+				DDRC |= 0b00000001; PORTC |= 0b00000001;
+				delay(200);
 
-				// Start SD Card
-				if (SD.begin(53)) {
+				// Open File for Write
+				LOG_File = SD.open(_LOG_SD_File_Name_, O_WRITE | O_CREAT);
 
-					// Open File for Write
-					LOG_File = SD.open("LOG.txt", FILE_WRITE);
+				// Control for File Open
+				if (LOG_File) {
 
-					// Control for File Open
-					if (LOG_File) {
+					// Command Delay
+					delay(5);
 
-						// Write Data
-						delay(5);
-						LOG_File.flush();
-						LOG_File.println(this->JSON_Data.JSON_Pack);
-						LOG_File.println("");
-						delay(5);
+					// Flush File
+					LOG_File.flush();
 
-						// Close File
-						delay(8);
-						LOG_File.close();
+					// Print Data
+					LOG_File.println(this->JSON_Data.JSON_Pack);
 
-						#ifdef GSM_Debug
-							Terminal_GSM.Text(14, 44, RED, F("                               "));
-							Terminal_GSM.Text(14, 44, RED, F("Error : Pack Writen to SD Card."));
-						#endif
+					// Print Line Feed
+					LOG_File.println("");
 
-						// Clear Pack
-						this->JSON_Data.JSON_Pack = "";
-					}
+					// Command Delay
+					delay(10);
+
+					// Close File
+					LOG_File.close();
+
+					// Console Print
+					#ifdef GSM_Debug
+						Terminal_GSM.Text(14, 44, RED, F("                               "));
+						Terminal_GSM.Text(14, 44, RED, F("Error : Pack Writen to SD Card."));
+					#endif
+
+					// Clear Pack
+					this->JSON_Data.JSON_Pack = "";
 
 				}
 
@@ -869,7 +872,7 @@
 				if (GSM::Status.Connection) {
 
 					// Open Connection
-					if (AT_Command_Set::ATSD(3, 0, 80, 255, 88, 1, PostOffice_Server)) {
+					if (AT_Command_Set::ATSD(3, 0, 80, 255, 88, 1, _BackEnd_Server_)) {
 
 						// Blink
 						Hardware::MCU_LED(__GREEN__, 1, 200);
@@ -937,8 +940,8 @@
 						delay(10);
 
 						// Print HTTP Header
-						GSM_Serial->print(F("POST ")); GSM_Serial->print(PostOffice_EndPoint); GSM_Serial->print(F(" HTTP/1.1\r\n"));
-						GSM_Serial->print(F("Host: ")); GSM_Serial->print(PostOffice_Server); GSM_Serial->print(F("\r\n"));
+						GSM_Serial->print(F("POST ")); GSM_Serial->print(_BackEnd_EndPoint_); GSM_Serial->print(F(" HTTP/1.1\r\n"));
+						GSM_Serial->print(F("Host: ")); GSM_Serial->print(_BackEnd_Server_); GSM_Serial->print(F("\r\n"));
 						GSM_Serial->print(F("Content-Length: ")); GSM_Serial->print(_JSON_Size); GSM_Serial->print(F("\r\n"));
 						GSM_Serial->print(F("Content-Type: application/json\r\n"));
 						GSM_Serial->print(F("User-Agent: ")); GSM_Serial->print(__Device__); GSM_Serial->print(F("\r\n"));
