@@ -63,8 +63,8 @@
 
 					// SD Message
 					#ifdef GSM_Debug
-						Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("                               "));
-						Terminal_GSM.Text(GSM_PostOfficeStatus_X, GSM_PostOfficeStatus_Y, GREEN, F("File Exist and Deleted."));
+						Terminal_GSM.Text(14, 44, GREEN, F("                               "));
+						Terminal_GSM.Text(14, 44, GREEN, F("File Exist and Deleted."));
 					#endif
 
 				}
@@ -364,6 +364,7 @@
 					// Define Variable
 					uint32_t _SD_Recieve_Size = 0;
 					uint16_t _RecieveSize = 0;
+					uint8_t _State = 0;
 
 					// SD Message
 					#ifdef GSM_Debug
@@ -384,7 +385,7 @@
 						_RecieveSize = 0;
 
 						// Send Command
-						if (AT_Command_Set::FTPRECV(200, _RecieveSize, _Data)) {
+						if (AT_Command_Set::FTPRECV(200, _RecieveSize, _State, _Data)) {
 
 							if (_RecieveSize > 0) {
 
@@ -396,10 +397,15 @@
 
 							}
 
+						} else {
+
+							// Control for State
+							if (_State == 1) break;
+
 						}
 
 						// Work Delay
-						delay(20);
+						delay(50);
 
 						// Calculate Download Time
 						Variables.Download_Time = (millis() - _Download_Start_Time) / 1000;
@@ -414,6 +420,9 @@
 
 							Terminal_GSM.Text(20, 112, WHITE, F("       "));
 							Terminal_GSM.Text(20, 112, WHITE, String(_SD_Recieve_Size));
+
+							Terminal_GSM.Text(16, 90, WHITE, F(" "));
+							Terminal_GSM.Text(16, 90, WHITE, String(_State));
 
 						#endif
 

@@ -56,6 +56,89 @@
 
 			}
 
+			// Serial ID Read Function
+			void Get_Serial_ID(void) {
+				
+				// Define Variable
+				uint64_t _Serial = 0x00;
+				uint8_t _Read_Byte;
+
+				// Define I2C Device
+				I2C_Functions I2C_DS28C(__I2C_Addr_DS28C__, true, 2);
+
+				// Set DS28C to I2C Mode
+				I2C_DS28C.Write_Register(0x08, 0x01, false);
+
+				// Send CRC  Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x07);
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 40-47 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x06);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 32-39 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x05);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 24-31 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x04);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 16-23 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x03);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 08-15 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x02);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 00-07 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x01);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send Device Family bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x00);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Set Array
+				String(uint64ToString(_Serial)).toCharArray(this->JSON_Data.Device_ID, 17);
+
+				// Print Command State
+				#ifdef GSM_Debug
+					Terminal_GSM.Text(5, 63, GREEN, String(this->JSON_Data.Device_ID));
+				#endif
+
+			}
+
+			// Environment Read Function
+			void Get_Environment(void) {
+				
+				// Define Sensor Object
+				HDC2010 _Sensor(true, 3, 10, true);
+
+				// Set Device Environment Variable
+				this->JSON_Data.JSON_Environment.Temperature = _Sensor.Temperature();
+				this->JSON_Data.JSON_Environment.Humidity = _Sensor.Humidity();
+
+				// Print Command State
+				#ifdef GSM_Debug
+					Terminal_GSM.Text(8, 72, CYAN, String(_Sensor.Temperature(), 2));
+					Terminal_GSM.Text(9, 72, CYAN, String(_Sensor.Humidity(), 2));
+				#endif
+
+			}
+
+
+
+
 			// Clear Interrupt Function
 			void Clear_Interrupt(uint8_t _Pack_Type) {
 
@@ -181,86 +264,6 @@
 					}
 
 				}
-
-			}
-
-			// Serial ID Read Function
-			void Get_Serial_ID(void) {
-				
-				// Define Variable
-				uint64_t _Serial = 0x00;
-				uint8_t _Read_Byte;
-
-				// Define I2C Device
-				I2C_Functions I2C_DS28C(__I2C_Addr_DS28C__, true, 2);
-
-				// Set DS28C to I2C Mode
-				I2C_DS28C.Write_Register(0x08, 0x01, false);
-
-				// Send CRC  Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x07);
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 40-47 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x06);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 32-39 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x05);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 24-31 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x04);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 16-23 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x03);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 08-15 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x02);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 00-07 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x01);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send Device Family bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x00);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Set Array
-				String(uint64ToString(_Serial)).toCharArray(this->JSON_Data.Device_ID, 17);
-
-				// Print Command State
-				#ifdef GSM_Debug
-					Terminal_GSM.Text(5, 63, GREEN, String(this->JSON_Data.Device_ID));
-				#endif
-
-			}
-
-			// Environment Read Function
-			void Get_Environment(void) {
-				
-				// Define Sensor Object
-				HDC2010 _Sensor(true, 3, 10, true);
-
-				// Set Device Environment Variable
-				this->JSON_Data.JSON_Environment.Temperature = _Sensor.Temperature();
-				this->JSON_Data.JSON_Environment.Humidity = _Sensor.Humidity();
-
-				// Print Command State
-				#ifdef GSM_Debug
-					Terminal_GSM.Text(8, 72, CYAN, String(_Sensor.Temperature(), 2));
-					Terminal_GSM.Text(9, 72, CYAN, String(_Sensor.Humidity(), 2));
-				#endif
 
 			}
 
@@ -524,23 +527,55 @@
 					// Set Device Time Variable
 					JSON_Payload[F("TimeStamp")] = _TimeStamp;
 
-					// Get Environment
-					this->Get_Environment();
+					// Set Device ID Variable
+					if (_Pack_Type == Pack_Types::Online) {
 
-					// Set Device Environment Variable
-					JSON_Payload[F("PCBT")] = this->JSON_Data.JSON_Environment.Temperature;
-					JSON_Payload[F("PCBH")] = this->JSON_Data.JSON_Environment.Humidity;
+						// Get Environment
+						this->Get_Environment();
 
-					// Set Device Status Variable
-					JSON_Payload[F("Status")] = this->JSON_Data.JSON_Status.Device_State;
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Payload[F("Publish")] = this->JSON_Data.JSON_Status.Publish_Mask;
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Payload[F("Stop")] = this->JSON_Data.JSON_Status.Stop_Mask;
+						// Set Device Environment Variable
+						JSON_Payload[F("PCBT")] = this->JSON_Data.JSON_Environment.Temperature;
+						JSON_Payload[F("PCBH")] = this->JSON_Data.JSON_Environment.Humidity;
+
+						// Set Device Status Variable
+						JSON_Payload[F("Status")] = this->JSON_Data.JSON_Status.Device_State;
+
+					} else if (_Pack_Type == Pack_Types::Update) {
+
+						// Get Environment
+						this->Get_Environment();
+
+						// Set Device Environment Variable
+						JSON_Payload[F("PCBT")] = this->JSON_Data.JSON_Environment.Temperature;
+						JSON_Payload[F("PCBH")] = this->JSON_Data.JSON_Environment.Humidity;
+
+						// Set Device Status Variable
+						JSON_Payload[F("Status")] = this->JSON_Data.JSON_Status.Device_State;
+
+					} else if (_Pack_Type == Pack_Types::Timed) {
 
 
+					} else if (_Pack_Type == Pack_Types::Interrupt) {
 
 
+					} else if (_Pack_Type == Pack_Types::Alarm) {
 
 
+					} else if (_Pack_Type == Pack_Types::Offline) {
+
+
+					} else if (_Pack_Type == Pack_Types::FOTA_Info) {
+
+						// Set Device Environment Variable
+						JSON_Payload[F("File_ID")] = this->JSON_Data.JSON_FOTA.File_ID;
+						JSON_Payload[F("Status")] = this->JSON_Data.JSON_FOTA.DownloadStatus;
+						JSON_Payload[F("SD_Size")] = this->JSON_Data.JSON_FOTA.SD_Size;
+						JSON_Payload[F("Download_Time")] = this->JSON_Data.JSON_FOTA.Download_Time;
+
+					} else {
+
+
+					}
 
 				#endif
 
@@ -701,27 +736,6 @@
 
 				// Set CallBack Functions
 				this->_Command_CallBack = _Command_CallBack;
-
-			}
-
-			// ************************************************************
-
-			// Read EEPROM Function
-			uint16_t Get_EEPROM(uint8_t _Address) {
-
-				// RTC Object Definitions	
-				I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
-				RV3028 RTC(true, 1);
-
-				// Read Registers
-				uint8_t _High_Byte = (RTC.Read_EEPROM(_Address));
-				uint8_t _Low_Byte = (RTC.Read_EEPROM(_Address + 0x01));
-
-				// Combine Bytes
-				uint16_t _Byte = (_High_Byte << 8) | _Low_Byte;
-
-				// End Function
-				return(_Byte);
 
 			}
 

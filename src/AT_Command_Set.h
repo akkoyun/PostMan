@@ -124,6 +124,17 @@
 
 			}
 
+			// CME Find Function
+			bool Find_CME(char * _Buffer, uint8_t _Size) {
+
+				// Control for <\r\n+CME> Response
+				if (_Buffer[_Size - 3] == '+' and _Buffer[_Size - 2] == 'C' and _Buffer[_Size - 1] == 'M' and _Buffer[_Size] == 'E') return(true);
+
+				// End Function
+				return(false);
+
+			}
+
 			// ******************** General Control and Config Commands ********************
 
 			// AT Command
@@ -3255,12 +3266,22 @@
 
 					// Get Data
 					if (Data_Handle) {
-						_Data[Data_Order] = Buffer_Variable[i];
-						Data_Order += 1;
+
+						// Handle for Space
+						if (Buffer_Variable[i] != ' ' and Buffer_Variable[i] != '\n' and Buffer_Variable[i] != '\r') {
+
+							// Set Data
+							_Data[Data_Order] = Buffer_Variable[i];
+							
+							// Increase Data Order
+							Data_Order += 1;
+
+						}
+
 					}
 
 					// Handle JSON Data
-					if (Buffer_Variable[i-1] == '}') Data_Handle = false;
+					if (Buffer_Variable[i-2] == '}' and Buffer_Variable[i-1] == '\r' and Buffer_Variable[i] == '\n') Data_Handle = false;
 
 				}
 
@@ -3664,7 +3685,7 @@
 			}
 
 			// Get FTP File From Buffer Function
-			bool FTPRECV(const uint16_t _Size, uint16_t & _ReadSize, char * _Data) {
+			bool FTPRECV(const uint16_t _Size, uint16_t & _ReadSize, uint8_t & _State, char * _Data) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -3674,7 +3695,7 @@
 					false, 	// Response State
 					0, 		// Read Order
 					0, 		// Data Order
-					500000,	// Time Out
+					5000,	// Time Out
 					255		// Buffer Size
 				};
 
@@ -3710,13 +3731,23 @@
 					if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
 
 					// Handle for timeout
-					if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+					if (millis() - Current_Time >= Buffer.Time_Out) break;;
 
 				}
 
 				// \r\n#FTPRECV: 200\r\n20202055\r\n:100BA00020202020000D0A002C002C002C00415495\r\n:100BB00023534C3D000D0A004154234532534C52FF\r\n:100BC000493D000D0A00415423534C4544534156BE\r\n:100BD000000D0A00415423534C45443D000D0A00CA\r\n:100BE0004\r\n\r\nOK\r\n
-				// \r\n#FTPRECV: 200\r\n1542B474D52000D0A0041542B474D4DA7\r\n:100BF000000D0A0041542B474D49000D0A00415495\r\n:100C00002343434944000D0A0041542B47534E00EF\r\n:100C10000D0A0041542B4347534E000D0A00415426\r\n:100C20002B4350494E3F000D0A004\r\n\r\nOK\r\n
-				// \r\n#FTPRECV: 200\r\n7000313030000D0A00415400202E2E2000415A\r\n:100C800054234532534C52493D353000202E2E20FE\r\n:100C900000415423534C454453415600202E2E20EE\r\n:100CA00000415423534C45443D3200202E2E200059\r\n:100CB00041542B474D520020\r\n\r\nOK\r\n
+				// \r\n+CME ERROR: 614\r\n	
+
+				// Control for CME Error
+				if (this->Find_CME(Buffer_Variable, Buffer.Read_Order)) {
+
+					// Set State
+					_State = 1;
+
+					// End Function
+					return (false);
+
+				}
 
 				// Clear Size Variable
 				_ReadSize = 0;
