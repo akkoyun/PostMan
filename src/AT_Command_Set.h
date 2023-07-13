@@ -3143,7 +3143,7 @@
 					false, 	// Response State
 					0, 		// Read Order
 					0, 		// Data Order
-					50000, 	// Time Out
+					140000, // Time Out
 					7		// Buffer Size
 				};
 

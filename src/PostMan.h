@@ -1016,14 +1016,18 @@
 							uint16_t _Response_Command;
 
 							// Command Delay
-							delay(200);
+							delay(50);
 
 							// Get Request Data
 							if (AT_Command_Set::SRECV(3, _Length, _Response)) {
 
-								// Deserialize the JSON document
+								// Define JSON Object
 								StaticJsonDocument<32> Incoming_JSON;
+
+								// Deserialize the JSON document
 								deserializeJson(Incoming_JSON, _Response);
+								
+								// Get Response Command
 								_Response_Command = Incoming_JSON["Event"];
 
 								// Print Command State
@@ -1034,7 +1038,7 @@
 								#endif
 
 								// Command Delay
-								delay(200);
+								delay(50);
 
 								// Close Socket
 								AT_Command_Set::SH(3);
@@ -1061,13 +1065,35 @@
 									}
 								#endif
 
-								// End Function
-								if (_Response_Command == 200) return(true);
+								// Handle Response
+								if (_Response_Command == 200) {
+
+									// End Function
+									return(true);
+
+								} else if (_Response_Command == 201) {
+
+									// Print Command State
+									#ifdef GSM_Debug
+										Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+										Terminal_GSM.Text(14, 44, RED, F("Wrong Data Format"));
+									#endif
+
+									// End Function
+									return(true);
+
+								}
 
 							} else {
 
 								// Send Data CallBack Error
 								_Send_Response_CallBack(0, 1);
+
+								// Print Command State
+								#ifdef GSM_Debug
+									Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+									Terminal_GSM.Text(14, 44, GREEN, F("Server Don't Response"));
+								#endif
 
 								// Port Control
 								GSM::Listen(true);
@@ -1100,6 +1126,12 @@
 
 						// Send Data CallBack Error
 						_Send_Response_CallBack(0, 3);
+
+						// Print Command State
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, RED, F("Socket Dial Error"));
+						#endif
 
 						// Port Control
 						GSM::Listen(true);
