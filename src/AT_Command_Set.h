@@ -4968,7 +4968,7 @@
 					GSM_Serial->print(F("Content-Length: ")); GSM_Serial->print(String(_Data).length()); GSM_Serial->print(F("\r\n"));
 
 					// Print Connection Header
-					GSM_Serial->print(F("Connection: close\r\n"));
+//					GSM_Serial->print(F("Connection: close\r\n"));
 
 					// Print Content Type
 					GSM_Serial->print(F("Content-Type: application/json\r\n"));

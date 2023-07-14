@@ -136,6 +136,54 @@
 
 			}
 
+			// LOG JSON Pack Function
+			void LOG(void) {
+
+				// Declare LOG File Object
+				File LOG_File;
+
+				// Activate Mux
+				DDRC |= 0b00000001; PORTC |= 0b00000001; delay(200);
+
+				// Open File for Write
+				LOG_File = SD.open(_LOG_SD_File_Name_, O_WRITE | O_CREAT);
+
+				// Control for File Open
+				if (LOG_File) {
+
+					// Command Delay
+					delay(5);
+
+					// Flush File
+					LOG_File.flush();
+
+					// Print Data
+					LOG_File.println(this->JSON_Data.JSON_Pack);
+
+					// Print Line Feed
+					LOG_File.println("");
+
+					// Command Delay
+					delay(10);
+
+					// Close File
+					LOG_File.close();
+
+					// Console Print
+					#ifdef GSM_Debug
+						Terminal_GSM.Text(14, 44, RED, F("                               "));
+						Terminal_GSM.Text(14, 44, RED, F("Error : Pack Writen to SD Card."));
+					#endif
+
+					// Clear Pack
+					memset(this->JSON_Data.JSON_Pack, '\0', 1024);
+
+				}
+
+				// Turn SD MUX Enable LOW
+				PORTC &= 0b11111110;
+
+			}
 
 
 
@@ -324,7 +372,7 @@
 				#define JSON_Segment_Payload
 
 				// Clear Pack
-				this->JSON_Data.JSON_Pack = "";
+				memset(this->JSON_Data.JSON_Pack, '\0', 1024);
 
 				// Define JSON
 				StaticJsonDocument<1024> JSON;
@@ -688,7 +736,7 @@
 				} JSON_FOTA;
 
 				// Define JSON
-				String JSON_Pack;
+				char JSON_Pack[1024];
 
 			} JSON_Data;
 
@@ -741,15 +789,8 @@
 
 			// ************************************************************
 
-			// GSM Modem Power Sequence
-			void Power(const bool _State) {
-
-				Hardware::Power(_State);
-
-			}
-
-			// Initialize GSM Modem
-			void Initialize(void) {
+			// Connect GSM Modem
+			void Connect(void) {
 
 				// Get Serial ID
 				this->Get_Serial_ID();
@@ -757,244 +798,117 @@
 				// Get Environment
 				this->Get_Environment();
 
-				// Initialize Modem
-				GSM::Initialize();
+				// GSM Connection Squence
+				if (Hardware::Power(false)) {
 
-			}
+					// GSM Initialize Sequence
+					if (GSM::Initialize()) {
 
-			// Connect GSM Modem
-			void Connect(void) {
+						// Print Command State
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, CYAN, F("GSM Initialized"));
+						#endif
 
-				GSM::Connect();
+						// GSM Connect Sequence
+						if (GSM::Connect()) {
 
-				// Detect RTC
-				I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+								Terminal_GSM.Text(14, 44, CYAN, F("GSM Connected"));
+							#endif
 
-				// RTC Object Definitions	
-				RV3028 RTC(true, 1);
+							// Define RTC
+							I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
 
-				// Update Time
-				RTC.Set_Time(GSM::Time.Second, GSM::Time.Minute, GSM::Time.Hour, GSM::Time.Day, GSM::Time.Month, GSM::Time.Year);
+							// RTC Object Definitions	
+							RV3028 RTC(true, 1);
 
-				// Publish Interrupt Status
-				this->Interrupt.Online = true;
+							// Update Time
+							RTC.Set_Time(GSM::Time.Second, GSM::Time.Minute, GSM::Time.Hour, GSM::Time.Day, GSM::Time.Month, GSM::Time.Year);
 
-			}
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+								Terminal_GSM.Text(14, 44, CYAN, F("Device Time Updated"));
+							#endif
 
-			// LOG JSON Pack Function
-			void LOG(void) {
+							// GSM Socket Open Sequence
+							if (GSM::Listen(true)) {
 
-				// Declare LOG File Object
-				File LOG_File;
+								// Print Command State
+								#ifdef GSM_Debug
+									Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+									Terminal_GSM.Text(14, 44, CYAN, F("GSM Socket Listening"));
+								#endif
 
-				// Activate Mux
-				DDRC |= 0b00000001; PORTC |= 0b00000001;
-				delay(200);
+							} else {
 
-				// Open File for Write
-				LOG_File = SD.open(_LOG_SD_File_Name_, O_WRITE | O_CREAT);
+								// Print Command State
+								#ifdef GSM_Debug
+									Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+									Terminal_GSM.Text(14, 44, RED, F("GSM Socket Open Error"));
+								#endif
+							}
 
-				// Control for File Open
-				if (LOG_File) {
+							// Publish Interrupt Status
+							this->Interrupt.Online = true;
 
-					// Command Delay
-					delay(5);
+						} else {
+							
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+								Terminal_GSM.Text(14, 44, RED, F("GSM Connect Error"));
+							#endif
 
-					// Flush File
-					LOG_File.flush();
+							// Power Down GSM
+							Hardware::Power(false);
 
-					// Print Data
-					LOG_File.println(this->JSON_Data.JSON_Pack);
+						}
 
-					// Print Line Feed
-					LOG_File.println("");
+					} else {
 
-					// Command Delay
-					delay(10);
+						// Print Command State
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, RED, F("GSM Initialize Error"));
+						#endif
 
-					// Close File
-					LOG_File.close();
+						// Power Down GSM
+						Hardware::Power(false);
 
-					// Console Print
+					}
+
+				} else {
+
+					// Print Command State
 					#ifdef GSM_Debug
-						Terminal_GSM.Text(14, 44, RED, F("                               "));
-						Terminal_GSM.Text(14, 44, RED, F("Error : Pack Writen to SD Card."));
+						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+						Terminal_GSM.Text(14, 44, RED, F("GSM Power Down Error"));
 					#endif
 
-					// Clear Pack
-					this->JSON_Data.JSON_Pack = "";
-
 				}
-
-				// Turn SD MUX Enable LOW
-				PORTC &= 0b11111110;
 
 			}
 
 			// ************************************************************
 
-			// Connect Cloud
-			bool Listen(void) {
-
-				// Control for Connection
-				if (GSM::Status.Connection) {
-
-					// Blink
-					Hardware::MCU_LED(__WHITE__, 1, 200);
-
-					// Listen Port
-					bool _Response = GSM::Listen(true);
-
-					// Print Command State
-					#ifdef GSM_Debug
-						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-						if (_Response) Terminal_GSM.Text(14, 44, GREEN, F("Cloud Online"));
-						if (!_Response) Terminal_GSM.Text(14, 44, RED, F("Cloud Offline"));
-					#endif
-
-					// End Function
-					return(true);
-
-				} else {
-
-					// Blink
-					Hardware::MCU_LED(__RED__, 1, 200);
-
-					// Print Command State
-					#ifdef GSM_Debug
-						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-						Terminal_GSM.Text(14, 44, RED, F("No GSM Connection"));
-					#endif
-
-					// End Function
-					return(false);
-
-				}
-
-				// End Function
-				return(false);
-
-			}
-
 			// Send Data Batch Function
 			bool Publish(const uint8_t _Pack_Type) {
 
-				// Parse JSON
-				uint16_t _JSON_Size = this->Parse_JSON(_Pack_Type);
-
 				// Control for Connection
 				if (GSM::Status.Connection) {
+
+					// Parse JSON
+					this->Parse_JSON(_Pack_Type);
 
 					// Open Connection
 					if (AT_Command_Set::ATSD(3, 0, 80, 255, 88, 1, _BackEnd_Server_)) {
 
-						// Blink
-						Hardware::MCU_LED(__GREEN__, 1, 200);
-
-						// Print Command State
-						#ifdef GSM_Debug
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, YELLOW, F("JSON Pack"));
-						#endif
-
-						// Clear UART Buffer
-						AT_Command_Set::Clear_UART_Buffer();
-
-						// Declare Buffer Object
-						Serial_Buffer Buffer_Set = {
-							false, 	// Response State
-							0, 		// Read Order
-							0, 		// Data Order
-							5000, 	// Time Out
-							255		// Buffer Size
-						};
-
-						// Declare Buffer
-						char Buffer_Variable[Buffer_Set.Size];
-						memset(Buffer_Variable, '\0', Buffer_Set.Size);
-
-						// Command Chain Delay (Advice by Telit)
-						delay(20);
-
-						// Print Command State
-						#ifdef GSM_Debug
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, YELLOW, F("Sending Pack"));
-						#endif
-
-						// Send UART Command
-						GSM_Serial->print(F("AT#SSEND=3"));
-						GSM_Serial->write(0x0D);
-						GSM_Serial->write(0x0A);
-
-						// Read Current Time
-						uint32_t Current_Time = millis();
-
-						// Response Wait Delay
-						delay(10);
-
-						// Read UART Response
-						while (!Buffer_Set.Response) {
-
-							// Read Serial Char
-							Buffer_Variable[Buffer_Set.Read_Order] = GSM_Serial->read();
-
-							// Control for <OK> Response
-							if (Buffer_Variable[Buffer_Set.Read_Order - 1] == '>' and Buffer_Variable[Buffer_Set.Read_Order] == ' ') Buffer_Set.Response = true;
-
-							// Increase Read Order
-							if (Buffer_Variable[Buffer_Set.Read_Order] > 31 and Buffer_Variable[Buffer_Set.Read_Order] < 127) Buffer_Set.Read_Order += 1;
-
-							// Handle for timeout
-							if (millis() - Current_Time >= Buffer_Set.Time_Out) return(false);
-
-						}
-
-						// Send Delay
-						delay(10);
-
-						// Print HTTP Header
-						GSM_Serial->print(F("POST ")); GSM_Serial->print(_BackEnd_EndPoint_); GSM_Serial->print(F(" HTTP/1.1\r\n"));
-						GSM_Serial->print(F("Host: ")); GSM_Serial->print(_BackEnd_Server_); GSM_Serial->print(F("\r\n"));
-						GSM_Serial->print(F("Content-Length: ")); GSM_Serial->print(_JSON_Size); GSM_Serial->print(F("\r\n"));
-						GSM_Serial->print(F("Content-Type: application/json\r\n"));
-						GSM_Serial->print(F("User-Agent: ")); GSM_Serial->print(__Device__); GSM_Serial->print(F("\r\n"));
-						GSM_Serial->print(F("\r\n"));
-
-						// Send Data Pack
-						GSM_Serial->print(this->JSON_Data.JSON_Pack);
-
-						// Print End Char
-						GSM_Serial->print((char)26);
-
-						// Declare Buffer Object
-						Serial_Buffer Buffer_Get = {false, 0, 0, 2000};
-
-						// Declare Buffer
-						memset(Buffer_Variable, '\0', 255);
-
-						// Read Current Time
-						Current_Time = millis();
-
-						// Read UART Response
-						while (!Buffer_Get.Response) {
-
-							// Read Serial Char
-							Buffer_Variable[Buffer_Get.Read_Order] = GSM_Serial->read();
-
-							// Control for <OK> Response
-							Buffer_Get.Response = this->Find_OK(Buffer_Variable, Buffer_Get.Read_Order);
-
-							// Increase Read Order
-							if (isAscii(Buffer_Variable[Buffer_Get.Read_Order])) Buffer_Get.Read_Order++;
-
-							// Handle for timeout
-							if (millis() - Current_Time >= Buffer_Get.Time_Out) return(false);
-
-						}
-
-						// Response Wait Delay
-						delay(10);
+						// Send Data
+						AT_Command_Set::SSEND(3, 2, 0, _BackEnd_Server_, _BackEnd_EndPoint_, this->JSON_Data.JSON_Pack);
 
 						// Print Command State
 						#ifdef GSM_Debug
@@ -1011,8 +925,11 @@
 							// Blink
 							Hardware::MCU_LED(__GREEN__, 1, 200);
 
-							// Declare Response Status
+							// Declare Response Variable
 							char _Response[32];
+							memset(_Response, '\0', 32);
+							
+							// Declare Response Command
 							uint16_t _Response_Command;
 
 							// Command Delay

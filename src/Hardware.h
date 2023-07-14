@@ -288,14 +288,18 @@
 			// GSM Modem Power Sequence
 			bool Power(const bool _State) {
 
-				// Open Modem
-				if (_State) this->ON();
+				// Power Process
+				if (_State) {
 
-				// ShutDown Modem
-				if (!_State) this->OFF();
+					// Power ON Sequence
+					return(this->ON());
 
-				// End Function
-				return(this->PowerMonitor());
+				} else {
+
+					// Power OFF Sequence
+					return(this->OFF());
+
+				}
 
 			}
 

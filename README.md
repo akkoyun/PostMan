@@ -1,5 +1,15 @@
 # Release Notes
 
+## 0.12.6 (2023-07-14)
+
+* Initialisation procedure updated.
+* Connection setup procedure updated.
+* Single connection mode added.
+* Power functions updated.
+* Publish functions updated.
+* Header functions updated.
+* Documentation update.
+
 ## 0.12.5 (2023-07-13)
 
 * Publish parameters are tuned.

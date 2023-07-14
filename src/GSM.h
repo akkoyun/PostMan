@@ -91,7 +91,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// ATE Command
 						#ifdef _AT_ATE_
@@ -114,7 +114,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// SIMDET Command
 						#ifdef _AT_SIMDET_QUERY_
@@ -144,7 +144,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// SEARCHLIM Command
 						#ifdef _AT_SEARCHLIM_
@@ -167,7 +167,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// ATF Command
 						#ifdef _AT_ATF_
@@ -190,7 +190,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// CFUN Command
 						#ifdef _AT_CFUN_
@@ -213,7 +213,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// CMEE Command
 						#ifdef _AT_CMEE_
@@ -236,7 +236,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// FCLASS Command
 						#ifdef _AT_FCLASS_
@@ -259,7 +259,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// K Command
 						#ifdef _AT_K_
@@ -282,7 +282,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// CPIN Command
 						#ifdef _AT_CPIN_
@@ -309,7 +309,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// CGSN Command
 						#ifdef _AT_CGSN_
@@ -333,7 +333,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// GSN Command
 						#ifdef _AT_GSN_
@@ -357,7 +357,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// ICCID Command
 						#ifdef _AT_ICCID_
@@ -381,7 +381,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// GMI Command
 						#ifdef _AT_GMI_
@@ -405,7 +405,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// GMM Command
 						#ifdef _AT_GMM_
@@ -429,7 +429,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// GMR Command
 						#ifdef _AT_GMR_
@@ -460,7 +460,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// SLED Command
 						#ifdef _AT_SLED_
@@ -483,7 +483,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// SLEDSAV Command
 						#ifdef _AT_SLEDSAV_
@@ -506,7 +506,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// E2RI Command
 						#ifdef _AT_E2RI_
@@ -529,7 +529,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// E2SLRI Command
 						#ifdef _AT_E2SLRI_
@@ -552,7 +552,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 						// TXMONMODE Command
 						#ifdef _AT_TXMONMODE_
@@ -575,7 +575,7 @@
 						#endif
 
 						// Control for Initialize
-						if (!this->Status.Initialize) return(false);
+						if (!this->Status.Initialize) break;
 
 					} else {
 
@@ -648,6 +648,9 @@
 							
 						#endif
 
+						// Control for Connection
+						if (!this->Status.Connection) break;
+
 						// COPS Command
 						#ifdef _AT_COPS_
 
@@ -673,6 +676,9 @@
 
 						#endif
 
+						// Control for Connection
+						if (!this->Status.Connection) break;
+
 						// AUTOBND Command
 						#ifdef _AT_AUTOBND_
 
@@ -697,6 +703,9 @@
 							}
 
 						#endif
+
+						// Control for Connection
+						if (!this->Status.Connection) break;
 
 						// Get Time
 						uint32_t _Connection_Start_Time = millis();
@@ -858,6 +867,9 @@
 
 						#endif
 
+						// Control for Connection
+						if (!this->Status.Connection) break;
+
 						// CGREG Command
 						#ifdef _AT_CGREG_
 
@@ -996,6 +1008,9 @@
 
 						#endif
 
+						// Control for Connection
+						if (!this->Status.Connection) break;
+
 						// CGDCONT Command Socket
 						#ifdef _AT_CGDCONT_
 
@@ -1020,6 +1035,9 @@
 							}
 
 						#endif
+
+						// Control for Connection
+						if (!this->Status.Connection) break;
 
 						// SGACT Command
 						#ifdef _AT_SGACT_
@@ -1054,6 +1072,9 @@
 
 						#endif
 
+						// Control for Connection
+						if (!this->Status.Connection) break;
+
 						// DNS Command
 						#ifdef _AT_DNS_
 
@@ -1078,6 +1099,9 @@
 							}
 
 						#endif
+
+						// Control for Connection
+						if (!this->Status.Connection) break;
 
 						// Set Connection Time
 						AT_Command_Set::GSM_Operator.Connection_Time = ((millis() - _Connection_Start_Time) / 1000);
@@ -1107,6 +1131,9 @@
 
 						#endif
 
+						// Control for Connection
+						if (!this->Status.Connection) break;
+
 						// SCFGEXT (Send Port) Command
 						#ifdef _AT_SCFGEXT_Out_
 
@@ -1131,6 +1158,9 @@
 							}
 
 						#endif
+
+						// Control for Connection
+						if (!this->Status.Connection) break;
 
 						// SCFGEXT2 (Send Port) Command
 						#ifdef _AT_SCFGEXT2_Out_
@@ -1157,6 +1187,9 @@
 
 						#endif
 
+						// Control for Connection
+						if (!this->Status.Connection) break;
+
 						// SCFG (In Port) Command
 						#ifdef _AT_SCFG_In_
 
@@ -1182,6 +1215,9 @@
 
 						#endif
 
+						// Control for Connection
+						if (!this->Status.Connection) break;
+
 						// SCFGEXT (In Port) Command
 						#ifdef _AT_SCFGEXT_In_
 
@@ -1206,6 +1242,9 @@
 							}
 
 						#endif
+
+						// Control for Connection
+						if (!this->Status.Connection) break;
 
 						// Print Command State
 						#ifdef GSM_Debug
@@ -1238,6 +1277,9 @@
 
 						#endif
 
+						// Control for Connection
+						if (!this->Status.Connection) break;
+
 						// FRWL Command 2
 						#ifdef _AT_FRWL_2_IP_
 
@@ -1262,6 +1304,9 @@
 							}
 
 						#endif
+
+						// Control for Connection
+						if (!this->Status.Connection) break;
 
 						// FRWL Command 3
 						#ifdef _AT_FRWL_3_IP_
@@ -1288,6 +1333,9 @@
 
 						#endif
 
+						// Control for Connection
+						if (!this->Status.Connection) break;
+
 						// ICMP Command
 						#ifdef _AT_ICMP_
 
@@ -1312,6 +1360,9 @@
 							}
 
 						#endif
+
+						// Control for Connection
+						if (!this->Status.Connection) break;
 
 						// Set MONI Command
 						#ifdef _AT_MONIZIP_
@@ -1358,6 +1409,9 @@
 
 						#endif
 
+						// Control for Connection
+						if (!this->Status.Connection) break;
+
 						// Print Command State
 						#ifdef GSM_Debug
 							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
@@ -1388,6 +1442,9 @@
 							}
 
 						#endif
+
+						// Control for Connection
+						if (!this->Status.Connection) break;
 
 						// Print Command State
 						#ifdef GSM_Debug
@@ -1434,6 +1491,11 @@
 
 				// Declare Status Variable
 				uint8_t _Socket_Status;
+
+				// Print Command State
+				#ifdef GSM_Debug
+					Terminal_GSM.Text(14, 34, WHITE, F("[    ]"));
+				#endif
 
 				// Print Command State
 				#ifdef GSM_Debug
