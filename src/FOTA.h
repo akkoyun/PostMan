@@ -11,6 +11,11 @@
 		#include "Config/Includes.h"
 	#endif
 
+	// Define Config Includes
+	#ifndef __PostMan_Config__
+		#include "Config/Config.h"
+	#endif
+
 	// Define Library Includes
 	#ifndef __Telit_AT_Command_Set__
 		#include "AT_Command_Set.h"
@@ -395,6 +400,9 @@
 								// Handle Recieve Size
 								_SD_Recieve_Size += _RecieveSize;
 
+								// Control for File End
+								if (_SD_Recieve_Size == Variables.File_Size) Control.Response = true;
+
 							}
 
 						} else {
@@ -425,9 +433,6 @@
 							Terminal_GSM.Text(16, 90, WHITE, String(_State));
 
 						#endif
-
-						// Control for File End
-						if (_SD_Recieve_Size == Variables.File_Size) Control.Response = true;
 
 						// End Function
 						if (Variables.Download_Time > 1200) break;

@@ -136,54 +136,6 @@
 
 			}
 
-			// LOG JSON Pack Function
-			void LOG(void) {
-
-				// Declare LOG File Object
-				File LOG_File;
-
-				// Activate Mux
-				DDRC |= 0b00000001; PORTC |= 0b00000001; delay(200);
-
-				// Open File for Write
-				LOG_File = SD.open(_LOG_SD_File_Name_, O_WRITE | O_CREAT);
-
-				// Control for File Open
-				if (LOG_File) {
-
-					// Command Delay
-					delay(5);
-
-					// Flush File
-					LOG_File.flush();
-
-					// Print Data
-					LOG_File.println(this->JSON_Data.JSON_Pack);
-
-					// Print Line Feed
-					LOG_File.println("");
-
-					// Command Delay
-					delay(10);
-
-					// Close File
-					LOG_File.close();
-
-					// Console Print
-					#ifdef GSM_Debug
-						Terminal_GSM.Text(14, 44, RED, F("                               "));
-						Terminal_GSM.Text(14, 44, RED, F("Error : Pack Writen to SD Card."));
-					#endif
-
-					// Clear Pack
-					memset(this->JSON_Data.JSON_Pack, '\0', 1024);
-
-				}
-
-				// Turn SD MUX Enable LOW
-				PORTC &= 0b11111110;
-
-			}
 
 
 
@@ -328,7 +280,7 @@
 				while (!_Response) {
 
 					// Process Command
-					_Response = AT_Command_Set::MONIZIP();
+					_Response = AT_Command_Set::MONIZIP(GSM::Operator.Code, GSM::Operator.LAC, GSM::Operator.Cell_ID, GSM::Operator.dBm, GSM::Operator.Signal);
 
 					// Set WD Variable
 					_Error_WD++;
@@ -343,20 +295,20 @@
 
 					// Print Signal Level Value
 					Terminal_GSM.Text(18, 65, WHITE, F("[-   ]"));
-					Terminal_GSM.Text(18, 67, CYAN, String(GSM::GSM_Operator.dBm));
+					Terminal_GSM.Text(18, 67, CYAN, String(GSM::Operator.dBm));
 
 					// Print Signal Level Bar
 					Terminal_GSM.Text(18, 74, GRAY, F("_____"));
-					for (uint8_t i = 1; i <= GSM::GSM_Operator.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
+					for (uint8_t i = 1; i <= GSM::Operator.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
 
 					// Print Operator Value
-					Terminal_GSM.Text(19, 74, CYAN, String(GSM::GSM_Operator.Operator));
+					Terminal_GSM.Text(19, 74, CYAN, String(GSM::Operator.Code));
 
 					// Print Modem LAC Value
-					Terminal_GSM.Text(21, 75, CYAN, String(GSM::GSM_Operator.LAC, HEX));
+					Terminal_GSM.Text(21, 75, CYAN, String(GSM::Operator.LAC, HEX));
 
 					// Print Modem Cell ID Value
-					Terminal_GSM.Text(22, 75, CYAN, String(GSM::GSM_Operator.Cell_ID, HEX));
+					Terminal_GSM.Text(22, 75, CYAN, String(GSM::Operator.Cell_ID, HEX));
 
 				#endif
 
@@ -513,21 +465,15 @@
 					// Get GSM Parameters
 					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) {
 
-						// Declare Variable
-						char _Firmware[10];
-
-						// Handle TimeStamp
-						sprintf(_Firmware, "%02d.%02d.%03d", GSM::GSM_Module.Firmware.Segment_1, GSM::GSM_Module.Firmware.Segment_2, GSM::GSM_Module.Firmware.Segment_3);
-
 						// Define IoT Module
 						JsonObject JSON_Module = JSON_GSM.createNestedObject(F("Module"));
 
 						// Set IoT Parameters
-						JSON_Module[F("Manufacturer")] = GSM::GSM_Module.Manufacturer;
-						JSON_Module[F("Model")] = GSM::GSM_Module.Model;
-						JSON_Module[F("Firmware")] = _Firmware;
-						JSON_Module[F("Serial")] = GSM::GSM_Module.Serial_ID;
-						JSON_Module[F("IMEI")] = GSM::GSM_Module.IMEI;
+						JSON_Module[F("Manufacturer")] = GSM::Module.Manufacturer;
+						JSON_Module[F("Model")] = GSM::Module.Model;
+						JSON_Module[F("Firmware")] = GSM::Module.Firmware;
+						JSON_Module[F("Serial")] = GSM::Module.Serial_ID;
+						JSON_Module[F("IMEI")] = GSM::Module.IMEI;
 
 					}
 
@@ -539,17 +485,11 @@
 
 					// Set Device GSM Connection Detail Section
 					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Operator[F("SIM_Type")] = 1;
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update)JSON_Operator[F("ICCID")] = GSM::GSM_Operator.ICCID;
-					JSON_Operator[F("Code")] = GSM::GSM_Operator.Operator;
-					JSON_Operator[F("dBm")] = GSM::GSM_Operator.dBm;
-					JSON_Operator[F("LAC")] = GSM::GSM_Operator.LAC;
-					JSON_Operator[F("Cell_ID")] = GSM::GSM_Operator.Cell_ID;
-
-					// Clear IoT Variables
-					GSM::GSM_Operator.Operator = 0;
-					GSM::GSM_Operator.dBm = 0;
-					GSM::GSM_Operator.LAC = 0;
-					GSM::GSM_Operator.Cell_ID = 0;
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update)JSON_Operator[F("ICCID")] = GSM::Operator.ICCID;
+					JSON_Operator[F("Code")] = GSM::Operator.Code;
+					JSON_Operator[F("dBm")] = GSM::Operator.dBm;
+					JSON_Operator[F("LAC")] = GSM::Operator.LAC;
+					JSON_Operator[F("Cell_ID")] = GSM::Operator.Cell_ID;
 
 				#endif
 
@@ -901,11 +841,17 @@
 				// Control for Connection
 				if (GSM::Status.Connection) {
 
-					// Parse JSON
-					this->Parse_JSON(_Pack_Type);
-
 					// Open Connection
 					if (AT_Command_Set::ATSD(3, 0, 80, 255, 88, 1, _BackEnd_Server_)) {
+
+						// Print Command State
+						#ifdef GSM_Debug
+							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Terminal_GSM.Text(14, 44, GREEN, F("Open Connection"));
+						#endif
+
+						// Parse JSON
+						this->Parse_JSON(_Pack_Type);
 
 						// Send Data
 						AT_Command_Set::SSEND(3, 2, 0, _BackEnd_Server_, _BackEnd_EndPoint_, this->JSON_Data.JSON_Pack);
@@ -921,9 +867,6 @@
 
 						// Get Ring Port
 						if (AT_Command_Set::Send_SRING(_Length)) {
-
-							// Blink
-							Hardware::MCU_LED(__GREEN__, 1, 200);
 
 							// Declare Response Variable
 							char _Response[32];
@@ -1022,9 +965,6 @@
 							
 						} else {
 
-							// Blink
-							Hardware::MCU_LED(__RED__, 1, 200);
-
 							// Send Data CallBack Error
 							_Send_Response_CallBack(0, 2);
 
@@ -1037,9 +977,6 @@
 						}
 
 					} else {
-
-						// Blink
-						Hardware::MCU_LED(__RED__, 1, 200);
 
 						// Send Data CallBack Error
 						_Send_Response_CallBack(0, 3);
@@ -1100,15 +1037,6 @@
 					// Handle Ring
 					if (Receive_SRING()) {
 
-						// Blink
-						Hardware::MCU_LED(__BLUE__, 1, 200);
-
-						// Print Command State
-						#ifdef GSM_Debug
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, GREEN, F("Ring.."));
-						#endif
-
 						// Answer Socket
 						AT_Command_Set::SA(2, 1, _Request_Length);
 
@@ -1121,7 +1049,8 @@
 						// Print Command State
 						#ifdef GSM_Debug
 							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, GREEN, String(_Event));
+							Terminal_GSM.Text(14, 44, GREEN, F("Response --> [   ]"));
+							Terminal_GSM.Text(14, 58, YELLOW, String(_Event));
 						#endif
 
 						// Declare Response
@@ -1129,15 +1058,6 @@
 
 						// Handle Command
 						if (_Event == Command_Reset) {
-
-							// Blink
-							Hardware::MCU_LED(__RED__, 1, 200);
-
-							// Print Command State
-							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-								Terminal_GSM.Text(14, 44, GREEN, F("Reset.."));
-							#endif
 
 							// Send Response
 							this->Send_Response(Command_OK);
@@ -1147,15 +1067,6 @@
 
 						} else if (_Event == Command_Update) {
 
-							// Blink
-							Hardware::MCU_LED(__RED__, 1, 200);
-
-							// Print Command State
-							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-								Terminal_GSM.Text(14, 44, GREEN, F("Update Request"));
-							#endif
-
 							// Send Response
 							this->Send_Response(Command_OK);
 
@@ -1163,15 +1074,6 @@
 							this->Interrupt.Update = true;
 
 						} else if (_Event == Command_Parameter) {
-
-							// Blink
-							Hardware::MCU_LED(__RED__, 1, 200);
-
-							// Print Command State
-							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-								Terminal_GSM.Text(14, 44, GREEN, F("Parameter Update"));
-							#endif
 
 							// Declare JSON Object
 							StaticJsonDocument<64> Incoming_JSON;
@@ -1217,15 +1119,6 @@
 
 						} else if (_Event == Command_FOTA_Download) {
 
-							// Blink
-							Hardware::MCU_LED(__RED__, 1, 200);
-
-							// Print Command State
-							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-								Terminal_GSM.Text(14, 44, GREEN, F("FOTA Download Request"));
-							#endif
-
 							// Declare JSON Object
 							StaticJsonDocument<64> Incoming_JSON;
 
@@ -1243,20 +1136,11 @@
 
 						} else if (_Event == Command_FOTA_Burn) {
 
-							// Blink
-							Hardware::MCU_LED(__RED__, 1, 200);
-
-							// Print Command State
-							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-								Terminal_GSM.Text(14, 44, GREEN, F("FOTA Burn Request"));
-							#endif
+							// Send Response
+							this->Send_Response(Command_OK);
 
 							// Set Command Interrupt
 							this->Interrupt.FOTA_Burn = true;
-
-							// Send Response
-							this->Send_Response(Command_OK);
 
 						} else {
 
@@ -1287,9 +1171,6 @@
 
 				// Send Socket Answer
 				if (SSEND(2, 1, _Response_Code, "", "", _Data)) {
-
-					// Blink
-					Hardware::MCU_LED(__PURPLE__, 1, 200);
 
 					// Print Command State
 					#ifdef GSM_Debug
@@ -1326,6 +1207,57 @@
 
 				}
 				
+			}
+
+			// ************************************************************
+
+			// LOG JSON Pack Function
+			void LOG(void) {
+
+				// Declare LOG File Object
+				File LOG_File;
+
+				// Activate Mux
+				DDRC |= 0b00000001; PORTC |= 0b00000001; delay(200);
+
+				// Open File for Write
+				LOG_File = SD.open(_LOG_SD_File_Name_, O_WRITE | O_CREAT);
+
+				// Control for File Open
+				if (LOG_File) {
+
+					// Command Delay
+					delay(5);
+
+					// Flush File
+					LOG_File.flush();
+
+					// Print Data
+					LOG_File.println(this->JSON_Data.JSON_Pack);
+
+					// Print Line Feed
+					LOG_File.println("");
+
+					// Command Delay
+					delay(10);
+
+					// Close File
+					LOG_File.close();
+
+					// Console Print
+					#ifdef GSM_Debug
+						Terminal_GSM.Text(14, 44, RED, F("                               "));
+						Terminal_GSM.Text(14, 44, RED, F("Error : Pack Writen to SD Card."));
+					#endif
+
+					// Clear Pack
+					memset(this->JSON_Data.JSON_Pack, '\0', 1024);
+
+				}
+
+				// Turn SD MUX Enable LOW
+				PORTC &= 0b11111110;
+
 			}
 
 			// ************************************************************

@@ -29,9 +29,56 @@
 
 			// Define Modem Status Structure
 			struct Struct_Status {
+				bool 		Power				= false;
+				bool		SIM_Inserted		= false;
+				uint8_t		SIM_PIN				= 0;
 				bool 		Initialize		 	= false;
 				bool		Connection			= false;
+				uint8_t		Socket_State		= 0;
 			} Status;
+
+			// Define Module Structure
+			struct Struct_Module {
+
+				// Modem IMEI
+				char 		IMEI[17];
+
+				// GSM Serial ID
+				uint32_t	Serial_ID 			= 0;
+
+				// Manufacturer and Model
+				uint8_t 	Manufacturer 		= 0;
+				uint8_t 	Model 				= 0;
+
+				// Modem Firmware Version
+				char 		Firmware[10];
+
+			} Module;
+
+			// Define Network Structure
+			struct Struct_Network {
+
+				// SIM ICCID
+				char 		ICCID[21];
+
+				// Operator
+				uint16_t 	Code 				= 0;
+
+				// Location
+				uint16_t	LAC					= 0;
+				uint16_t	Cell_ID				= 0;
+
+				// Signal Level
+				uint8_t 	dBm					= 0;
+				uint8_t		Signal				= 0;
+
+				// IP Address
+				char 		IP_Address[16];
+
+				// Connection Time
+				uint8_t 	Connection_Time;
+
+			} Operator;
 
 			// Define Time Structure
 			Struct_Time Time;
@@ -51,30 +98,29 @@
 				while (!this->Status.Initialize) {
 
 					// Get PowerMon
-					Hardware::Status.Power = Hardware::PowerMonitor();
+					this->Status.Power = Hardware::PowerMonitor();
 
 					// Control for Power Monitor
-					if (Hardware::Status.Power) {
+					if (this->Status.Power) {
 
-						// Print Command State
-						#ifdef GSM_Debug
-							Terminal_GSM.Text(14, 34, WHITE, F("[    ]"));
-						#endif
+						// Print Batch Description
+						#ifdef DEBUG
 
-						// Print Command State
-						#ifdef GSM_Debug
+							// Print Description
 							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
 							Terminal_GSM.Text(14, 44, CYAN, F("Initializing Modem"));
+							Terminal_GSM.Text(14, 34, WHITE, F("[    ]"));
+
 						#endif
 
 						// Set Control Variable
 						this->Status.Initialize = true;
 
 						// AT Command
-						#ifdef _AT_
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
@@ -84,73 +130,70 @@
 							if (!AT_Command_Set::AT()) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 
-						#endif
+						} else break;
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
-
-						// ATE Command
-						#ifdef _AT_ATE_
+						// ATE Command (Echo Off)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("ATE0"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::ATE(0)) this->Status.Initialize = false;
+							if (!AT_Command_Set::ATE(false)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
-						// SIMDET Command
-						#ifdef _AT_SIMDET_QUERY_
+						// SIMDET Command (SIM Card Detect)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
+
+								// Print Command State
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+SIMDET?"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SIMDET_QUERY()) this->Status.Initialize = false;
+							if (!AT_Command_Set::SIMDET(GET, 0, this->Status.SIM_Inserted)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
+
+								// Print Command State
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 
 								// Print SIMDET State
-								if (AT_Command_Set::GSM_Module.SIM_State == 0) Terminal_GSM.Text(14, 44, RED, F("SIM Card Not Detected"));
+								if (this->Status.SIM_Inserted) Terminal_GSM.Text(14, 44, GREEN, F("SIM Card Detected"));
+								if (!this->Status.SIM_Inserted) Terminal_GSM.Text(14, 44, RED, F("SIM Card Not Detected"));
 
 							#endif
 
 							// No SIM Card
-							if (AT_Command_Set::GSM_Module.SIM_State == 0) return(false);
+							if (!this->Status.SIM_Inserted) return(false);
 
-						#endif
+						} else break;
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
-
-						// SEARCHLIM Command
-						#ifdef _AT_SEARCHLIM_
+						// SEARCHLIM Command (Search Network)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT#SEARCHLIM=100,100"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
@@ -160,43 +203,17 @@
 							if (!AT_Command_Set::SEARCHLIM(100, 100)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
-						// ATF Command
-						#ifdef _AT_ATF_
+						// CFUN Command (Full Functionality)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT&F0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-							#endif
-
-							// Send Command
-							if (!AT_Command_Set::ATF(1)) this->Status.Initialize = false;
-
-							// Print Command State
-							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
-							#endif
-						
-						#endif
-
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
-
-						// CFUN Command
-						#ifdef _AT_CFUN_
-
-							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+CFUN=1,0"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
@@ -206,20 +223,17 @@
 							if (!AT_Command_Set::CFUN(1)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 
-						#endif
+						} else break;
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
-
-						// CMEE Command
-						#ifdef _AT_CMEE_
+						// CMEE Command (Error Messages)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+CMEE=1"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
@@ -229,20 +243,17 @@
 							if (!AT_Command_Set::CMEE(1)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 
-						#endif
+						} else break;
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
-
-						// FCLASS Command
-						#ifdef _AT_FCLASS_
+						// FCLASS Command (Connection Mode)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+FCLASS=0"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
@@ -252,20 +263,17 @@
 							if (!AT_Command_Set::FCLASS(0)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
-						// K Command
-						#ifdef _AT_K_
+						// ATK Command (No Flow Control)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT&K0"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
@@ -275,198 +283,196 @@
 							if (!AT_Command_Set::K(0)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
-						// CPIN Command
-						#ifdef _AT_CPIN_
+						// CPIN Command (SIM PIN Control)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+CPIN?"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CPIN()) this->Status.Initialize = false;
+							if (!AT_Command_Set::CPIN(this->Status.SIM_PIN)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
 
 							// End Function
-							if (!this->Status.Initialize) return(false);
-							if (AT_Command_Set::GSM_Operator.PIN != 1) return(false);
+							if (this->Status.SIM_PIN != 1) break;
 
-						#endif
+						} else break;
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
-
-						// CGSN Command
-						#ifdef _AT_CGSN_
+						// CGSN Command (Get IMEI)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+CGSN"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CGSN()) this->Status.Initialize = false;
+							if (!AT_Command_Set::CGSN(this->Module.IMEI)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
+
+								// Print Command State
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
-								Terminal_GSM.Text(20, 24, CYAN, String(AT_Command_Set::GSM_Module.IMEI));
+								
+								// Print IMEI
+								Terminal_GSM.Text(20, 24, CYAN, String(this->Module.IMEI));
+
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
-						// GSN Command
-						#ifdef _AT_GSN_
+						// GSN Command (Get Serial Number)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+GSN"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GSN()) this->Status.Initialize = false;
+							if (!AT_Command_Set::GSN(this->Module.Serial_ID)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
+
+								// Print Command State
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
-								Terminal_GSM.Text(21, 29, CYAN, String(AT_Command_Set::GSM_Module.Serial_ID));
+								
+								// Print Serial ID
+								Terminal_GSM.Text(21, 29, CYAN, String(this->Module.Serial_ID));
+							
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
-						// ICCID Command
-						#ifdef _AT_ICCID_
+						// ICCID Command (Get SIM Card ID)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+CCID"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CCID()) this->Status.Initialize = false;
+							if (!AT_Command_Set::CCID(this->Operator.ICCID)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
+
+								// Print Command State
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
-								Terminal_GSM.Text(22, 20, CYAN, String(AT_Command_Set::GSM_Operator.ICCID));
+								
+								// Print ICCID
+								Terminal_GSM.Text(22, 20, CYAN, String(this->Operator.ICCID));
+
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
-						// GMI Command
-						#ifdef _AT_GMI_
+						// GMI Command (Get Manufacturer)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+GMI"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GMI()) this->Status.Initialize = false;
+							if (!AT_Command_Set::GMI(this->Module.Manufacturer)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
+
+								// Print Command State
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14,35);
-								Terminal_GSM.Text(17, 38, CYAN, String(AT_Command_Set::GSM_Module.Manufacturer));
+								
+								// Print Manufacturer
+								Terminal_GSM.Text(17, 38, CYAN, String(this->Module.Manufacturer));
+
 							#endif
 
-						#endif
+						} else break;
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
-
-						// GMM Command
-						#ifdef _AT_GMM_
+						// GMM Command (Get Model)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+GMM"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GMM()) this->Status.Initialize = false;
+							if (!AT_Command_Set::GMM(this->Module.Model)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
+
+								// Print Command State
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
-								Terminal_GSM.Text(18, 38, CYAN, String(AT_Command_Set::GSM_Module.Model));
+								
+								// Print Model
+								Terminal_GSM.Text(18, 38, CYAN, String(this->Module.Model));
+
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
-						// GMR Command
-						#ifdef _AT_GMR_
+						// GMR Command (Get Firmware Version)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT+GMR"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GMR()) this->Status.Initialize = false;
+							if (!AT_Command_Set::GMR(this->Module.Firmware)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 
-								// Declare Variable
-								char _Firmware[10];
-
-								// Handle TimeStamp
-								sprintf(_Firmware, "%02d.%02d.%03d", AT_Command_Set::GSM_Module.Firmware.Segment_1, AT_Command_Set::GSM_Module.Firmware.Segment_2, AT_Command_Set::GSM_Module.Firmware.Segment_3);
-
+								// Print Command State
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
-								Terminal_GSM.Text(19, 30, CYAN, String(_Firmware));
+
+								// Print Firmware Version
+								Terminal_GSM.Text(19, 30, CYAN, String(this->Module.Firmware));
+
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
-						// SLED Command
-						#ifdef _AT_SLED_
+						// SLED Command (Set Status LED)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT#SLED=2"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
@@ -476,20 +482,17 @@
 							if (!AT_Command_Set::SLED(2)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
-						// SLEDSAV Command
-						#ifdef _AT_SLEDSAV_
+						// SLEDSAV Command (Save Status LED)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT#SLEDSAV"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
@@ -499,20 +502,17 @@
 							if (!AT_Command_Set::SLEDSAV()) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
-						// E2RI Command
-						#ifdef _AT_E2RI_
+						// E2RI Command (Set RING Indicator)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT#E2RI=50,50"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
@@ -522,43 +522,17 @@
 							if (!AT_Command_Set::E2RI(50, 50)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
-						// E2SLRI Command
-						#ifdef _AT_E2SLRI_
+						// TXMONMODE Command (Set TX Monitor Mode)
+						if (this->Status.Initialize) {
 
 							// Print Command State
-							#ifdef GSM_Debug
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#E2SLRI=50"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-							#endif
-
-							// Send Command
-							if (!AT_Command_Set::E2SLRI(50)) this->Status.Initialize = false;
-
-							// Print Command State
-							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
-							#endif
-						
-						#endif
-
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
-
-						// TXMONMODE Command
-						#ifdef _AT_TXMONMODE_
-
-							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 								Terminal_GSM.Text(14, 4, WHITE, F("AT#TXMONMODE=1"));
 								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
@@ -568,14 +542,11 @@
 							if (!AT_Command_Set::TXMONMODE(1)) this->Status.Initialize = false;
 
 							// Print Command State
-							#ifdef GSM_Debug
+							#ifdef DEBUG
 								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
 							#endif
-						
-						#endif
 
-						// Control for Initialize
-						if (!this->Status.Initialize) break;
+						} else break;
 
 					} else {
 
@@ -585,10 +556,22 @@
 					}
 
 					// Handle WatchDog
-					if (_WD > 2) return(false);
+					if (_WD > 2) {
 
-					// Set WatchDog Variable
-					_WD++;
+						// Clear States
+						this->Status.Initialize = false;
+						this->Status.SIM_Inserted = false;
+						this->Status.SIM_PIN = 0;
+
+						// End Function
+						return(false);
+
+					} else {
+
+						// Set WatchDog Variable
+						_WD++;
+
+					}
 
 				}
 
@@ -609,850 +592,724 @@
 					// Control for Initialize
 					if (this->Status.Initialize) {
 
-						// Print Command State
-						#ifdef GSM_Debug
-							Terminal_GSM.Text(14, 34, WHITE, F("[    ]"));
-						#endif
+						// Print Batch Description
+						#ifdef DEBUG
 
-						// Print Command State
-						#ifdef GSM_Debug
+							// Print Description
 							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
 							Terminal_GSM.Text(14, 44, CYAN, F("Connecting"));
+							Terminal_GSM.Text(14, 34, WHITE, F("[    ]"));
+
 						#endif
 
 						// Set Control Variable
 						this->Status.Connection = true;
 
-						// REGMODE Command
-						#ifdef _AT_REGMODE_
+						// COPS Command (Set Operator Selection Mode)
+						if (this->Status.Connection) {
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT+COPS=0"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#REGMODE=1"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
+							// Send Command
+							if (!AT_Command_Set::COPS(0)) this->Status.Initialize = false;
 
-								// Send Command
-								if (!AT_Command_Set::REGMODE(1)) this->Status.Connection = false;
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
+						} else break;
 
-							}
-							
-						#endif
+						// AUTOBND Command (Set Band Selection Mode)
+						if (this->Status.Connection) {
 
-						// Control for Connection
-						if (!this->Status.Connection) break;
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#AUTOBND=2"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-						// COPS Command
-						#ifdef _AT_COPS_
+							// Send Command
+							if (!AT_Command_Set::AUTOBND(2)) this->Status.Initialize = false;
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT+COPS=0"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
-
-								// Send Command
-								if (!AT_Command_Set::COPS(0)) this->Status.Connection = false;
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
-
-							}
-
-						#endif
-
-						// Control for Connection
-						if (!this->Status.Connection) break;
-
-						// AUTOBND Command
-						#ifdef _AT_AUTOBND_
-
-							// Control for Ex Commands
-							if (this->Status.Connection) {
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#AUTOBND=2"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
-
-								// Send Command
-								if (!AT_Command_Set::AUTOBND(2)) this->Status.Connection = false;
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
-
-							}
-
-						#endif
-
-						// Control for Connection
-						if (!this->Status.Connection) break;
+						} else break;
 
 						// Get Time
 						uint32_t _Connection_Start_Time = millis();
 
-						// CREG Command
-						#ifdef _AT_CREG_
+						// Set CREG Command (Set Network Registration Mode)
+						if (this->Status.Connection) {
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT+CREG=1"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
+
+							// Declare Local Variables
+							uint8_t _Mode = 1;
+							uint8_t _Stat = 0;
+
+							// Send Command
+							if (!AT_Command_Set::CREG(true, _Mode, _Stat)) this->Status.Connection = false;
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
+
+						} else break;
+
+						// Connection Wait Delay
+						for (uint8_t i = 0; i < 5; i++) {
+
+							// Print Connection Time
+							#ifdef DEBUG
+								Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+							#endif
+
+							// Connection Wait Delay
+							delay(1000);
+
+						}
+
+						// Get CREG Command (Get Network Registration Mode)
+						if (this->Status.Connection) {
+
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT+CREG?"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
+
+							// Set Connection WatchDog
+							bool _Conn_WD = false;
+							uint8_t _Conn_WD_Counter = 0;
+
+							// Wait for Connection
+							while (!_Conn_WD) {
+
+								// Declare Variable
+								uint8_t _CREG_Connection_Mode = 0;
+								uint8_t _CREG_Connection_Stat = 0;
+
+								// Get CREG Status
+								AT_Command_Set::CREG(false, _CREG_Connection_Mode, _CREG_Connection_Stat);
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT+CREG=0"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, CYAN, F("    "));
+									Terminal_GSM.Text(14, 36, RED, String(_CREG_Connection_Stat));
 								#endif
 
-								// Send Command
-								if (!AT_Command_Set::Set_CREG(1)) this->Status.Connection = false;
+								// Control for Connection
+								if (_CREG_Connection_Stat == 0) {
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
+									// Set Variable
+									this->Status.Connection = false;
 
-							}
+									// End Function
+									return(false);
 
-							// Command Delay
-							delay(5000);
+								} else if (_CREG_Connection_Stat == 1) {
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+									// Set Variable
+									this->Status.Connection = true;
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT+CREG?"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
+									// Declare Response Status
+									_Conn_WD = true;
 
-								// Set Connection WatchDog
-								bool _Conn_WD = false;
-								uint8_t _Conn_WD_Counter = 0;
+								} else if (_CREG_Connection_Stat == 2) {
 
-								// Wait for Connection
-								while (!_Conn_WD) {
+									// Set Variable
+									this->Status.Connection = false;
 
-									// Declare Variable
-									uint8_t _CREG_Connection_Mode = 0;
-									uint8_t _CREG_Connection_Stat = 0;
+									// Declare Response Status
+									_Conn_WD = false;
 
-									// Get CREG Status
-									AT_Command_Set::Get_CREG(_CREG_Connection_Mode, _CREG_Connection_Stat);
+									// Connection Wait Delay
+									for (uint8_t i = 0; i < 5; i++) {
 
-									// Print Command State
-									#ifdef GSM_Debug
-										Terminal_GSM.Text(14, 35, CYAN, F("    "));
-										Terminal_GSM.Text(14, 36, RED, String(_CREG_Connection_Stat));
-									#endif
-
-									// Control for Connection
-									if (_CREG_Connection_Stat == 0) {
-
-										// Set Variable
-										this->Status.Connection = false;
-
-										// CFUN Function
-//										AT_Command_Set::CFUN(4);
-
-										// End Function
-										return(false);
-
-									} else if (_CREG_Connection_Stat == 1) {
-
-										// Set Variable
-										this->Status.Connection = true;
-
-										// Declare Response Status
-										_Conn_WD = true;
-
-									} else if (_CREG_Connection_Stat == 2) {
-
-										// Set Variable
-										this->Status.Connection = false;
-
-										// Declare Response Status
-										_Conn_WD = false;
-
-										// Wait Delay
-										delay(5000);
-
-									} else if (_CREG_Connection_Stat == 3) {
-
-										// Set Variable
-										this->Status.Connection = false;
-
-										// Declare Response Status
-										_Conn_WD = false;
-
-										// Ask For CEER Code
-										uint16_t _CeerCode = 0;
-										AT_Command_Set::CEER(_CeerCode);
-
-										// Print Command State
-										#ifdef GSM_Debug
-											Terminal_GSM.Text(14, 44, WHITE, F("[CEER:   ]"));
-											Terminal_GSM.Text(14, 50, RED, String(_CeerCode));
+										// Print Connection Time
+										#ifdef DEBUG
+											Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 										#endif
 
-										// Send Command
-//										AT_Command_Set::AT_Test();
-
-										// Send Command
-//										AT_Command_Set::AUTOBND(2);
-
-										// Wait Delay
-										delay(3000);
-
-									} else if (_CREG_Connection_Stat == 4) {
-
-										// Set Variable
-										this->Status.Connection = false;
-
-										// Declare Response Status
-										_Conn_WD = false;
-
-										// Wait Delay
-										delay(5000);
-
-									} else if (_CREG_Connection_Stat == 5) {
-
-										// Set Variable
-										this->Status.Connection = false;
-
-										// Declare Response Status
-										_Conn_WD = true;
+										// Connection Wait Delay
+										delay(1000);
 
 									}
 
-									// Print Command State
-									#ifdef GSM_Debug
-										Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
-									#endif
+								} else if (_CREG_Connection_Stat == 3) {
 
-									// Set WD Variable
-									_Conn_WD_Counter++;
+									// Set Variable
+									this->Status.Connection = false;
 
-									// Control for WD
-									if (_Conn_WD_Counter > 300) _Conn_WD = true;
+									// Declare Response Status
+									_Conn_WD = false;
+
+									// Connection Wait Delay
+									for (uint8_t i = 0; i < 3; i++) {
+
+										// Print Connection Time
+										#ifdef DEBUG
+											Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+										#endif
+
+										// Connection Wait Delay
+										delay(1000);
+
+									}
+
+								} else if (_CREG_Connection_Stat == 4) {
+
+									// Set Variable
+									this->Status.Connection = false;
+
+									// Declare Response Status
+									_Conn_WD = false;
+
+									// Connection Wait Delay
+									for (uint8_t i = 0; i < 5; i++) {
+
+										// Print Connection Time
+										#ifdef DEBUG
+											Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+										#endif
+
+										// Connection Wait Delay
+										delay(1000);
+
+									}
+
+								} else if (_CREG_Connection_Stat == 5) {
+
+									// Set Variable
+									this->Status.Connection = false;
+
+									// Declare Response Status
+									_Conn_WD = true;
 
 								}
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+									Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 								#endif
+
+								// Set WD Variable
+								_Conn_WD_Counter++;
+
+								// Control for WD
+								if (_Conn_WD_Counter > 300) _Conn_WD = true;
 
 							}
 
-						#endif
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-						// Control for Connection
-						if (!this->Status.Connection) break;
+						} else break;
 
-						// CGREG Command
-						#ifdef _AT_CGREG_
+						// Set CGREG Command (Set Network Registration Mode)
+						if (this->Status.Connection) {
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT+CGREG=1"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
+
+							// Declare Local Variables
+							uint8_t _Mode = 1;
+							uint8_t _Stat = 0;
+
+							// Send Command
+							if (!AT_Command_Set::CGREG(true, _Mode, _Stat)) this->Status.Connection = false;
+
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
+
+						} else break;
+
+						// Connection Wait Delay
+						for (uint8_t i = 0; i < 5; i++) {
+
+							// Print Connection Time
+							#ifdef DEBUG
+								Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+							#endif
+
+							// Connection Wait Delay
+							delay(1000);
+
+						}
+
+						// Get CGREG Command (Get Network Registration Mode)
+						if (this->Status.Connection) {
+
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT+CGREG?"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
+
+							// Set Connection WatchDog
+							bool _Conn_WD = false;
+							uint8_t _Conn_WD_Counter = 0;
+
+							// Wait for Connection
+							while (!_Conn_WD) {
+
+								// Declare Variable
+								uint8_t _CGREG_Connection_Mode = 0;
+								uint8_t _CGREG_Connection_Stat = 0;
+
+								// Get CREG Status
+								AT_Command_Set::CREG(false, _CGREG_Connection_Mode, _CGREG_Connection_Stat);
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT+CGREG=0"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+									Terminal_GSM.Text(14, 35, CYAN, F("    "));
+									Terminal_GSM.Text(14, 36, RED, String(_CGREG_Connection_Stat));
 								#endif
 
-								// Send Command
-								if (!AT_Command_Set::Set_CGREG(1)) this->Status.Connection = false;
+								// Control for Connection
+								if (_CGREG_Connection_Stat == 0) {
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
+									// Set Variable
+									this->Status.Connection = false;
 
-							}
+									// End Function
+									return(false);
 
-							// Command Delay
-							delay(5000);
+								} else if (_CGREG_Connection_Stat == 1) {
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+									// Set Variable
+									this->Status.Connection = true;
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT+CGREG?"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
+									// Declare Response Status
+									_Conn_WD = true;
 
-								// Set Connection WatchDog
-								bool _Conn_WD = false;
-								uint8_t _Conn_WD_Counter = 0;
+								} else if (_CGREG_Connection_Stat == 2) {
 
-								// Wait for Connection
-								while (!_Conn_WD) {
+									// Set Variable
+									this->Status.Connection = false;
 
-									// Declare Variable
-									uint8_t _CGREG_Connection_Mode = 0;
-									uint8_t _CGREG_Connection_Stat = 0;
+									// Declare Response Status
+									_Conn_WD = false;
 
-									// Get CREG Status
-									AT_Command_Set::Get_CGREG(_CGREG_Connection_Mode, _CGREG_Connection_Stat);
+									// Connection Wait Delay
+									for (uint8_t i = 0; i < 5; i++) {
 
-									// Print Command State
-									#ifdef GSM_Debug
-										Terminal_GSM.Text(14, 35, CYAN, F("    "));
-										Terminal_GSM.Text(14, 36, RED, String(_CGREG_Connection_Stat));
-									#endif
+										// Print Connection Time
+										#ifdef DEBUG
+											Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+										#endif
 
-									// Control for Connection
-									if (_CGREG_Connection_Stat == 0) {
-
-										// Set Variable
-										this->Status.Connection = false;
-
-										// Declare Response Status
-										_Conn_WD = false;
-
-									} else if (_CGREG_Connection_Stat == 1) {
-
-										// Set Variable
-										this->Status.Connection = true;
-
-										// Declare Response Status
-										_Conn_WD = true;
-
-									} else if (_CGREG_Connection_Stat == 2) {
-
-										// Set Variable
-										this->Status.Connection = false;
-
-										// Declare Response Status
-										_Conn_WD = false;
-
-										// Wait Delay
-										delay(5000);
-
-									} else if (_CGREG_Connection_Stat == 3) {
-
-										// Set Variable
-										this->Status.Connection = false;
-
-										// Declare Response Status
-										_Conn_WD = false;
-
-										// Wait Delay
-										delay(10000);
-
-									} else if (_CGREG_Connection_Stat == 4) {
-
-										// Set Variable
-										this->Status.Connection = false;
-
-										// Declare Response Status
-										_Conn_WD = false;
-
-										// Wait Delay
-										delay(5000);
-
-									} else if (_CGREG_Connection_Stat == 5) {
-
-										// Set Variable
-										this->Status.Connection = false;
-
-										// Declare Response Status
-										_Conn_WD = true;
+										// Connection Wait Delay
+										delay(1000);
 
 									}
 
-									// Print Command State
-									#ifdef GSM_Debug
-										Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
-									#endif
+								} else if (_CGREG_Connection_Stat == 3) {
 
-									// Set WD Variable
-									_Conn_WD_Counter++;
+									// Set Variable
+									this->Status.Connection = false;
 
-									// Control for WD
-									if (_Conn_WD_Counter > 100) _Conn_WD = true;
+									// Declare Response Status
+									_Conn_WD = false;
+
+									// Connection Wait Delay
+									for (uint8_t i = 0; i < 3; i++) {
+
+										// Print Connection Time
+										#ifdef DEBUG
+											Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+										#endif
+
+										// Connection Wait Delay
+										delay(1000);
+
+									}
+
+								} else if (_CGREG_Connection_Stat == 4) {
+
+									// Set Variable
+									this->Status.Connection = false;
+
+									// Declare Response Status
+									_Conn_WD = false;
+
+									// Connection Wait Delay
+									for (uint8_t i = 0; i < 5; i++) {
+
+										// Print Connection Time
+										#ifdef DEBUG
+											Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+										#endif
+
+										// Connection Wait Delay
+										delay(1000);
+
+									}
+
+								} else if (_CGREG_Connection_Stat == 5) {
+
+									// Set Variable
+									this->Status.Connection = false;
+
+									// Declare Response Status
+									_Conn_WD = true;
 
 								}
 
 								// Print Command State
 								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+									Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 								#endif
+
+								// Set WD Variable
+								_Conn_WD_Counter++;
+
+								// Control for WD
+								if (_Conn_WD_Counter > 300) _Conn_WD = true;
 
 							}
 
-						#endif
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-						// Control for Connection
-						if (!this->Status.Connection) break;
+						} else break;
 
-						// CGDCONT Command Socket
-						#ifdef _AT_CGDCONT_
+						// CGDCONT Command (Set PDP Context)
+						if (this->Status.Connection) {
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT+CGDCONT=1,IP,mgbs"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT++CGDCONT=1,IP,mgbs"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
+							// Send Command
+							if (!AT_Command_Set::CGDCONT(1, "IP", _PDP_APN_)) this->Status.Connection = false;
 
-								// Send Command
-								if (!AT_Command_Set::CGDCONT(1, "IP", _PDP_APN_)) this->Status.Connection = false;
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
+						} else break;
 
-							}
+						// SGACT Command (Activate PDP Context)
+						if (this->Status.Connection) {
 
-						#endif
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#SGACT=1,1"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-						// Control for Connection
-						if (!this->Status.Connection) break;
+							// Send Command
+							if (!AT_Command_Set::SGACT(1, 1, this->Operator.IP_Address)) this->Status.Connection = false;
 
-						// SGACT Command
-						#ifdef _AT_SGACT_
-
-							// Control for Ex Commands
-							if (this->Status.Connection) {
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#SGACT=1,1"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
-
-								// Send Command
-								if (!AT_Command_Set::Set_SGACT(1, 1)) this->Status.Connection = false;
+							// Print Command State
+							#ifdef DEBUG
 
 								// Print Command State
-								#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								
+								// Print IP Address
+								Terminal_GSM.Text(20, 64, CYAN, String(this->Operator.IP_Address));
 
-									// Declare Variable
-									char _IP[16];
+							#endif
 
-									// Handle TimeStamp
-									sprintf(_IP, "%03d.%03d.%03d.%03d", AT_Command_Set::GSM_Operator.IP_Address.Segment_1, AT_Command_Set::GSM_Operator.IP_Address.Segment_2, AT_Command_Set::GSM_Operator.IP_Address.Segment_3, AT_Command_Set::GSM_Operator.IP_Address.Segment_4);
-
-									Terminal_GSM.Text(20, 64, CYAN, String(_IP));
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
-
-							}
-
-						#endif
-
-						// Control for Connection
-						if (!this->Status.Connection) break;
-
-						// DNS Command
-						#ifdef _AT_DNS_
-
-							// Control for Ex Commands
-							if (this->Status.Connection) {
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#DNS=***,***"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
-
-								// Send Command
-								if (!AT_Command_Set::DNS()) this->Status.Connection = false;
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
-
-							}
-
-						#endif
-
-						// Control for Connection
-						if (!this->Status.Connection) break;
+						} else break;
 
 						// Set Connection Time
-						AT_Command_Set::GSM_Operator.Connection_Time = ((millis() - _Connection_Start_Time) / 1000);
+						this->Operator.Connection_Time = ((millis() - _Connection_Start_Time) / 1000);
 
-						// SCFG (Send Port) Command
-						#ifdef _AT_SCFG_Out_
+						// SCFG (Send Port) Command (Send Data Port Configuration)
+						if (this->Status.Connection) {
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFG=3,1,1500,90,1200,0"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFG=3,1,1500,90,1200,0"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
+							// Send Command
+							if (!AT_Command_Set::SCFG(3, 1, 1500, 90, 1200, 0)) this->Status.Connection = false;
 
-								// Send Command
-								if (!AT_Command_Set::SCFG(3, 1, 1500, 90, 1200, 0)) this->Status.Connection = false;
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
+						} else break;
 
-							}
+						// SCFGEXT (Send Port) Command (Send Data Port Extended Configuration)
+						if (this->Status.Connection) {
 
-						#endif
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFGEXT=3,1,0,0,0,0"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-						// Control for Connection
-						if (!this->Status.Connection) break;
+							// Send Command
+							if (!AT_Command_Set::SCFGEXT(3, 1, 0, 0, 0, 0)) this->Status.Connection = false;
 
-						// SCFGEXT (Send Port) Command
-						#ifdef _AT_SCFGEXT_Out_
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+						} else break;
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFGEXT=3,1,0,0,0,0"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
+						// SCFGEXT2 (Send Port) Command (Send Data Port Extended 2 Configuration)
+						if (this->Status.Connection) {
 
-								// Send Command
-								if (!AT_Command_Set::SCFGEXT(3, 1, 0, 0, 0, 0)) this->Status.Connection = false;
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFGEXT2=3,1,0,0,0,0"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
+							// Send Command
+							if (!AT_Command_Set::SCFGEXT2(3, 1, 0, 0, 0, 0)) this->Status.Connection = false;
 
-							}
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-						#endif
+						} else break;
 
-						// Control for Connection
-						if (!this->Status.Connection) break;
+						// SCFG (In Port) Command (In Port Configuration)
+						if (this->Status.Connection) {
 
-						// SCFGEXT2 (Send Port) Command
-						#ifdef _AT_SCFGEXT2_Out_
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFG=2,1,1500,90,300,50"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+							// Send Command
+							if (!AT_Command_Set::SCFG(2, 1, 1500, 90, 300, 50)) this->Status.Connection = false;
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFGEXT2=3,1,0,0,0,0"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-								// Send Command
-								if (!AT_Command_Set::SCFGEXT2(3, 1, 0, 0, 0, 0)) this->Status.Connection = false;
+						} else break;
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
+						// SCFGEXT (In Port) Command (In Port Extended Configuration)
+						if (this->Status.Connection) {
 
-							}
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFGEXT=2,1,0,1,0,0"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-						#endif
+							// Send Command
+							if (!AT_Command_Set::SCFGEXT(2, 1, 0, 1, 0, 0)) this->Status.Connection = false;
 
-						// Control for Connection
-						if (!this->Status.Connection) break;
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-						// SCFG (In Port) Command
-						#ifdef _AT_SCFG_In_
-
-							// Control for Ex Commands
-							if (this->Status.Connection) {
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFG=2,1,1500,90,300,50"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
-
-								// Send Command
-								if (!AT_Command_Set::SCFG(2, 1, 1500, 90, 300, 50)) this->Status.Connection = false;
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
-
-							}
-
-						#endif
-
-						// Control for Connection
-						if (!this->Status.Connection) break;
-
-						// SCFGEXT (In Port) Command
-						#ifdef _AT_SCFGEXT_In_
-
-							// Control for Ex Commands
-							if (this->Status.Connection) {
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFGEXT=2,1,0,1,0,0"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
-
-								// Send Command
-								if (!AT_Command_Set::SCFGEXT(2, 1, 0, 1, 0, 0)) this->Status.Connection = false;
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
-
-							}
-
-						#endif
-
-						// Control for Connection
-						if (!this->Status.Connection) break;
+						} else break;
 
 						// Print Command State
-						#ifdef GSM_Debug
+						#ifdef DEBUG
 							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
 							Terminal_GSM.Text(14, 44, CYAN, F("Setting Firewall"));
 						#endif
 
-						// FRWL Command 1
-						#ifdef _AT_FRWL_1_IP_
+						// FRWL Command 1 (Firewall Configuration)
+						if (this->Status.Connection) {
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#FRWL=1,***"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#FRWL=1,***"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
+							// Send Command
+							if (!AT_Command_Set::FRWL(1, _AT_FRWL_1_IP_)) this->Status.Connection = false;
 
-								// Send Command
-								if (!AT_Command_Set::FRWL(1, _AT_FRWL_1_IP_)) this->Status.Connection = false;
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
+						} else break;
 
-							}
+						// FRWL Command 2 (Firewall Configuration)
+						if (this->Status.Connection) {
 
-						#endif
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#FRWL=1,***"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-						// Control for Connection
-						if (!this->Status.Connection) break;
+							// Send Command
+							if (!AT_Command_Set::FRWL(1, _AT_FRWL_2_IP_)) this->Status.Connection = false;
 
-						// FRWL Command 2
-						#ifdef _AT_FRWL_2_IP_
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+						} else break;
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#FRWL=1,***"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
+						// FRWL Command 3 (Firewall Configuration)
+						if (this->Status.Connection) {
 
-								// Send Command
-								if (!AT_Command_Set::FRWL(1, _AT_FRWL_2_IP_)) this->Status.Connection = false;
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#FRWL=1,***"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
+							// Send Command
+							if (!AT_Command_Set::FRWL(1, _AT_FRWL_3_IP_)) this->Status.Connection = false;
 
-							}
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-						#endif
+						} else break;
 
-						// Control for Connection
-						if (!this->Status.Connection) break;
+						// ICMP Command (Ping Configuration)
+						if (this->Status.Connection) {
 
-						// FRWL Command 3
-						#ifdef _AT_FRWL_3_IP_
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#ICMP=2"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+							// Send Command
+							if (!AT_Command_Set::ICMP(2)) this->Status.Connection = false;
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#FRWL=1,***"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
+							// Print Command State
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-								// Send Command
-								if (!AT_Command_Set::FRWL(1, _AT_FRWL_3_IP_)) this->Status.Connection = false;
+						} else break;
+			
+						// MONI Command (Monitor Configuration)
+						if (this->Status.Connection) {
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#MONIZIP"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-							}
+							// Send Command
+							if (!AT_Command_Set::MONIZIP(this->Operator.Code, this->Operator.LAC, this->Operator.Cell_ID, this->Operator.dBm, this->Operator.Signal)) this->Status.Connection = false;
 
-						#endif
+							// Print Command State
+							#ifdef DEBUG
 
-						// Control for Connection
-						if (!this->Status.Connection) break;
+								// Print Signal Level Value
+								Terminal_GSM.Text(18, 65, WHITE, F("[-   ]"));
+								Terminal_GSM.Text(18, 67, CYAN, String(this->Operator.dBm));
 
-						// ICMP Command
-						#ifdef _AT_ICMP_
+								// Print Signal Level Bar
+								Terminal_GSM.Text(18, 74, GRAY, F("_____"));
+								for (uint8_t i = 1; i <= this->Operator.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+								// Print Operator Value
+								Terminal_GSM.Text(19, 74, CYAN, String(this->Operator.Code));
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#ICMP=2"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
+								// Print Modem LAC Value
+								Terminal_GSM.Text(21, 75, CYAN, String(this->Operator.LAC, HEX));
 
-								// Send Command
-								if (!AT_Command_Set::ICMP(2)) this->Status.Connection = false;
+								// Print Modem Cell ID Value
+								Terminal_GSM.Text(22, 75, CYAN, String(this->Operator.Cell_ID, HEX));
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
+								// Command Status
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 
-							}
+							#endif
 
-						#endif
-
-						// Control for Connection
-						if (!this->Status.Connection) break;
-
-						// Set MONI Command
-						#ifdef _AT_MONIZIP_
-
-							// Control for Ex Commands
-							if (this->Status.Connection) {
-
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT#MONIZIP"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
-
-								// Send Command
-								if (!AT_Command_Set::MONIZIP()) this->Status.Connection = false;
-
-								// Print Command State
-								#ifdef GSM_Debug
-
-									// Print Signal Level Value
-									Terminal_GSM.Text(18, 65, WHITE, F("[-   ]"));
-									Terminal_GSM.Text(18, 67, CYAN, String(GSM::GSM_Operator.dBm));
-
-									// Print Signal Level Bar
-									Terminal_GSM.Text(18, 74, GRAY, F("_____"));
-									for (uint8_t i = 1; i <= GSM::GSM_Operator.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
-
-									// Print Operator Value
-									Terminal_GSM.Text(19, 74, CYAN, String(GSM::GSM_Operator.Operator));
-
-									// Print Modem LAC Value
-									Terminal_GSM.Text(21, 75, CYAN, String(GSM::GSM_Operator.LAC, HEX));
-
-									// Print Modem Cell ID Value
-									Terminal_GSM.Text(22, 75, CYAN, String(GSM::GSM_Operator.Cell_ID, HEX));
-
-									// Command Status
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-
-								#endif
-
-							}
-
-						#endif
-
-						// Control for Connection
-						if (!this->Status.Connection) break;
+						} else break;
 
 						// Print Command State
-						#ifdef GSM_Debug
+						#ifdef DEBUG
 							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
 							Terminal_GSM.Text(14, 44, CYAN, F("Updating RTC"));
 						#endif
 
-						// Set CCLK Command
-						#ifdef _AT_CCLK_
+						// CCLK Command (Real Time Clock Configuration)
+						if (this->Status.Connection) {
 
-							// Control for Ex Commands
-							if (this->Status.Connection) {
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT+CCLK"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-									Terminal_GSM.Text(14, 4, WHITE, F("AT+CCLK"));
-									Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-								#endif
+							// Send Command
+							if (!AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second)) this->Status.Connection = false;
 
-								// Send Command
-								if (!AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second)) this->Status.Connection = false;
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							#endif
 
-								// Print Command State
-								#ifdef GSM_Debug
-									Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-								#endif
-
-							}
-
-						#endif
-
-						// Control for Connection
-						if (!this->Status.Connection) break;
-
+						} else break;
+		
 						// Print Command State
-						#ifdef GSM_Debug
-							Terminal_GSM.Text(17, 75, CYAN, String(AT_Command_Set::GSM_Operator.Connection_Time));
+						#ifdef DEBUG
+							Terminal_GSM.Text(17, 75, CYAN, String(this->Operator.Connection_Time));
 						#endif
 
 						// Print Command State
-						#ifdef GSM_Debug
+						#ifdef DEBUG
 							Terminal_GSM.Text(14, 4, CYAN, F("                                    "));
 							Terminal_GSM.Text(14, 4, CYAN, F("PostOffice Connected"));
 							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
@@ -1467,6 +1324,12 @@
 
 					// Handle WatchDog
 					if (_WD > 4) {
+
+						// Clear States
+						this->Status.SIM_Inserted = false;
+						this->Status.SIM_PIN = 0;
+						this->Status.Initialize = false;
+						this->Status.Connection = false;
 
 						// Turn Off Modem
 						Hardware::Power(false);
@@ -1489,149 +1352,182 @@
 			// Configure Socket for Listen
 			bool Listen(const bool _State) {
 
-				// Declare Status Variable
-				uint8_t _Socket_Status;
+				// Check Connection Status
+				if (this->Status.Connection) {
 
-				// Print Command State
-				#ifdef GSM_Debug
-					Terminal_GSM.Text(14, 34, WHITE, F("[    ]"));
-				#endif
-
-				// Print Command State
-				#ifdef GSM_Debug
-					Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-					Terminal_GSM.Text(14, 4, WHITE, F("AT#SS=2"));
-					Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-				#endif
-
-				// Send Command
-				AT_Command_Set::SS(2, _Socket_Status);
-
-				// Print Command State
-				#ifdef GSM_Debug
-					Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-				#endif
-
-				// Print Command State
-				#ifdef GSM_Debug
-					Terminal_GSM.Text(14, 44, CYAN, F("Socket [2] :                        "));
-					if (_Socket_Status == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
-					if (_Socket_Status == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
-					if (_Socket_Status == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
-					if (_Socket_Status == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
-					if (_Socket_Status == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
-				#endif
-
-				// Activate Socket
-				if (_State and _Socket_Status != 4) {
+					// Clear Socket Status
+					this->Status.Socket_State = 0;
 
 					// Print Command State
-					#ifdef GSM_Debug
-						Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-						Terminal_GSM.Text(14, 4, WHITE, F("AT#SL=2,1,80,255"));
-						Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+					#ifdef DEBUG
+						Terminal_GSM.Text(14, 34, WHITE, F("[    ]"));
 					#endif
 
-					// Activate Socket for Listen
-					AT_Command_Set::SL(2, 1, 80, 255);
-
 					// Print Command State
-					#ifdef GSM_Debug
-						Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-					#endif
-
-					// Command Delay
-					delay(50);
-
-					// Print Command State
-					#ifdef GSM_Debug
+					#ifdef DEBUG
 						Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
 						Terminal_GSM.Text(14, 4, WHITE, F("AT#SS=2"));
 						Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
 					#endif
 
 					// Send Command
-					AT_Command_Set::SS(2, _Socket_Status);
+					AT_Command_Set::SS(2, this->Status.Socket_State);
 
 					// Print Command State
-					#ifdef GSM_Debug
+					#ifdef DEBUG
 						Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
 					#endif
 
 					// Print Command State
-					#ifdef GSM_Debug
+					#ifdef DEBUG
+
+						// Print Socket State
 						Terminal_GSM.Text(14, 44, CYAN, F("Socket [2] :                        "));
-						if (_Socket_Status == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
-						if (_Socket_Status == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
-						if (_Socket_Status == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
-						if (_Socket_Status == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
-						if (_Socket_Status == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
+
+						// Print Socket State
+						if (this->Status.Socket_State == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
+						else if (this->Status.Socket_State == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
+						else if (this->Status.Socket_State == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
+						else if (this->Status.Socket_State == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
+						else if (this->Status.Socket_State == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
+
 					#endif
 
-					// Control Socket
-					if (_Socket_Status != 4) return(false);
+					// Activate Socket
+					if (_State and this->Status.Socket_State != 4) {
+
+						// Print Command State
+						#ifdef DEBUG
+							Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+							Terminal_GSM.Text(14, 4, WHITE, F("AT#SL=2,1,80,255"));
+							Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+						#endif
+
+						// Activate Socket for Listen
+						bool _SL_Command = AT_Command_Set::SL(2, 1, 80, 255);
+
+						// Print Command State
+						#ifdef DEBUG
+							Terminal_GSM.OK_Decide(_SL_Command, 14, 35);
+						#endif
+
+						// Command Delay
+						delay(50);
+
+						// Print Command State
+						#ifdef DEBUG
+							Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+							Terminal_GSM.Text(14, 4, WHITE, F("AT#SS=2"));
+							Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+						#endif
+
+						// Send Command
+						bool _SS_Command = AT_Command_Set::SS(2, this->Status.Socket_State);
+
+						// Print Command State
+						#ifdef DEBUG
+							Terminal_GSM.OK_Decide(_SS_Command, 14, 35);
+						#endif
+
+						// Print Command State
+						#ifdef DEBUG
+							
+							// Print Socket State
+							Terminal_GSM.Text(14, 44, CYAN, F("Socket [2] :                        "));
+							
+							// Print Socket State
+							if (this->Status.Socket_State == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
+							else if (this->Status.Socket_State == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
+							else if (this->Status.Socket_State == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
+							else if (this->Status.Socket_State == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
+							else if (this->Status.Socket_State == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
+
+						#endif
+
+						// Control Socket
+						if (this->Status.Socket_State != 4) return(false);
+
+						// End Function
+						return(true);
+
+					}
+
+					// DeActivate Socket
+					if (!_State and this->Status.Socket_State != 0) {
+
+						// Print Command State
+						#ifdef DEBUG
+							Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+							Terminal_GSM.Text(14, 4, WHITE, F("AT#SL=2,0,80,255"));
+							Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+						#endif
+
+						// DeActivate Socket for Listen
+						bool _SL_Command = AT_Command_Set::SL(2, 0, 80, 255);
+
+						// Print Command State
+						#ifdef DEBUG
+							Terminal_GSM.OK_Decide(_SL_Command, 14, 35);
+						#endif
+
+						// Command Delay
+						delay(50);
+
+						// Print Command State
+						#ifdef DEBUG
+							Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+							Terminal_GSM.Text(14, 4, WHITE, F("AT#SS=2"));
+							Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+						#endif
+
+						// Get Socket Status
+						AT_Command_Set::SS(2, this->Status.Socket_State);
+
+						// Print Command State
+						#ifdef DEBUG
+							Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+						#endif
+
+						// Print Command State
+						#ifdef DEBUG
+							
+							// Print Socket State
+							Terminal_GSM.Text(14, 44, CYAN, F("Socket [2] :                        "));
+							
+							// Print Socket State
+							if (this->Status.Socket_State == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
+							else if (this->Status.Socket_State == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
+							else if (this->Status.Socket_State == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
+							else if (this->Status.Socket_State == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
+							else if (this->Status.Socket_State == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
+
+						#endif
+
+						// Control Socket
+						if (this->Status.Socket_State != 0) return(false);
+
+						// End Function
+						return(true);
+
+					}
+
+					// Print Command State
+					#ifdef DEBUG
+						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+					#endif
 
 					// End Function
 					return(true);
 
-				}
-
-				// DeActivate Socket
-				if (!_State and _Socket_Status != 0) {
-
-					// Print Command State
-					#ifdef GSM_Debug
-						Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-						Terminal_GSM.Text(14, 4, WHITE, F("AT#SL=2,0,80,255"));
-						Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-					#endif
-
-					// DeActivate Socket for Listen
-					AT_Command_Set::SL(2, 0, 80, 255);
-
-					// Print Command State
-					#ifdef GSM_Debug
-						Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-					#endif
-
-					// Command Delay
-					delay(50);
-
-					// Print Command State
-					#ifdef GSM_Debug
-						Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-						Terminal_GSM.Text(14, 4, WHITE, F("AT#SS=2"));
-						Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-					#endif
-
-					// Get Socket Status
-					AT_Command_Set::SS(2, _Socket_Status);
-
-					// Print Command State
-					#ifdef GSM_Debug
-						Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
-					#endif
-
-					// Print Command State
-					#ifdef GSM_Debug
-						Terminal_GSM.Text(14, 44, CYAN, F("Socket [2] :                        "));
-						if (_Socket_Status == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
-						if (_Socket_Status == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
-						if (_Socket_Status == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
-						if (_Socket_Status == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
-						if (_Socket_Status == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
-					#endif
-
-					// Control Socket
-					if (_Socket_Status != 0) return(false);
+				} else { 
 
 					// End Function
-					return(true);
+					return(false);
 
 				}
-				
+
 				// End Function
-				return(true);
+				return(false);
 
 			}
 

@@ -6,6 +6,10 @@
 		#include <Arduino.h>
 	#endif
 
+	// Function Mode Definitions
+	#define SET		true
+	#define GET		false
+
 	// Define AT Command Defaults	
 	#include "Config/AT_Definitions.h"
 
@@ -14,80 +18,19 @@
 
 		private:
 
+			// Serial Buffer Variable Structure Definition
+			struct Serial_Buffer {
+				bool 				Response;
+				uint8_t 			Read_Order;
+				uint8_t 			Data_Order;
+				const uint32_t 		Time_Out;
+				uint8_t 			Size;
+			};
 
 		public:
 
             // GSM Serial Stream Definition
             Stream * GSM_Serial;
-
-			/**
-			 * @brief GSM Serial Buffer Object Definition.
-			 */
-			struct Serial_Buffer {
-				bool Response;
-				uint8_t Read_Order;
-				uint8_t Data_Order;
-				const uint32_t Time_Out;
-				uint8_t Size;
-			};
-
-			// Define Module Structure
-			struct Struct_Module {
-
-				// SIM State
-				bool 		SIM_State = false;
-
-				// Manufacturer and Model
-				uint8_t 	Manufacturer = 0;
-				uint8_t 	Model = 0;
-
-				// Modem IMEI
-				char 		IMEI[17];
-
-				// GSM Serial ID
-				uint32_t	Serial_ID = 0;
-
-				// IP Address Struct
-				struct Struct_Firmware {
-					uint16_t	Segment_1 = 0;
-					uint16_t	Segment_2 = 0;
-					uint16_t	Segment_3 = 0;
-				} Firmware;
-
-			} GSM_Module;
-
-			// Define Network Structure
-			struct Struct_Network {
-
-				// PIN State
-				uint8_t 	PIN;
-
-				// SIM ICCID
-				char 		ICCID[21];
-
-				// IP Address Struct
-				struct Struct_IP {
-					uint16_t	Segment_1;
-					uint16_t	Segment_2;
-					uint16_t	Segment_3;
-					uint16_t	Segment_4;
-				} IP_Address;
-
-				// Connection Time
-				uint8_t 	Connection_Time;
-
-				// Operator
-				uint16_t 	Operator;
-
-				// Location
-				uint16_t	LAC;
-				uint16_t	Cell_ID;
-
-				// Signal Level
-				uint8_t 	dBm;
-				uint8_t		Signal;
-
-			} GSM_Operator;
 
 			// PostOffice Constructor
 			AT_Command_Set(Stream &_Serial) {
@@ -470,8 +413,8 @@
 
 			}
 
-			// Get Model Function
-			bool SIMDET_QUERY(void) {
+			// SIMDET Function
+			bool SIMDET(const bool _Function_Type, uint8_t _Mode, bool & _SIM_in_Pin_State) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -492,51 +435,102 @@
 				// Command Chain Delay (Advice by Telit)
 				delay(20);
 
-				// Send UART Command
-				GSM_Serial->print(F("AT#SIMDET?"));
-				GSM_Serial->write(0x0D);
-				GSM_Serial->write(0x0A);
+				// SET Function
+				if (_Function_Type == SET) {
 
-				// Read Current Time
-				const uint32_t Current_Time = millis();
+					// Send UART Command
+					GSM_Serial->print(F("AT#SIMDET="));
+					GSM_Serial->print(String(_Mode));
+					GSM_Serial->write(0x0D);
+					GSM_Serial->write(0x0A);
 
-				// Response Wait Delay
-				delay(10);
+					// Response is 8 byte
+					// \r\n\r\nOK\r\n
 
-				// Read UART Response
-				while (!Buffer.Response) {
+					// Read Current Time
+					const uint32_t Current_Time = millis();
 
-					// Read Serial Char
-					Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
+					// Response Wait Delay
+					delay(10);
 
-					// Control for <OK> Response
-					Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
+					// Read UART Response
+					while (!Buffer.Response) {
 
-					// Increase Read Order
-					if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
+						// Read Serial Char
+						Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
 
-					// Handle for timeout
-					if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+						// Control for <OK> Response
+						Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
 
-				}
+						// Increase Read Order
+						if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
 
-				// \r\n#SIMDET: 2,1\r\n\r\nOK\r\n
+						// Handle for timeout
+						if (millis() - Current_Time >= Buffer.Time_Out) return(false);
 
-				// Handle Model Name
-				int _Sim_State = 0;
-				sscanf(Buffer_Variable, "\r\n#SIMDET: 2,%d\r\n\r\nOK\r\n", &_Sim_State);
-
-				// Control for SIM State
-				if (_Sim_State == 1) {
-
-					// Set SIM State
-					this->GSM_Module.SIM_State = true;
+					}
 
 					// End Function
 					return(true);
 
-				}
+				} 
 				
+				// GET Function
+				if (_Function_Type == GET) {
+
+					// Send UART Command
+					GSM_Serial->print(F("AT#SIMDET?"));
+					GSM_Serial->write(0x0D);
+					GSM_Serial->write(0x0A);
+
+					// Response is 22 byte
+					// \r\n#SIMDET: 2,1\r\n\r\nOK\r\n
+
+					// Read Current Time
+					const uint32_t Current_Time = millis();
+
+					// Response Wait Delay
+					delay(10);
+
+					// Read UART Response
+					while (!Buffer.Response) {
+
+						// Read Serial Char
+						Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
+
+						// Control for <OK> Response
+						Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
+
+						// Increase Read Order
+						if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
+
+						// Handle for timeout
+						if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+
+					}
+
+					// Define Handle Variable
+					int _SIMDET_Mode = 0;
+					int _SIMDET_State = 0;
+
+					// Handle Query Answer
+					uint8_t _Parsed_Variable = sscanf(Buffer_Variable, "\r\n#SIMDET: %d,%d\r\n\r\nOK\r\n", &_SIMDET_Mode, &_SIMDET_State);
+
+					// Parse Variables
+					_Mode = 0;
+
+					// Assign SIM State
+					if (_SIMDET_State == 1) _SIM_in_Pin_State = true;
+					else _SIM_in_Pin_State = false;
+
+					// End Function
+					if (_Parsed_Variable == 2) return(true);
+
+					// End Function
+					return(false);
+
+				}
+
 				// End Function
 				return(false);
 
@@ -849,7 +843,7 @@
 			}
 
 			// Get SIM PIN Status Function
-			bool CPIN(void) {
+			bool CPIN(uint8_t & _Code) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -906,15 +900,15 @@
 				sscanf(Buffer_Variable, "\r\n+CPIN: %s\r\n\r\nOK\r\n", _PIN_Response);
 
 				// Declare Variable
-				this->GSM_Operator.PIN = 0;
+				_Code = 0;
 
 				// Control for Manufacturer Name
-				if (strstr(_PIN_Response, "READY")) this->GSM_Operator.PIN = 1;
-				if (strstr(_PIN_Response, "SIM PIN")) this->GSM_Operator.PIN = 2;
-				if (strstr(_PIN_Response, "SIM PUK")) this->GSM_Operator.PIN = 3;
+				if (strstr(_PIN_Response, "READY")) _Code = 1;
+				if (strstr(_PIN_Response, "SIM PIN")) _Code = 2;
+				if (strstr(_PIN_Response, "SIM PUK")) _Code = 3;
 
 				// Handle Status
-				if (this->GSM_Operator.PIN == 1) return(true);
+				if (_Code != 0) return(true);
 
 				// End Function
 				return(false);
@@ -922,7 +916,7 @@
 			}
 
 			// Get IMEI Function
-			bool CGSN(void) {
+			bool CGSN(char * _IMEI) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -971,17 +965,14 @@
 
 				}
 
-				// Clear Variable
-				memset(this->GSM_Module.IMEI, '\0', 17);
-
 				// Handle for Response
-				for (size_t i = 0; i < Buffer.Size; i++) {
+				for (uint8_t i = 0; i < Buffer.Size; i++) {
 
 					// Handle IMEI
 					if (Buffer_Variable[i] > 47 and Buffer_Variable[i] < 58) {
 
 						// Set IMEI Variable
-						this->GSM_Module.IMEI[Buffer.Data_Order] = Buffer_Variable[i];
+						_IMEI[Buffer.Data_Order] = Buffer_Variable[i];
 
 						// Set Data Order
 						Buffer.Data_Order++;
@@ -996,7 +987,7 @@
 			}
 
 			// Get Modem Serial ID Function
-			bool GSN(void) {
+			bool GSN(uint32_t & _Serial_ID) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -1047,7 +1038,7 @@
 				// 0001409405OK
 
 				// Handle Firmware
-				uint8_t _Variable_Count = sscanf(Buffer_Variable, "%10luOK", &this->GSM_Module.Serial_ID);
+				uint8_t _Variable_Count = sscanf(Buffer_Variable, "%10luOK", &_Serial_ID);
 
 				// Control for IP
 				if (_Variable_Count == 1) return (true);
@@ -1058,7 +1049,7 @@
 			}
 
 			// Get ICCID Function
-			bool CCID(void) {
+			bool CCID(char * _ICCID) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -1107,9 +1098,6 @@
 
 				}
 
-				// Clear Variable
-				memset(this->GSM_Operator.ICCID, '\0', 21);
-
 				// Handle for Response
 				for (size_t i = 0; i < Buffer.Size; i++) {
 
@@ -1117,7 +1105,7 @@
 					if (Buffer_Variable[i] > 47 and Buffer_Variable[i] < 58) {
 
 						// Set IMEI Variable
-						this->GSM_Operator.ICCID[Buffer.Data_Order] = Buffer_Variable[i];
+						_ICCID[Buffer.Data_Order] = Buffer_Variable[i];
 
 						// Set Data Order
 						Buffer.Data_Order++;
@@ -1132,7 +1120,7 @@
 			}
 
 			// Get Manufacturer Function
-			bool GMI(void) {
+			bool GMI(uint8_t & _Manufacturer) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -1187,10 +1175,10 @@
 				sscanf(Buffer_Variable, "\r\n%s\r\n\r\nOK\r\n", _Manufacruer_Name);
 
 				// Set No Manufacturer
-				this->GSM_Module.Manufacturer = 0;
+				_Manufacturer = 0;
 
 				// Control for Manufacturer Name
-				if (strstr(_Manufacruer_Name, "Telit")) this->GSM_Module.Manufacturer = 1;
+				if (strstr(_Manufacruer_Name, "Telit")) _Manufacturer = 1;
 
 				// End Function
 				return(true);
@@ -1198,7 +1186,7 @@
 			}
 
 			// Get Model Function
-			bool GMM(void) {
+			bool GMM(uint8_t & _Model) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -1253,11 +1241,11 @@
 				sscanf(Buffer_Variable, "\r\n%s\r\n\r\nOK\r\n", _Model_Name);
 
 				// Set No Model
-				this->GSM_Module.Model = 0;
+				_Model = 0;
 
 				// Control for Manufacturer Name
-				if (strstr(_Model_Name, "GE910-QUAD")) this->GSM_Module.Model = 1;
-				if (strstr(_Model_Name, "GE910-QUAD-V3")) this->GSM_Module.Model = 2;
+				if (strstr(_Model_Name, "GE910-QUAD")) _Model = 1;
+				if (strstr(_Model_Name, "GE910-QUAD-V3")) _Model = 2;
 
 				// End Function
 				return(true);
@@ -1265,7 +1253,7 @@
 			}
 
 			// Get Firmware Function
-			bool GMR(void) {
+			bool GMR(char * _Firmware) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -1315,8 +1303,16 @@
 
 				// 16.01.305OK
 
+				// Declare Firmware Segments
+				uint16_t	Segment_1 = 0;
+				uint16_t	Segment_2 = 0;
+				uint16_t	Segment_3 = 0;
+
 				// Handle Firmware
-				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n%d.%d.%d\r\n\r\nOK\r\n", &this->GSM_Module.Firmware.Segment_1, &this->GSM_Module.Firmware.Segment_2, &this->GSM_Module.Firmware.Segment_3);
+				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n%d.%d.%d\r\n\r\nOK\r\n", &Segment_1, &Segment_2, &Segment_3);
+
+				// Handle TimeStamp
+				sprintf(_Firmware, "%02d.%02d.%03d", Segment_1, Segment_2, Segment_3);
 
 				// Control for IP
 				if (_Variable_Count == 3) return (true);
@@ -1775,64 +1771,8 @@
 
 			}
 
-			// Set CREG Function
-			bool Set_CREG(const bool _Mode) {
-
-				// Clear UART Buffer
-				this->Clear_UART_Buffer();
-
-				// Declare Buffer Object
-				Serial_Buffer Buffer = {
-					false, 	// Response State
-					0, 		// Read Order
-					0, 		// Data Order
-					1000, 	// Time Out
-					7		// Buffer Size
-				};
-
-				// Declare Buffer
-				char Buffer_Variable[Buffer.Size];
-				memset(Buffer_Variable, '\0', Buffer.Size);
-
-				// Command Chain Delay (Advice by Telit)
-				delay(20);
-
-				// Send UART Command
-				GSM_Serial->print(F("AT+CREG="));
-				GSM_Serial->print(_Mode);
-				GSM_Serial->write(0x0D);
-				GSM_Serial->write(0x0A);
-
-				// Response Wait Delay
-				delay(10);
-
-				// Read Current Time
-				const uint32_t Current_Time = millis();
-
-				// Read UART Response
-				while (!Buffer.Response) {
-
-					// Read Serial Char
-					Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
-
-					// Control for <OK> Response
-					Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
-
-					// Increase Read Order
-					if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
-
-					// Handle for timeout
-					if (millis() - Current_Time >= Buffer.Time_Out) return(false);
-
-				}
-
-				// End Function
-				return (true);
-
-			}
-
-			// Get CREG Function
-			bool Get_CREG(uint8_t & _Mode, uint8_t & _Stat) {
+			// CREG Function
+			bool CREG(const bool _Function_Type, uint8_t & _Mode, uint8_t & _Stat) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -1853,108 +1793,97 @@
 				// Command Chain Delay (Advice by Telit)
 				delay(20);
 
-				// Send UART Command
-				GSM_Serial->print(F("AT+CREG?"));
-				GSM_Serial->write(0x0D);
-				GSM_Serial->write(0x0A);
+				// SET Function
+				if (_Function_Type == SET) {
 
-				// Response Wait Delay
-				delay(10);
+					// Send UART Command
+					GSM_Serial->print(F("AT+CREG="));
+					GSM_Serial->print(_Mode);
+					GSM_Serial->write(0x0D);
+					GSM_Serial->write(0x0A);
 
-				// Read Current Time
-				const uint32_t Current_Time = millis();
+					// Response Wait Delay
+					delay(10);
 
-				// Read UART Response
-				while (!Buffer.Response) {
+					// Read Current Time
+					const uint32_t Current_Time = millis();
 
-					// Read Serial Char
-					Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
+					// Read UART Response
+					while (!Buffer.Response) {
 
-					// Control for <OK> Response
-					Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
+						// Read Serial Char
+						Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
 
-					// Increase Read Order
-					if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
+						// Control for <OK> Response
+						Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
 
-					// Handle for timeout
-					if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+						// Increase Read Order
+						if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
+
+						// Handle for timeout
+						if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+
+					}
+
+					// End Function
+					return (true);
 
 				}
 
-				// Handle Variables
-				sscanf(Buffer_Variable, "\r\n+CREG: %hhu,%hhu\r\n\r\nOK\r\n", &_Mode, &_Stat);
+				// GET Function
+				if (_Function_Type == GET) {
 
-				// Handle Response
-				if (_Stat == 0) return(true);
-				if (_Stat == 1) return(true);
-				if (_Stat == 2) return(true);
-				if (_Stat == 3) return(true);
-				if (_Stat == 4) return(true);
-				if (_Stat == 5) return(true);
+					// Send UART Command
+					GSM_Serial->print(F("AT+CREG?"));
+					GSM_Serial->write(0x0D);
+					GSM_Serial->write(0x0A);
 
-				// End Function
-				return (false);
+					// Response Wait Delay
+					delay(10);
 
-			}
+					// Read Current Time
+					const uint32_t Current_Time = millis();
 
-			// Set CGREG Function
-			bool Set_CGREG(const bool _Mode) {
+					// Read UART Response
+					while (!Buffer.Response) {
 
-				// Clear UART Buffer
-				this->Clear_UART_Buffer();
+						// Read Serial Char
+						Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
 
-				// Declare Buffer Object
-				Serial_Buffer Buffer = {
-					false, 	// Response State
-					0, 		// Read Order
-					0, 		// Data Order
-					1000, 	// Time Out
-					7		// Buffer Size
-				};
+						// Control for <OK> Response
+						Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
 
-				// Declare Buffer
-				char Buffer_Variable[Buffer.Size];
-				memset(Buffer_Variable, '\0', Buffer.Size);
+						// Increase Read Order
+						if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
 
-				// Command Chain Delay (Advice by Telit)
-				delay(20);
+						// Handle for timeout
+						if (millis() - Current_Time >= Buffer.Time_Out) return(false);
 
-				// Send UART Command
-				GSM_Serial->print(F("AT+CGREG="));
-				GSM_Serial->print(_Mode);
-				GSM_Serial->write(0x0D);
-				GSM_Serial->write(0x0A);
+					}
 
-				// Response Wait Delay
-				delay(10);
+					// Handle Variables
+					sscanf(Buffer_Variable, "\r\n+CREG: %hhu,%hhu\r\n\r\nOK\r\n", &_Mode, &_Stat);
 
-				// Read Current Time
-				const uint32_t Current_Time = millis();
+					// Handle Response
+					if (_Stat == 0) return(true);
+					if (_Stat == 1) return(true);
+					if (_Stat == 2) return(true);
+					if (_Stat == 3) return(true);
+					if (_Stat == 4) return(true);
+					if (_Stat == 5) return(true);
 
-				// Read UART Response
-				while (!Buffer.Response) {
-
-					// Read Serial Char
-					Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
-
-					// Control for <OK> Response
-					Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
-
-					// Increase Read Order
-					if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
-
-					// Handle for timeout
-					if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+					// End Function
+					return (false);
 
 				}
 
 				// End Function
-				return (true);
+				return(false);
 
 			}
 
-			// Get CGREG Function
-			bool Get_CGREG(uint8_t & _Mode, uint8_t & _Stat) {
+			// CGREG Function
+			bool CGREG(const bool _Function_Type, uint8_t & _Mode, uint8_t & _Stat) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -1975,47 +1904,92 @@
 				// Command Chain Delay (Advice by Telit)
 				delay(20);
 
-				// Send UART Command
-				GSM_Serial->print(F("AT+CGREG?"));
-				GSM_Serial->write(0x0D);
-				GSM_Serial->write(0x0A);
+				// SET Function
+				if (_Function_Type == SET) {
 
-				// Response Wait Delay
-				delay(10);
+					// Send UART Command
+					GSM_Serial->print(F("AT+CGREG="));
+					GSM_Serial->print(_Mode);
+					GSM_Serial->write(0x0D);
+					GSM_Serial->write(0x0A);
 
-				// Read Current Time
-				const uint32_t Current_Time = millis();
+					// Response Wait Delay
+					delay(10);
 
-				// Read UART Response
-				while (!Buffer.Response) {
+					// Read Current Time
+					const uint32_t Current_Time = millis();
 
-					// Read Serial Char
-					Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
+					// Read UART Response
+					while (!Buffer.Response) {
 
-					// Control for <OK> Response
-					Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
+						// Read Serial Char
+						Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
 
-					// Increase Read Order
-					if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
+						// Control for <OK> Response
+						Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
 
-					// Handle for timeout
-					if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+						// Increase Read Order
+						if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
+
+						// Handle for timeout
+						if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+
+					}
+
+					// End Function
+					return (true);
 
 				}
 
-				// Handle Variables
-				sscanf(Buffer_Variable, "\r\n+CGREG: %hhu,%hhu\r\n\r\nOK\r\n", &_Mode, &_Stat);
+				// GET Function
+				if (_Function_Type == GET) {
 
-				// Handle Response
-				if (_Stat == 0) return(true);
-				if (_Stat == 1) return(true);
-				if (_Stat == 2) return(true);
-				if (_Stat == 3) return(true);
-				if (_Stat == 4) return(true);
-				if (_Stat == 5) return(true);
+					// Send UART Command
+					GSM_Serial->print(F("AT+CGREG?"));
+					GSM_Serial->write(0x0D);
+					GSM_Serial->write(0x0A);
+
+					// Response Wait Delay
+					delay(10);
+
+					// Read Current Time
+					const uint32_t Current_Time = millis();
+
+					// Read UART Response
+					while (!Buffer.Response) {
+
+						// Read Serial Char
+						Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
+
+						// Control for <OK> Response
+						Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
+
+						// Increase Read Order
+						if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
+
+						// Handle for timeout
+						if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+
+					}
+
+					// Handle Variables
+					sscanf(Buffer_Variable, "\r\n+CGREG: %hhu,%hhu\r\n\r\nOK\r\n", &_Mode, &_Stat);
+
+					// Handle Response
+					if (_Stat == 0) return(true);
+					if (_Stat == 1) return(true);
+					if (_Stat == 2) return(true);
+					if (_Stat == 3) return(true);
+					if (_Stat == 4) return(true);
+					if (_Stat == 5) return(true);
+
+					// End Function
+					return (false);
+
+				}
 
 				// End Function
-				return (false);
+				return(false);
 
 			}
 
@@ -2142,7 +2116,7 @@
 			}
 
 			// Set SGACT Function
-			bool Set_SGACT(const uint8_t _Cid, const bool _Stat) {
+			bool SGACT(const uint8_t _Cid, const bool _Stat, char * _IP_Address) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -2196,9 +2170,18 @@
 
 				// \r\n#SGACT: 000.000.000.000\r\n\r\nOK\r\n
 
+				// Declare IP Segments
+				uint16_t	Segment_1 = 0;
+				uint16_t	Segment_2 = 0;
+				uint16_t	Segment_3 = 0;
+				uint16_t	Segment_4 = 0;
+
 				// Handle IP 
-				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#SGACT: %d.%d.%d.%d\r\n\r\nOK\r\n", &this->GSM_Operator.IP_Address.Segment_1, &this->GSM_Operator.IP_Address.Segment_2, &this->GSM_Operator.IP_Address.Segment_3, &this->GSM_Operator.IP_Address.Segment_4);
+				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#SGACT: %d.%d.%d.%d\r\n\r\nOK\r\n", &Segment_1, &Segment_2, &Segment_3, &Segment_4);
 	
+				// Parse IP Address
+				sprintf(_IP_Address, "%03d.%03d.%03d.%03d", Segment_1, Segment_2, Segment_3, Segment_4);
+
 				// Control for IP
 				if (_Variable_Count == 4) return (true);
 
@@ -2521,14 +2504,18 @@
 			}
 
 			// Get Cell Info Function
-			bool MONIZIP(void) {
+			bool MONIZIP(uint16_t & _Operator_Code, uint16_t & _Operator_LAC, uint16_t & _Operator_Cell_ID, uint8_t & _Operator_dBm, uint8_t & _Operator_Signal) {
 
 				// Declare Variable Structure
 				struct Operator_Structure {
+					int 	Code			= 0;
 					int 	BSIC			= 0;
 					int 	QUAL			= 0;
 					int		ARFCN			= 0;
 					int		TIMADV			= 0;
+					int		Cell_ID			= 0;
+					int		Cell_LAC		= 0;
+					int		dBm				= 0;
 				} Operator;
 
 				// Clear UART Buffer
@@ -2585,15 +2572,21 @@
 				// \r\n#MONIZIP: 28602,65,0,D3D6,5DAA,119,-73,3\r\n\r\nOK\r\n
 
 				// Handle Variables
-				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#MONIZIP: %05d,%02d,%01d,%04X,%04X,%03d,-%hhu,%01d\r\n\r\nOK\r\n", &this->GSM_Operator.Operator, &Operator.BSIC, &Operator.QUAL, &this->GSM_Operator.LAC, &this->GSM_Operator.Cell_ID, &Operator.ARFCN, &this->GSM_Operator.dBm, &Operator.TIMADV);
+				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#MONIZIP: %05d,%02d,%01d,%04X,%04X,%03d,-%02d,%01d\r\n\r\nOK\r\n", &Operator.Code, &Operator.BSIC, &Operator.QUAL, &Operator.Cell_LAC, &Operator.Cell_ID, &Operator.ARFCN, &Operator.dBm, &Operator.TIMADV);
 
 				// Calculate Signal Level
-				if (this->GSM_Operator.dBm >= 51 and this->GSM_Operator.dBm < 65) this->GSM_Operator.Signal = 5;
-				if (this->GSM_Operator.dBm >= 66 and this->GSM_Operator.dBm < 77) this->GSM_Operator.Signal = 4;
-				if (this->GSM_Operator.dBm >= 78 and this->GSM_Operator.dBm < 89) this->GSM_Operator.Signal = 3;
-				if (this->GSM_Operator.dBm >= 90 and this->GSM_Operator.dBm < 101) this->GSM_Operator.Signal = 2;
-				if (this->GSM_Operator.dBm >= 102 and this->GSM_Operator.dBm < 111) this->GSM_Operator.Signal = 1;
-				if (this->GSM_Operator.dBm >= 112 and this->GSM_Operator.dBm < 113) this->GSM_Operator.Signal = 0;
+				if (Operator.dBm >= 51 and Operator.dBm < 65) _Operator_Signal = 5;
+				if (Operator.dBm >= 66 and Operator.dBm < 77) _Operator_Signal = 4;
+				if (Operator.dBm >= 78 and Operator.dBm < 89) _Operator_Signal = 3;
+				if (Operator.dBm >= 90 and Operator.dBm < 101) _Operator_Signal = 2;
+				if (Operator.dBm >= 102 and Operator.dBm < 111) _Operator_Signal = 1;
+				if (Operator.dBm >= 112 and Operator.dBm < 113) _Operator_Signal = 0;
+
+				// Assign Variables
+				_Operator_Code = (uint16_t)Operator.Code;
+				_Operator_LAC = (uint16_t)Operator.Cell_LAC;
+				_Operator_Cell_ID = (uint16_t)Operator.Cell_ID;
+				_Operator_dBm = (uint8_t)Operator.dBm;
 
 				// Control for Variable
 				if (_Variable_Count == 8) return(true);
