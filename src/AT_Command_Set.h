@@ -10,9 +10,6 @@
 	#define SET		true
 	#define GET		false
 
-	// Define AT Command Defaults	
-	#include "Config/AT_Definitions.h"
-
 	// Modem AT Command Set Class
 	class AT_Command_Set {
 

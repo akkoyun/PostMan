@@ -1,5 +1,18 @@
 # Release Notes
 
+## 0.12.10 (2023-07-16)
+
+* AT_Definitions file removed from library.
+* FOTA class removed, download function moved to Postman class.
+* All FOTA variables moved to postman class.
+* Send_Response function deleted.
+* Response function updated.
+* Recieve command and send response JSON size are defined in constant.
+* Download function updated.
+* Set_status function deleted.
+* FOTO function deleted in postman class.
+* Config file updated.
+
 ## 0.12.9 (2023-07-16)
 
 * GSM clas removed.

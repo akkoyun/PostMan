@@ -11,6 +11,10 @@
 		#define CONSOLE_TEMPLATE_GE910
 	#endif
 
+	// Define Packet Size
+	#define Recieve_JSON_Size	64
+	#define Response_JSON_Size	32
+
 	// Define Operator Defaults
 	#ifndef _PDP_APN_
 		#define _PDP_APN_				"mgbs"

@@ -21,11 +21,6 @@
 		#include "Hardware.h"
 	#endif
 
-	// Define Library Includes
-	#ifndef __PostMan_FOTA__
-		#include "FOTA.h"
-	#endif
-
 	// Cloud Functions
 	class PostMan : private AT_Command_Set, private Hardware {
 
@@ -1480,120 +1475,6 @@
 
 			}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-			// uint64 to String Converter Function
-			String uint64ToString(uint64_t input) {
-				
-				String result = "";
-				uint8_t base = 16;
-
-				do {
-					
-					char c = input % base;
-					input /= base;
-
-					if (c < 10)
-						c +='0';
-					else
-						c += 'A' - 10;
-				
-					result = c + result;
-
-				} while (input);
-
-				return result;
-
-			}
-
-			// Serial ID Read Function
-			void Get_Serial_ID(char * _Serial_ID) {
-				
-				// Define Variable
-				uint64_t _Serial = 0x00;
-				uint8_t _Read_Byte;
-
-				// Define I2C Device
-				I2C_Functions I2C_DS28C(__I2C_Addr_DS28C__, true, 2);
-
-				// Set DS28C to I2C Mode
-				I2C_DS28C.Write_Register(0x08, 0x01, false);
-
-				// Send CRC  Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x07);
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 40-47 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x06);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 32-39 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x05);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 24-31 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x04);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 16-23 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x03);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 08-15 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x02);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 00-07 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x01);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send Device Family bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x00);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Set Array
-				String(uint64ToString(_Serial)).toCharArray(_Serial_ID, 17);
-
-			}
-
-			// Environment Read Function
-			void Get_Environment(void) {
-				
-				// Define Sensor Object
-				HDC2010 _Sensor(true, 3, 10, true);
-
-				// Set Device Environment Variable
-				this->JSON_Data.JSON_Environment.Temperature = _Sensor.Temperature();
-				this->JSON_Data.JSON_Environment.Humidity = _Sensor.Humidity();
-
-				// Print Command State
-				#ifdef DEBUG
-					Terminal_GSM.Text(8, 72, CYAN, String(_Sensor.Temperature(), 2));
-					Terminal_GSM.Text(9, 72, CYAN, String(_Sensor.Humidity(), 2));
-				#endif
-
-			}
-
 			// Clear Interrupt Function
 			void Clear_Interrupt(uint8_t _Pack_Type) {
 
@@ -1719,6 +1600,119 @@
 					}
 
 				}
+
+			}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			// uint64 to String Converter Function
+			String uint64ToString(uint64_t input) {
+				
+				String result = "";
+				uint8_t base = 16;
+
+				do {
+					
+					char c = input % base;
+					input /= base;
+
+					if (c < 10)
+						c +='0';
+					else
+						c += 'A' - 10;
+				
+					result = c + result;
+
+				} while (input);
+
+				return result;
+
+			}
+
+			// Serial ID Read Function
+			void Get_Serial_ID(char * _Serial_ID) {
+				
+				// Define Variable
+				uint64_t _Serial = 0x00;
+				uint8_t _Read_Byte;
+
+				// Define I2C Device
+				I2C_Functions I2C_DS28C(__I2C_Addr_DS28C__, true, 2);
+
+				// Set DS28C to I2C Mode
+				I2C_DS28C.Write_Register(0x08, 0x01, false);
+
+				// Send CRC  Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x07);
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 40-47 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x06);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 32-39 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x05);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 24-31 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x04);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 16-23 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x03);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 08-15 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x02);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 00-07 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x01);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send Device Family bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x00);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Set Array
+				String(uint64ToString(_Serial)).toCharArray(_Serial_ID, 17);
+
+			}
+
+			// Environment Read Function
+			void Get_Environment(void) {
+				
+				// Define Sensor Object
+				HDC2010 _Sensor(true, 3, 10, true);
+
+				// Set Device Environment Variable
+				this->JSON_Data.JSON_Environment.Temperature = _Sensor.Temperature();
+				this->JSON_Data.JSON_Environment.Humidity = _Sensor.Humidity();
+
+				// Print Command State
+				#ifdef DEBUG
+					Terminal_GSM.Text(8, 72, CYAN, String(_Sensor.Temperature(), 2));
+					Terminal_GSM.Text(9, 72, CYAN, String(_Sensor.Humidity(), 2));
+				#endif
 
 			}
 
@@ -2010,10 +2004,10 @@
 					} else if (_Pack_Type == Pack_Types::FOTA_Info) {
 
 						// Set Device Environment Variable
-						JSON_Payload[F("File_ID")] = this->JSON_Data.JSON_FOTA.File_ID;
-						JSON_Payload[F("Status")] = this->JSON_Data.JSON_FOTA.DownloadStatus;
-						JSON_Payload[F("SD_Size")] = this->JSON_Data.JSON_FOTA.SD_Size;
-						JSON_Payload[F("Download_Time")] = this->JSON_Data.JSON_FOTA.Download_Time;
+						JSON_Payload[F("File_ID")] = this->FOTA_Variables.File_ID;
+						JSON_Payload[F("Status")] = this->FOTA_Variables.Download_Status;
+						JSON_Payload[F("SD_Size")] = this->FOTA_Variables.SD_File_Size;
+						JSON_Payload[F("Download_Time")] = this->FOTA_Variables.Download_Time;
 
 					} else {
 
@@ -2061,38 +2055,6 @@
 
 				// End Function
 				return(Event);
-
-			}
-
-			// Send Response Function
-			bool Send_Response(const uint16_t _Response) {
-
-				// Declare Response JSON Variable
-				String _Response_JSON;
-
-				// Declare JSON Object
-				StaticJsonDocument<32> Response_JSON;
-
-				// Declare JSON Data
-				Response_JSON[F("Response")] = _Response;
-
-				// Clear Unused Data
-				Response_JSON.garbageCollect();
-
-				// Serialize JSON	
-				uint8_t _JSON_Length = serializeJson(Response_JSON, _Response_JSON) + 1;
-
-				// Declare Response Array
-				char JSON[_JSON_Length];
-
-				// Convert Response
-				_Response_JSON.toCharArray(JSON, _JSON_Length);
-
-				// Send Response
-				bool _Res = this->Response(200, JSON);
-
-				// End Function
-				return(_Res);
 
 			}
 
@@ -2155,6 +2117,15 @@
 
 			} Operator;
 
+			// Define Variables
+			struct Struct_FOTA {
+				uint32_t		File_ID				= 0;
+				uint32_t		Download_Time		= 0;
+				uint32_t		File_Size			= 0;
+				uint32_t		SD_File_Size		= 0;
+				bool 			Download_Status		= false;
+			} FOTA_Variables;
+
 			// Define Time Structure
 			struct Struct_Time {
 				uint16_t 	Year				= 0;
@@ -2165,16 +2136,24 @@
 				uint16_t 	Second				= 0;
 			} Time;
 
+			// Define Modem Interrupt Structure
+			struct Interrupt_Status {
 
+				// Send Interrupt
+				bool 		Online				= false;
+				bool 		Update				= false;
+				bool 		Timed				= false;
+				bool 		Interrupt			= false;
+				bool 		Alarm				= false;
+				bool 		Offline				= false;
+				bool 		FOTA_Info			= false;
+				bool 		FOTA_Download		= false;
+				bool 		FOTA_Burn			= false;
 
+				// Ring Interrupt
+				bool 		Ring				= false;
 
-
-
-
-
-
-
-
+			} Interrupt;
 
 			// Define JSON Status Structure
 			struct JSON_Device_Structure {
@@ -2195,38 +2174,10 @@
 					uint32_t Stop_Mask = 0;
 				} JSON_Status;
 
-				// Define JSON FOTA Structure
-				struct JSON_FOTA_Structure {
-					uint16_t		File_ID				= 0;
-					bool 			DownloadStatus		= false;
-					uint32_t		Download_Time		= 0;
-					uint32_t		FTP_Size			= 0;
-					uint32_t		SD_Size				= 0;
-				} JSON_FOTA;
-
 				// Define JSON
 				char JSON_Pack[1024];
 
 			} JSON_Data;
-
-			// Define Modem Interrupt Structure
-			struct Interrupt_Status {
-
-				// Send Interrupt
-				bool 		Online				= false;
-				bool 		Update				= false;
-				bool 		Timed				= false;
-				bool 		Interrupt			= false;
-				bool 		Alarm				= false;
-				bool 		Offline				= false;
-				bool 		FOTA_Info			= false;
-				bool 		FOTA_Download		= false;
-				bool 		FOTA_Burn			= false;
-
-				// Ring Interrupt
-				bool 		Ring				= false;
-
-			} Interrupt;
 
 			// PostMan Constructor
 			PostMan(Stream &_Serial) : AT_Command_Set(_Serial) {
@@ -2563,7 +2514,7 @@
 				if (this->Status.Connection) {
 
 					// Declare Variable
-					char _JSON_Data[50];
+					char _JSON_Data[Recieve_JSON_Size];
 
 					// Declare Request Length
 					uint16_t _Request_Length;
@@ -2594,7 +2545,7 @@
 						if (_Event == Command_Reset) {
 
 							// Send Response
-							this->Send_Response(Command_OK);
+							this->Response(200, Command_OK);
 
 							// Reset
 							Reset();
@@ -2602,7 +2553,7 @@
 						} else if (_Event == Command_Update) {
 
 							// Send Response
-							this->Send_Response(Command_OK);
+							this->Response(200, Command_OK);
 
 							// Set Command Interrupt
 							this->Interrupt.Update = true;
@@ -2649,7 +2600,7 @@
 							}
 
 							// Send Response
-							this->Send_Response(_Response);
+							this->Response(200, _Response);
 
 						} else if (_Event == Command_FOTA_Download) {
 
@@ -2660,18 +2611,18 @@
 							deserializeJson(Incoming_JSON, _JSON_Data);
 
 							// Handle JSON
-							this->JSON_Data.JSON_FOTA.File_ID = Incoming_JSON["Request"]["Firmware"];
+							this->FOTA_Variables.File_ID = Incoming_JSON["Request"]["Firmware"];
 
 							// Set Command Interrupt
 							this->Interrupt.FOTA_Download = true;
 
 							// Send Response
-							this->Send_Response(Command_OK);
+							this->Response(200, Command_OK);
 
 						} else if (_Event == Command_FOTA_Burn) {
 
 							// Send Response
-							this->Send_Response(Command_OK);
+							this->Response(200, Command_OK);
 
 							// Set Command Interrupt
 							this->Interrupt.FOTA_Burn = true;
@@ -2701,10 +2652,25 @@
 			}
 
 			// Send Request Response Function
-			bool Response(uint16_t _Response_Code, char * _Data) {
+			bool Response(const uint16_t _Response_Code, const uint16_t _Response) {
+
+				// Declare Response Array
+				char _Response_JSON[Response_JSON_Size];
+
+				// Declare JSON Object
+				StaticJsonDocument<Response_JSON_Size> Response_JSON;
+
+				// Declare JSON Data
+				Response_JSON[F("Response")] = _Response;
+
+				// Clear Unused Data
+				Response_JSON.garbageCollect();
+
+				// Serialize JSON	
+				serializeJson(Response_JSON, _Response_JSON);
 
 				// Send Socket Answer
-				if (SSEND(2, 1, _Response_Code, "", "", _Data)) {
+				if (AT_Command_Set::SSEND(2, 1, _Response_Code, "", "", _Response_JSON)) {
 
 					// Print Command State
 					#ifdef DEBUG
@@ -2716,7 +2682,7 @@
 					delay(20);
 
 					// Close Socket
-					if (SH(2)) {
+					if (AT_Command_Set::SH(2)) {
 
 						// Command Delay
 						delay(20);
@@ -2742,6 +2708,497 @@
 				}
 				
 			}
+
+			// Firmware Download Function
+			bool Download(const uint16_t _File_ID) {
+
+				// Check Connection Status
+				if (this->Status.Connection) {
+
+					// SD Message
+					#ifdef DEBUG
+						Terminal_GSM.Text(14, 44, GREEN, F("                               "));
+						Terminal_GSM.Text(14, 44, GREEN, F("Firmware download started."));
+					#endif
+
+					// Activate SD Mux
+					DDRC |= 0b00000001; PORTC |= 0b00000001;
+					
+					// SD Wait Delay
+					delay(200);
+
+					// Declare SD File Object
+					File SD_File;
+
+					// Control for Existing File
+					if (SD.exists(_FOTA_SD_FileName_)) {
+
+						// Remove Existing File
+						SD.remove(_FOTA_SD_FileName_);
+
+						// SD Message
+						#ifdef DEBUG
+							Terminal_GSM.Text(14, 44, GREEN, F("                               "));
+							Terminal_GSM.Text(14, 44, GREEN, F("File Exist and Deleted."));
+						#endif
+
+						// Command Delay
+						delay(100);
+
+					}
+
+					// Open File for Write
+					SD_File = SD.open(_FOTA_SD_FileName_, O_WRITE | O_CREAT);
+
+					// Command Delay
+					delay(100);
+
+					// Control for File Open
+					if (SD_File) {
+
+						// Declare Prosedure State
+						bool _State = true;
+
+						// Open FTP Socket
+						if (_State) {
+
+							// Reset Control Variables
+							uint8_t _WD = 0;
+							bool _Response = false;
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPOPEN=***,***,***"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
+
+							// AT#FTPOPEN="165.227.154.147","fota","123456",1\r\n
+
+							// Process Command
+							while (!_Response) {
+
+								// Send Command
+								_Response = AT_Command_Set::FTPOPEN(_FOTA_Server_, _FOTA_UserName_, _FOTA_PassWord_, 1);
+
+								// Set WD Variable
+								_WD++;
+
+								// Control for WD
+								if (_WD > 4) break;
+
+							}
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.OK_Decide(_Response, 14, 35);
+							#endif
+
+							// Set Function Variable
+							if (!_Response) _State = false;
+
+						}
+
+						// Set FTP Type
+						if (_State) {
+
+							// Reset Control Variables
+							uint8_t _WD = 0;
+							bool _Response = false;
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPTYPE=0"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
+
+							// AT#FTPTYPE=0\r\n
+
+							// Process Command
+							while (!_Response) {
+
+								// Send Command
+								_Response = AT_Command_Set::FTPTYPE(0);
+
+								// Set WD Variable
+								_WD++;
+
+								// Control for WD
+								if (_WD > 4) break;
+
+							}
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.OK_Decide(_Response, 14, 35);
+							#endif
+
+							// Set Function Variable
+							if (!_Response) _State = false;
+
+						}
+
+						// Set FTP Folder
+						if (_State) {
+
+							// Reset Control Variables
+							uint8_t _WD = 0;
+							bool _Response = false;
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPCWD=\"firmware\""));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
+
+							// AT#FTPCWD="firmware"\r\n
+
+							// Process Command
+							while (!_Response) {
+
+								// Send Command
+								_Response = AT_Command_Set::FTPCWD(_FOTA_Folder_);
+
+								// Set WD Variable
+								_WD++;
+
+								// Control for WD
+								if (_WD > 4) break;
+
+							}
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.OK_Decide(_Response, 14, 35);
+							#endif
+
+							// Set Function Variable
+							if (!_Response) _State = false;
+
+						}
+
+						// Get File Size
+						if (_State) {
+
+							// Reset Control Variables
+							uint8_t _WD = 0;
+							bool _Response = false;
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPFSIZE=\"xxx.hex\""));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
+
+							// AT#FTPFSIZE="6.hex"\r\n
+
+							// Process Command
+							while (!_Response) {
+
+								// Send Command
+								_Response = AT_Command_Set::FTPFSIZE(_File_ID, this->FOTA_Variables.File_Size);
+
+								// Set WD Variable
+								_WD++;
+
+								// Control for WD
+								if (_WD > 4) break;
+
+							}
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.OK_Decide(_Response, 14, 35);
+							#endif
+
+							// Set Function Variable
+							if (!_Response) _State = false;
+
+						}
+
+						// Get File
+						if (_State) {
+
+							// Reset Control Variables
+							uint8_t _WD = 0;
+							bool _Response = false;
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPGETPKT=\"xxx.hex\",0"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
+
+							// AT#FTPGETPKT="6.hex",0\r\n
+
+							// Process Command
+							while (!_Response) {
+
+								// Send Command
+								_Response = AT_Command_Set::FTPGETPKT(_File_ID, 0);
+
+								// Set WD Variable
+								_WD++;
+
+								// Control for WD
+								if (_WD > 4) break;
+
+							}
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.OK_Decide(_Response, 14, 35);
+							#endif
+
+							// Set Function Variable
+							if (!_Response) _State = false;
+
+						}
+
+						#ifdef DEBUG
+							Terminal_GSM.Text(17, 113, GREEN, String(_File_ID));
+							Terminal_GSM.Text(19, 112, GREEN, String(this->FOTA_Variables.File_Size));
+						#endif
+
+						// SD Message
+						#ifdef DEBUG
+							Terminal_GSM.Text(14, 44, GREEN, F("                               "));
+							Terminal_GSM.Text(14, 44, GREEN, F("SD Opened"));
+						#endif
+
+						// Get Time
+						uint32_t _Download_Start_Time = millis();
+
+						// Set Data Variable
+						char _Data[250];
+
+						// Define Variable
+						uint32_t _SD_Recieve_Size = 0;
+						uint16_t _Download_Size = 0;
+						uint8_t _Download_State = 0;
+
+						// SD Message
+						#ifdef DEBUG
+							Terminal_GSM.Text(14, 44, GREEN, F("                               "));
+							Terminal_GSM.Text(14, 44, GREEN, F("Downloading"));
+						#endif
+
+						// Get Data Pack From Buffer
+						if (_State) {
+
+							// Reset Control Variables
+							bool _Response = false;
+
+							// Get Pack
+							while (!_Response) {
+
+								// Set Data Variable
+								memset(_Data, '\0', 250);
+
+								// Reset Variable
+								_Download_Size = 0;
+
+								// Send Command
+								if (AT_Command_Set::FTPRECV(200, _Download_Size, _Download_State, _Data)) {
+
+									if (_Download_Size > 0) {
+
+										// Write Data
+										SD_File.write(_Data, _Download_Size);
+
+										// Handle Recieve Size
+										_SD_Recieve_Size += _Download_Size;
+
+										// Control for File End
+										if (_SD_Recieve_Size == this->FOTA_Variables.File_Size) _Response = true;
+
+									}
+
+								} else {
+
+									// Control for State
+									if (_Download_State == 1) break;
+
+								}
+
+								// Work Delay
+								delay(50);
+
+								// Calculate Download Time
+								this->FOTA_Variables.Download_Time = (millis() - _Download_Start_Time) / 1000;
+
+								// SD Message
+								#ifdef DEBUG
+									
+									// Print File Size
+									Terminal_GSM.Text(21, 114, CYAN, String("   "));
+									Terminal_GSM.Text(21, 114, CYAN, String(map(_SD_Recieve_Size, 0, this->FOTA_Variables.File_Size, 0, 100)));
+
+									// Print Download Time
+									Terminal_GSM.Text(22, 111, CYAN, String("    "));
+									Terminal_GSM.Text(22, 111, CYAN, String(this->FOTA_Variables.Download_Time));
+
+									Terminal_GSM.Text(20, 112, WHITE, F("       "));
+									Terminal_GSM.Text(20, 112, WHITE, String(_SD_Recieve_Size));
+
+								#endif
+
+								// End Function
+								if (this->FOTA_Variables.Download_Time > 1200) break;
+
+							}
+
+							//Work Delay
+							delay(8);
+
+							// Close File
+							SD_File.close();
+
+							// SD Message
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 44, GREEN, F("                               "));
+								Terminal_GSM.Text(14, 44, GREEN, F("SD Closed"));
+							#endif
+
+						}
+
+						// Close FTP
+						if (_State) {
+
+							// Reset Control Variables
+							uint8_t _WD = 0;
+							bool _Response = false;
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+								Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPCLOSE"));
+								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							#endif
+
+							// Process Command
+							while (!_Response) {
+
+								// Send Command
+								_Response = AT_Command_Set::FTPCLOSE();
+
+								// Set WD Variable
+								_WD++;
+
+								// Control for WD
+								if (_WD > 4) break;
+
+							}
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.OK_Decide(_Response, 14, 35);
+							#endif
+
+							// Set Function Variable
+							if (!_Response) _State = false;
+
+						}
+
+					} else {
+
+						// SD Message
+						#ifdef DEBUG
+							Terminal_GSM.Text(14, 44, GREEN, F("                               "));
+							Terminal_GSM.Text(14, 44, RED, F("File Not Opened"));
+						#endif
+
+					}
+
+					// Control for Existing File
+					if (SD.exists(_FOTA_SD_FileName_)) {
+
+						// Open File for Write
+						SD_File = SD.open(_FOTA_SD_FileName_, FILE_READ);
+
+						// Get File Size
+						this->FOTA_Variables.SD_File_Size = SD_File.size();
+
+						// Control for File Size
+						if (this->FOTA_Variables.File_Size == this->FOTA_Variables.SD_File_Size) {
+
+							// SD Message
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(true, 18, 115);
+								Terminal_GSM.Text(19, 112, GREEN, String(this->FOTA_Variables.SD_File_Size));
+							#endif
+
+							// Turn SD MUX Enable LOW
+							PORTC &= 0b11111110;
+
+							// Set Download Status
+							this->FOTA_Variables.Download_Status = true;
+
+							// End Function
+							return(true);
+
+						} else {
+
+							// SD Message
+							#ifdef GSM_Debug
+								Terminal_GSM.OK_Decide(false, 18, 115);
+								Terminal_GSM.Text(19, 112, RED, String(this->FOTA_Variables.SD_File_Size));
+							#endif
+
+							// Turn SD MUX Enable LOW
+							PORTC &= 0b11111110;
+
+							// Set Download Status
+							this->FOTA_Variables.Download_Status = false;
+
+							// End Function
+							return(false);
+
+						}
+
+						// Set Download Status
+						this->FOTA_Variables.Download_Status = false;
+
+						// End Function
+						return(false);
+
+					} else {
+
+						// Turn SD MUX Enable LOW
+						PORTC &= 0b11111110;
+
+						// Set Download Status
+						this->FOTA_Variables.Download_Status = false;
+
+						// End Function
+						return(false);
+
+					}
+
+				}
+
+				// Set Download Status
+				this->FOTA_Variables.Download_Status = false;
+
+				// End Function
+				return(false);
+
+			}
+
+			// ************************************************************
+
+
+
+
+
+
+
+
+
 
 			// ************************************************************
 
@@ -2791,27 +3248,6 @@
 
 				// Turn SD MUX Enable LOW
 				PORTC &= 0b11111110;
-
-			}
-
-			// ************************************************************
-
-			// Set Status
-			void SetStatus(uint16_t _Device, uint16_t _Fault) {
-
-				// Set Device Status Variables
-
-			}
-
-			// Set FOTA Status
-			void FOTA(const uint16_t _ID, const bool _Status, const uint32_t _FTP_Size, const uint32_t _SD_Size, const uint32_t _Time) {
-
-				// Set Device Status Variables
-				this->JSON_Data.JSON_FOTA.File_ID = _ID;
-				this->JSON_Data.JSON_FOTA.DownloadStatus = _Status;
-				this->JSON_Data.JSON_FOTA.FTP_Size = _FTP_Size;
-				this->JSON_Data.JSON_FOTA.SD_Size = _SD_Size;
-				this->JSON_Data.JSON_FOTA.Download_Time = _Time;
 
 			}
 
