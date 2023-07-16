@@ -1,5 +1,11 @@
 # Release Notes
 
+## 0.12.9 (2023-07-16)
+
+* GSM clas removed.
+* All GSM class function moved to Postman class.
+* Serial_ID function updated.
+* GSM_Debug definitions changed to DEBUG
 ## 0.12.8 (2023-07-16)
 
 * SIMDET function updated.

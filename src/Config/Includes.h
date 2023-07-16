@@ -51,15 +51,6 @@
 	#include <SPI.h>
 	#include "SD.h"
 
-	// Define Time Structure
-	typedef struct {
-		uint16_t 	Year				= 0;
-		uint16_t 	Month				= 0;
-		uint16_t 	Day					= 0;
-		uint16_t 	Hour				= 0;
-		uint16_t 	Minute				= 0;
-		uint16_t 	Second				= 0;
-	} Struct_Time;
 
 	// PostOffice Pack Types
 	enum Pack_Types {
