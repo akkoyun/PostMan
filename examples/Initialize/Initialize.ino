@@ -2,10 +2,8 @@
 #include <Arduino.h>
 #include "Definitions.h"
 #include "B100BC.h"
-#include "Terminal_Variables.h"
 #include <PostMan.h>
 #include <ArduinoJson.h>
-//#include <Console.h>
 
 // Define Hardware
 B100BC B100_BC;
@@ -15,7 +13,6 @@ Console Terminal(Serial_Terminal);
 
 // Set PostOffice Cloud API
 PostMan Postman(Serial3);
-FOTA Firmware(Serial3);
 
 // Define CallBack Functions
 void CallBack_PackData(uint8_t);
@@ -77,7 +74,7 @@ void CallBack_Send_Response(uint16_t _Response, uint8_t _Error) {
 	}
 
 	// Set RTC Timer
-	B100_BC.Set_Timer(B100_BC.Variables.Interval.Online);
+	B100_BC.Set_Timer(600);
 
 }
 void CallBack_Command(uint16_t _Command, char * _Pack) {
@@ -89,58 +86,11 @@ void CallBack_Command(uint16_t _Command, char * _Pack) {
 	B100_BC.Terminal_Text(14, 44, Terminal_CYAN, F("                                    "));
 	B100_BC.Terminal_Text(14, 44, Terminal_CYAN, String(_Command));
 
-	// Declare Response Code
-	uint16_t _Response_Code = 0;
-
-	// Select Command
-	switch (_Command) {
-
-		// Unknown Command
-		default: {
-
-			// Set Response Code
-			_Response_Code = 201;
-
-			// End Case
-			break;
-
-		}
-
-	}
-
-	// Declare Response JSON Variable
-	String _Response_JSON;
-
-	// Declare JSON Object
-	StaticJsonDocument<32> Response_JSON;
-
-	// Declare JSON Data
-	Response_JSON[F("Response")] = _Response_Code;
-
-	// Clear Unused Data
-	Response_JSON.garbageCollect();
-
-	// Serialize JSON	
-	uint8_t _JSON_Length = serializeJson(Response_JSON, _Response_JSON) + 1;
-
-	// Declare Response Array
-	char JSON[_JSON_Length];
-
-	// Convert Response
-	_Response_JSON.toCharArray(JSON, _JSON_Length);
-
 	// Send Response
-	Postman.Response(200, JSON);
-
-	// Clear Response Code
-	_Response_Code = 0;
-
-	// Print Command State
-	B100_BC.Terminal_Text(14, 44, Terminal_CYAN, F("                                    "));
-	B100_BC.Terminal_Text(14, 44, Terminal_CYAN, String(_Response_JSON));
+	Postman.Response(200, 200);
 
 	// Set RTC Timer
-	B100_BC.Set_Timer(B100_BC.Variables.Interval.Online);
+	B100_BC.Set_Timer(180);
 
 }
 
@@ -166,10 +116,7 @@ void Interrupt_Routine(void) {
 		Terminal.Beep();
 
 		// Download Firmware
-		bool _Download = Firmware.Download(Postman.JSON_Data.JSON_FOTA.File_ID);
-
-		// Set Download Parameters
-		Postman.FOTA(Postman.JSON_Data.JSON_FOTA.File_ID, _Download, Firmware.Variables.File_Size, Firmware.Variables.SD_File_Size, Firmware.Variables.Download_Time);
+		Postman.Download(Postman.FOTA_Variables.File_ID);
 
 		// Publish Download Status
 		Postman.Interrupt.FOTA_Download = false;
@@ -215,17 +162,8 @@ void setup() {
 	Postman.Event_PackSend_Response(CallBack_Send_Response);
 	Postman.Event_Request(CallBack_Command);
 
-	// Power OFF GSM Modem
-	Postman.Power(false);
-
-	// Initialize Modem
-	Postman.Initialize();
-
 	// Connect to Cloud
-	Postman.Connect();
-
-	// Set Postman
-	Postman.Listen();
+	Postman.Online();
 
 	// Enable Interrupts
 	B100_BC.AVR_Enable_Interrupt();

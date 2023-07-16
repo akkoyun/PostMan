@@ -4,6 +4,7 @@
 #endif
 
 // Terminal Parameters
+#define DEBUG
 #define GSM_Debug
 #define CONSOLE_TEMPLATE_GE910
 
@@ -18,11 +19,6 @@
 // Operator Parameters
 #define _PDP_APN_				"mgbs"
 
-// Fireware Parameters
-#define _AT_FRWL_1_IP_			"213.14.250.214"
-#define _AT_FRWL_2_IP_			"167.99.137.254"
-#define _AT_FRWL_3_IP_			"176.240.98.205"
-
 // BackEnd Parameters
 #define	_BackEnd_Server_		"165.227.154.147"
 #define	_BackEnd_EndPoint_		"/"
@@ -30,7 +26,7 @@
 // FireWall Parameters
 #define	_AT_FRWL_1_IP_			"213.14.250.214"
 #define	_AT_FRWL_2_IP_			"167.99.137.254"
-#define	_AT_FRWL_3_IP_			"176.240.98.205"
+#define	_AT_FRWL_3_IP_			"45.133.37.13"
 
 // FOTA Parameters
 #define	_FOTA_Server_		   	"165.227.154.147"
