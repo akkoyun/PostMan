@@ -1,5 +1,14 @@
 # Release Notes
 
+## 0.12.14 (2023-07-17)
+
+* FOTA Status variables added.
+* Recieve JSON size variable updated.
+* GET function updated.
+* Download function updated.
+* Find CME error function updated.
+* FTPRECV function updated.
+
 ## 0.12.13 (2023-07-17)
 
 * Connection procedure updated. CGREG query command writen wrong in procedure.

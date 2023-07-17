@@ -67,8 +67,10 @@
 			// CME Find Function
 			bool Find_CME(char * _Buffer, uint8_t _Size) {
 
+				// \r\n+CME ERROR: 614\r\n
+
 				// Control for <\r\n+CME> Response
-				if (_Buffer[_Size - 3] == '+' and _Buffer[_Size - 2] == 'C' and _Buffer[_Size - 1] == 'M' and _Buffer[_Size] == 'E') return(true);
+				if (_Buffer[_Size - 18] == '\r' and _Buffer[_Size - 17] == '\n' and _Buffer[_Size - 16] == '+' and _Buffer[_Size - 15] == 'C' and _Buffer[_Size - 14] == 'M' and _Buffer[_Size - 13] == 'E' and _Buffer[_Size - 1] == '\r' and _Buffer[_Size - 0] == '\n') return(true);
 
 				// End Function
 				return(false);
@@ -2157,6 +2159,9 @@
 					// Control for <OK> Response
 					Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
 
+					// Control for <ERROR> Response
+					if (this->Find_CME(Buffer_Variable, Buffer.Read_Order)) return(false);
+
 					// Increase Read Order
 					if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
 
@@ -3721,7 +3726,7 @@
 					Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
 
 					// Control for <ERROR> Response
-					if (Find_CME(Buffer_Variable, Buffer.Read_Order)) break;
+					if (this->Find_CME(Buffer_Variable, Buffer.Read_Order)) break;
 
 					// Increase Read Order
 					if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
@@ -3731,17 +3736,17 @@
 
 				}
 
-				// Control for Timeout
-				if (!Buffer.Response) return(false);
-
 				// \r\n#FTPRECV: 200\r\n20202055\r\n:100BA00020202020000D0A002C002C002C00415495\r\n:100BB00023534C3D000D0A004154234532534C52FF\r\n:100BC000493D000D0A00415423534C4544534156BE\r\n:100BD000000D0A00415423534C45443D000D0A00CA\r\n:100BE0004\r\n\r\nOK\r\n
 				// \r\n+CME ERROR: 614\r\n	
 
 				// Clear Size Variable
 				_ReadSize = 0;
 
-				// Parse Size
-				if (sscanf(Buffer_Variable, "\r\n#FTPRECV: %03d\r\n", &_ReadSize) == 1) {
+				// Control for Response
+				if (Buffer.Response) {
+
+					// Parse Size
+					sscanf(Buffer_Variable, "\r\n#FTPRECV: %03d\r\n", &_ReadSize);
 
 					// Calculate Header Length
 					const int _Start = 14 + (int)log10(_ReadSize) + 1;
@@ -3771,10 +3776,13 @@
 					if (_CME == 606) _State = 1;
 					if (_CME == 614) _State = 2;
 
-					// End Function
-					return (false);
+					Serial.println("-------");
+					Serial.println(_CME);
 
 				}
+
+				// Control for Timeout
+				if (!Buffer.Response) return(false);
 
 				// End Function
 				if (_ReadSize == Buffer.Data_Order and _ReadSize != 0) {

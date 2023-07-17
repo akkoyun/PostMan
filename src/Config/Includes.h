@@ -93,4 +93,17 @@
 	#define EEPROM_Current_Ratio		0x28
 	#define EEPROM_Fault_Control		0x2A
 
+	// Define FOTA Status
+	#define FOTA_Download_OK			1
+	#define FOTA_FTP_Open_Error			10
+	#define FOTA_FTP_Type_Error			11
+	#define FOTA_FTP_Folder_Error		12
+	#define FOTA_FTP_File_Size_Error	13
+	#define FOTA_FTP_Get_Error			14
+	#define FOTA_FTP_Close_Error		15
+	#define FOTA_Download_TimeOut		20
+	#define FOTA_Download_Size_Error	21
+	#define FOTA_Download_Not_Save		21
+	#define FOTA_SD_Error				30
+
 #endif

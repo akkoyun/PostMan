@@ -2084,7 +2084,7 @@
 				uint32_t		Download_Time		= 0;
 				uint32_t		File_Size			= 0;
 				uint32_t		SD_File_Size		= 0;
-				bool 			Download_Status		= false;
+				uint8_t 		Download_Status		= 0;
 			} FOTA_Variables;
 
 			// Define Time Structure
@@ -2477,20 +2477,24 @@
 				// Control for Connection
 				if (this->Status.Connection) {
 
-					// Declare Variable
-					char _JSON_Data[Recieve_JSON_Size];
-
-					// Declare Request Length
-					uint16_t _Request_Length;
-
 					// Handle Ring
 					if (Receive_SRING()) {
+
+						// Declare Request Length
+						uint16_t _Request_Length;
 
 						// Answer Socket
 						AT_Command_Set::SA(2, 1, _Request_Length);
 
+						// Declare Variable
+						char _JSON_Data[Recieve_JSON_Size];
+
 						// Get Request Data
 						AT_Command_Set::SRECV(2, _Request_Length, _JSON_Data);
+
+
+
+
 
 						// Declare Variable
 						uint16_t _Event = 0;
@@ -2503,6 +2507,11 @@
 
 						// Handle JSON
 						if (!Error) _Event = Incoming_JSON["Request"]["Event"];
+
+
+
+
+
 
 						// Print Command State
 						#ifdef DEBUG
@@ -2762,7 +2771,15 @@
 							#endif
 
 							// Set Function Variable
-							if (!_Response) _State = false;
+							if (!_Response) {
+
+								// Set State Variable
+								_State = false;
+
+								// Set Download Status
+								this->FOTA_Variables.Download_Status = FOTA_FTP_Open_Error;
+
+							}
 
 						}
 
@@ -2802,7 +2819,15 @@
 							#endif
 
 							// Set Function Variable
-							if (!_Response) _State = false;
+							if (!_Response) {
+
+								// Set State Variable
+								_State = false;
+
+								// Set Download Status
+								this->FOTA_Variables.Download_Status = FOTA_FTP_Type_Error;
+
+							}
 
 						}
 
@@ -2842,7 +2867,15 @@
 							#endif
 
 							// Set Function Variable
-							if (!_Response) _State = false;
+							if (!_Response) {
+
+								// Set State Variable
+								_State = false;
+
+								// Set Download Status
+								this->FOTA_Variables.Download_Status = FOTA_FTP_Folder_Error;
+
+							}
 
 						}
 
@@ -2882,7 +2915,15 @@
 							#endif
 
 							// Set Function Variable
-							if (!_Response) _State = false;
+							if (!_Response) {
+
+								// Set State Variable
+								_State = false;
+
+								// Set Download Status
+								this->FOTA_Variables.Download_Status = FOTA_FTP_File_Size_Error;
+
+							}
 
 						}
 
@@ -2922,7 +2963,15 @@
 							#endif
 
 							// Set Function Variable
-							if (!_Response) _State = false;
+							if (!_Response) {
+
+								// Set State Variable
+								_State = false;
+
+								// Set Download Status
+								this->FOTA_Variables.Download_Status = FOTA_FTP_Get_Error;
+
+							}
 
 						}
 
@@ -2982,13 +3031,11 @@
 
 									}
 
-								} else {
+								} 
 
-									// Control for State
-									if (_Download_State == 1) break;
-									if (_Download_State == 2) break;
-
-								}
+								// Control for State
+								if (_Download_State == 1) break;
+								if (_Download_State == 2) break;
 
 								// Control for File End
 								if (_SD_Recieve_Size == this->FOTA_Variables.File_Size) _Response = true;
@@ -3016,7 +3063,15 @@
 								#endif
 
 								// End Function
-								if (this->FOTA_Variables.Download_Time > 1200) break;
+								if (this->FOTA_Variables.Download_Time > 1200) {
+
+									// Set Download Status
+									this->FOTA_Variables.Download_Status = FOTA_Download_TimeOut;
+	
+									// Break Loop
+									break;
+
+								}
 
 							}
 
@@ -3065,7 +3120,15 @@
 						#endif
 
 						// Set Function Variable
-						if (!_Response) _State = false;
+						if (!_Response) {
+
+							// Set State Variable
+							_State = false;
+
+							// Set Download Status
+							this->FOTA_Variables.Download_Status = FOTA_FTP_Close_Error;
+
+						}
 
 					} else {
 
@@ -3074,6 +3137,9 @@
 							Terminal_GSM.Text(14, 44, GREEN, F("                               "));
 							Terminal_GSM.Text(14, 44, RED, F("File Not Opened"));
 						#endif
+
+						// Set Download Status
+						this->FOTA_Variables.Download_Status = FOTA_SD_Error;
 
 					}
 
@@ -3109,7 +3175,7 @@
 							PORTC &= 0b11111110;
 
 							// Set Download Status
-							this->FOTA_Variables.Download_Status = true;
+							this->FOTA_Variables.Download_Status = FOTA_Download_OK;
 
 							// End Function
 							return(true);
@@ -3126,15 +3192,12 @@
 							PORTC &= 0b11111110;
 
 							// Set Download Status
-							this->FOTA_Variables.Download_Status = false;
+							this->FOTA_Variables.Download_Status = FOTA_FTP_File_Size_Error;
 
 							// End Function
 							return(false);
 
 						}
-
-						// Set Download Status
-						this->FOTA_Variables.Download_Status = false;
 
 						// End Function
 						return(false);
@@ -3145,7 +3208,7 @@
 						PORTC &= 0b11111110;
 
 						// Set Download Status
-						this->FOTA_Variables.Download_Status = false;
+						this->FOTA_Variables.Download_Status = FOTA_Download_Not_Save;
 
 						// End Function
 						return(false);
@@ -3155,7 +3218,7 @@
 				}
 
 				// Set Download Status
-				this->FOTA_Variables.Download_Status = false;
+				this->FOTA_Variables.Download_Status = 0;
 
 				// End Function
 				return(false);

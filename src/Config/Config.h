@@ -12,7 +12,7 @@
 	#endif
 
 	// Define Packet Size
-	#define Recieve_JSON_Size	64
+	#define Recieve_JSON_Size	128
 	#define Response_JSON_Size	32
 
 	// Define Operator Defaults
