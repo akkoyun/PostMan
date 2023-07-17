@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.12.15 (2023-07-17)
+
+* Interrupt clear function updated.
+
 ## 0.12.14 (2023-07-17)
 
 * FOTA Status variables added.

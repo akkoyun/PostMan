@@ -2287,6 +2287,9 @@
 				// Control for Connection
 				if (this->Status.Connection) {
 
+					// Clear Interrupt
+					this->Clear_Interrupt(_Pack_Type);
+
 					// Open Connection
 					if (AT_Command_Set::ATSD(3, 0, 80, 255, 88, 1, _BackEnd_Server_)) {
 
@@ -2351,9 +2354,6 @@
 
 								// Port Control
 								this->Listen(true);
-
-								// Clear Interrupt
-								this->Clear_Interrupt(_Pack_Type);
 
 								// Send Data CallBack
 								_Send_Response_CallBack(_Response_Command, 0);
@@ -2436,9 +2436,6 @@
 						// Port Control
 						this->Listen(true);
 
-						// Clear Interrupt
-						this->Clear_Interrupt(_Pack_Type);
-
 						// End Function
 						return(false);
 
@@ -2460,9 +2457,6 @@
 
 					// Send Data CallBack Error
 					_Send_Response_CallBack(0, 4);
-
-					// Clear Interrupt
-					this->Clear_Interrupt(_Pack_Type);
 
 					// End Function
 					return(false);
