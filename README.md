@@ -1,5 +1,28 @@
 # Release Notes
 
+## 0.12.13 (2023-07-17)
+
+* Connection procedure updated. CGREG query command writen wrong in procedure.
+* JSON Parse function updated.
+* JSON LOG function added when not send data.
+* FOTA download command updated.
+* FOTA download procedure updated.
+* LOG FUnction name changed to JSON_LOG.
+* FTP commands timeout variable updated.
+
+## 0.12.12 (2023-07-17)
+
+* Library update for platformio.
+
+## 0.12.11 (2023-07-17)
+
+* FTP Commands timeout variable updated.
+* FTPRECV function updated.
+* JSON Parse function updated.
+* Handle JSON request function deleted.
+* GET function updated.
+* Download function updated.
+
 ## 0.12.10 (2023-07-16)
 
 * AT_Definitions file removed from library.

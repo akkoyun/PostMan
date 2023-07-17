@@ -828,7 +828,7 @@
 								uint8_t _CGREG_Connection_Stat = 0;
 
 								// Get CREG Status
-								AT_Command_Set::CREG(false, _CGREG_Connection_Mode, _CGREG_Connection_Stat);
+								AT_Command_Set::CGREG(false, _CGREG_Connection_Mode, _CGREG_Connection_Stat);
 
 								// Print Command State
 								#ifdef DEBUG
@@ -1603,119 +1603,6 @@
 
 			}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-			// uint64 to String Converter Function
-			String uint64ToString(uint64_t input) {
-				
-				String result = "";
-				uint8_t base = 16;
-
-				do {
-					
-					char c = input % base;
-					input /= base;
-
-					if (c < 10)
-						c +='0';
-					else
-						c += 'A' - 10;
-				
-					result = c + result;
-
-				} while (input);
-
-				return result;
-
-			}
-
-			// Serial ID Read Function
-			void Get_Serial_ID(char * _Serial_ID) {
-				
-				// Define Variable
-				uint64_t _Serial = 0x00;
-				uint8_t _Read_Byte;
-
-				// Define I2C Device
-				I2C_Functions I2C_DS28C(__I2C_Addr_DS28C__, true, 2);
-
-				// Set DS28C to I2C Mode
-				I2C_DS28C.Write_Register(0x08, 0x01, false);
-
-				// Send CRC  Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x07);
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 40-47 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x06);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 32-39 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x05);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 24-31 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x04);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 16-23 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x03);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 08-15 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x02);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 00-07 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x01);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send Device Family bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x00);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Set Array
-				String(uint64ToString(_Serial)).toCharArray(_Serial_ID, 17);
-
-			}
-
-			// Environment Read Function
-			void Get_Environment(void) {
-				
-				// Define Sensor Object
-				HDC2010 _Sensor(true, 3, 10, true);
-
-				// Set Device Environment Variable
-				this->JSON_Data.JSON_Environment.Temperature = _Sensor.Temperature();
-				this->JSON_Data.JSON_Environment.Humidity = _Sensor.Humidity();
-
-				// Print Command State
-				#ifdef DEBUG
-					Terminal_GSM.Text(8, 72, CYAN, String(_Sensor.Temperature(), 2));
-					Terminal_GSM.Text(9, 72, CYAN, String(_Sensor.Humidity(), 2));
-				#endif
-
-			}
-
 			// Update GSM Parameters
 			void Update_Connection_Variables(void) {
 
@@ -1784,25 +1671,15 @@
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Online"));
 
-					// Get Data
-					_Send_Data_CallBack(Pack_Types::Online);
-
 				} else if (_Pack_Type == Pack_Types::Update) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Update"));
 
-					// Get Data
-					_Send_Data_CallBack(Pack_Types::Update);
-
-
 				} else if (_Pack_Type == Pack_Types::Timed) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Timed"));
-
-					// Get Data
-					_Send_Data_CallBack(Pack_Types::Timed);
 
 				} else if (_Pack_Type == Pack_Types::Interrupt) {
 
@@ -1810,31 +1687,20 @@
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Interrupt"));
 
 					// Get Data
-					_Send_Data_CallBack(Pack_Types::Interrupt);
-
 				} else if (_Pack_Type == Pack_Types::Alarm) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Alarm"));
-
-					// Get Data
-					_Send_Data_CallBack(Pack_Types::Alarm);
 
 				} else if (_Pack_Type == Pack_Types::Offline) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Offline"));
 
-					// Get Data
-					_Send_Data_CallBack(Pack_Types::Offline);
-
 				} else if (_Pack_Type == Pack_Types::FOTA_Info) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("FOTA_Download"));
-
-					// Get Data
-					_Send_Data_CallBack(Pack_Types::FOTA_Info);
 
 				} else {
 
@@ -1842,6 +1708,9 @@
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("UnKnown"));
 
 				}
+
+				// Get Data
+				_Send_Data_CallBack(_Pack_Type);
 
 				// Define Device Section
 				JsonObject JSON_Device = JSON.createNestedObject(F("Device"));
@@ -2038,23 +1907,115 @@
 
 			}
 
-			// Handle Send Response
-			uint16_t Handle_JSON_Request(const char *_Data) {
 
-				// Declare Variable
-				uint16_t Event = 0;
 
-				// Declare JSON Object
-				StaticJsonDocument<512> Incoming_JSON;
 
-				// Deserialize the JSON document
-				DeserializationError Error = deserializeJson(Incoming_JSON, _Data);
 
-				// Handle JSON
-				if (!Error) Event = Incoming_JSON["Request"]["Event"];
 
-				// End Function
-				return(Event);
+
+
+
+
+
+
+
+
+			// uint64 to String Converter Function
+			String uint64ToString(uint64_t input) {
+				
+				String result = "";
+				uint8_t base = 16;
+
+				do {
+					
+					char c = input % base;
+					input /= base;
+
+					if (c < 10)
+						c +='0';
+					else
+						c += 'A' - 10;
+				
+					result = c + result;
+
+				} while (input);
+
+				return result;
+
+			}
+
+			// Serial ID Read Function
+			void Get_Serial_ID(char * _Serial_ID) {
+				
+				// Define Variable
+				uint64_t _Serial = 0x00;
+				uint8_t _Read_Byte;
+
+				// Define I2C Device
+				I2C_Functions I2C_DS28C(__I2C_Addr_DS28C__, true, 2);
+
+				// Set DS28C to I2C Mode
+				I2C_DS28C.Write_Register(0x08, 0x01, false);
+
+				// Send CRC  Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x07);
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 40-47 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x06);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 32-39 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x05);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 24-31 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x04);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 16-23 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x03);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 08-15 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x02);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 00-07 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x01);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send Device Family bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x00);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Set Array
+				String(uint64ToString(_Serial)).toCharArray(_Serial_ID, 17);
+
+			}
+
+			// Environment Read Function
+			void Get_Environment(void) {
+				
+				// Define Sensor Object
+				HDC2010 _Sensor(true, 3, 10, true);
+
+				// Set Device Environment Variable
+				this->JSON_Data.JSON_Environment.Temperature = _Sensor.Temperature();
+				this->JSON_Data.JSON_Environment.Humidity = _Sensor.Humidity();
+
+				// Print Command State
+				#ifdef DEBUG
+					Terminal_GSM.Text(8, 72, CYAN, String(_Sensor.Temperature(), 2));
+					Terminal_GSM.Text(9, 72, CYAN, String(_Sensor.Humidity(), 2));
+				#endif
 
 			}
 
@@ -2494,6 +2455,9 @@
 						Terminal_GSM.Text(14, 44, RED, F("No Connection"));
 					#endif
 
+					// LOG JSON Data
+					this->JSON_LOG();
+
 					// Send Data CallBack Error
 					_Send_Response_CallBack(0, 4);
 
@@ -2528,8 +2492,17 @@
 						// Get Request Data
 						AT_Command_Set::SRECV(2, _Request_Length, _JSON_Data);
 
-						// Handle JSON Data
-						uint16_t _Event = this->Handle_JSON_Request(_JSON_Data);
+						// Declare Variable
+						uint16_t _Event = 0;
+
+						// Declare JSON Object
+						StaticJsonDocument<Recieve_JSON_Size> Incoming_JSON;
+
+						// Deserialize the JSON document
+						DeserializationError Error = deserializeJson(Incoming_JSON, _JSON_Data);
+
+						// Handle JSON
+						if (!Error) _Event = Incoming_JSON["Request"]["Event"];
 
 						// Print Command State
 						#ifdef DEBUG
@@ -2604,13 +2577,7 @@
 
 						} else if (_Event == Command_FOTA_Download) {
 
-							// Declare JSON Object
-							StaticJsonDocument<64> Incoming_JSON;
-
-							// Deserialize the JSON document
-							deserializeJson(Incoming_JSON, _JSON_Data);
-
-							// Handle JSON
+							// Get File ID
 							this->FOTA_Variables.File_ID = Incoming_JSON["Request"]["Firmware"];
 
 							// Set Command Interrupt
@@ -3013,17 +2980,18 @@
 										// Handle Recieve Size
 										_SD_Recieve_Size += _Download_Size;
 
-										// Control for File End
-										if (_SD_Recieve_Size == this->FOTA_Variables.File_Size) _Response = true;
-
 									}
 
 								} else {
 
 									// Control for State
 									if (_Download_State == 1) break;
+									if (_Download_State == 2) break;
 
 								}
+
+								// Control for File End
+								if (_SD_Recieve_Size == this->FOTA_Variables.File_Size) _Response = true;
 
 								// Work Delay
 								delay(50);
@@ -3066,43 +3034,38 @@
 
 						}
 
-						// Close FTP
-						if (_State) {
+						// Reset Control Variables
+						uint8_t _WD = 0;
+						bool _Response = false;
 
-							// Reset Control Variables
-							uint8_t _WD = 0;
-							bool _Response = false;
+						// Print Command State
+						#ifdef DEBUG
+							Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
+							Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPCLOSE"));
+							Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+						#endif
 
-							// Print Command State
-							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPCLOSE"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-							#endif
+						// Process Command
+						while (!_Response) {
 
-							// Process Command
-							while (!_Response) {
+							// Send Command
+							_Response = AT_Command_Set::FTPCLOSE();
 
-								// Send Command
-								_Response = AT_Command_Set::FTPCLOSE();
+							// Set WD Variable
+							_WD++;
 
-								// Set WD Variable
-								_WD++;
-
-								// Control for WD
-								if (_WD > 4) break;
-
-							}
-
-							// Print Command State
-							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(_Response, 14, 35);
-							#endif
-
-							// Set Function Variable
-							if (!_Response) _State = false;
+							// Control for WD
+							if (_WD > 4) break;
 
 						}
+
+						// Print Command State
+						#ifdef DEBUG
+							Terminal_GSM.OK_Decide(_Response, 14, 35);
+						#endif
+
+						// Set Function Variable
+						if (!_Response) _State = false;
 
 					} else {
 
@@ -3113,6 +3076,16 @@
 						#endif
 
 					}
+
+					// FOTA Download Status
+					#ifdef DEBUG
+						Terminal_GSM.Text(17, 113, GREEN, F("      "));
+						Terminal_GSM.Text(18, 115, GREEN, F("    "));
+						Terminal_GSM.Text(19, 112, GREEN, F("       "));
+						Terminal_GSM.Text(20, 112, GREEN, F("       "));
+						Terminal_GSM.Text(21, 114, GREEN, F("    "));
+						Terminal_GSM.Text(22, 111, GREEN, F("     "));
+					#endif
 
 					// Control for Existing File
 					if (SD.exists(_FOTA_SD_FileName_)) {
@@ -3191,19 +3164,8 @@
 
 			// ************************************************************
 
-
-
-
-
-
-
-
-
-
-			// ************************************************************
-
 			// LOG JSON Pack Function
-			void LOG(void) {
+			void JSON_LOG(void) {
 
 				// Declare LOG File Object
 				File LOG_File;

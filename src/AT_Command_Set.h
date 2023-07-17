@@ -3456,7 +3456,7 @@
 					false, 	// Response State
 					0, 		// Read Order
 					0, 		// Data Order
-					10000, 	// Time Out
+					500000, // Time Out
 					7		// Buffer Size
 				};
 
@@ -3567,7 +3567,7 @@
 					false, 	// Response State
 					0, 		// Read Order
 					0, 		// Data Order
-					5000, 	// Time Out
+					500000,	// Time Out
 					7		// Buffer Size
 				};
 
@@ -3625,7 +3625,7 @@
 					false, 	// Response State
 					0, 		// Read Order
 					0, 		// Data Order
-					5000, 	// Time Out
+					100000,	// Time Out
 					20		// Buffer Size
 				};
 
@@ -3661,6 +3661,9 @@
 					// Control for <OK> Response
 					Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
 
+					// Control for <ERROR> Response
+					if (Find_CME(Buffer_Variable, Buffer.Read_Order)) return(false);
+
 					// Increase Read Order
 					if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
 
@@ -3685,7 +3688,7 @@
 					false, 	// Response State
 					0, 		// Read Order
 					0, 		// Data Order
-					5000,	// Time Out
+					10000,	// Time Out
 					255		// Buffer Size
 				};
 
@@ -3717,6 +3720,9 @@
 					// Control for <OK> Response
 					Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
 
+					// Control for <ERROR> Response
+					if (Find_CME(Buffer_Variable, Buffer.Read_Order)) break;
+
 					// Increase Read Order
 					if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
 
@@ -3725,37 +3731,48 @@
 
 				}
 
+				// Control for Timeout
+				if (!Buffer.Response) return(false);
+
 				// \r\n#FTPRECV: 200\r\n20202055\r\n:100BA00020202020000D0A002C002C002C00415495\r\n:100BB00023534C3D000D0A004154234532534C52FF\r\n:100BC000493D000D0A00415423534C4544534156BE\r\n:100BD000000D0A00415423534C45443D000D0A00CA\r\n:100BE0004\r\n\r\nOK\r\n
 				// \r\n+CME ERROR: 614\r\n	
-
-				// Control for CME Error
-				if (this->Find_CME(Buffer_Variable, Buffer.Read_Order)) {
-
-					// Set State
-					_State = 1;
-
-					// End Function
-					return (false);
-
-				}
 
 				// Clear Size Variable
 				_ReadSize = 0;
 
 				// Parse Size
-				sscanf(Buffer_Variable, "\r\n#FTPRECV: %03d\r\n", &_ReadSize);
+				if (sscanf(Buffer_Variable, "\r\n#FTPRECV: %03d\r\n", &_ReadSize) == 1) {
 
-				// Calculate Header Length
-				const int _Start = 14 + (int)log10(_ReadSize) + 1;
+					// Calculate Header Length
+					const int _Start = 14 + (int)log10(_ReadSize) + 1;
 
-				// Parse Data
-				for (uint16_t i = _Start; i < (_Start + _ReadSize); i++) {
+					// Parse Data
+					for (uint16_t i = _Start; i < (_Start + _ReadSize); i++) {
 
-					// Get Data
-					_Data[Buffer.Data_Order] = Buffer_Variable[i];
+						// Get Data
+						_Data[Buffer.Data_Order] = Buffer_Variable[i];
 
-					// Increase Data Order
-					Buffer.Data_Order += 1;
+						// Increase Data Order
+						Buffer.Data_Order += 1;
+
+					}
+
+				} else {
+
+					// \r\n+CME ERROR: 614\r\n
+
+					// Declare CMEE Variable
+					int _CME = 0;
+
+					// Control for CME Error
+					sscanf(Buffer_Variable, "\r\n+CME ERROR: %03d\r\n", &_CME);
+
+					// Handle CME Error
+					if (_CME == 606) _State = 1;
+					if (_CME == 614) _State = 2;
+
+					// End Function
+					return (false);
 
 				}
 
@@ -3791,7 +3808,7 @@
 					false, 	// Response State
 					0, 		// Read Order
 					0, 		// Data Order
-					5000, 	// Time Out
+					500000,	// Time Out
 					7		// Buffer Size
 				};
 
@@ -3847,7 +3864,7 @@
 					false, 	// Response State
 					0, 		// Read Order
 					0, 		// Data Order
-					5000, 	// Time Out
+					500000, // Time Out
 					30		// Buffer Size
 				};
 
