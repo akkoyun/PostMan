@@ -1833,6 +1833,10 @@
 					// Set Device Time Variable
 					JSON_Payload[F("TimeStamp")] = _TimeStamp;
 
+					// Set Device Status Variable
+					JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
+					JSON_Payload[F("Fault")] = this->JSON_Data.JSON_Status.Fault;
+
 					// Set Device ID Variable
 					if (_Pack_Type == Pack_Types::Online) {
 
@@ -1843,9 +1847,6 @@
 						JSON_Payload[F("PCBT")] = this->JSON_Data.JSON_Environment.Temperature;
 						JSON_Payload[F("PCBH")] = this->JSON_Data.JSON_Environment.Humidity;
 
-						// Set Device Status Variable
-						JSON_Payload[F("Status")] = this->JSON_Data.JSON_Status.Device_State;
-
 					} else if (_Pack_Type == Pack_Types::Update) {
 
 						// Get Environment
@@ -1854,9 +1855,6 @@
 						// Set Device Environment Variable
 						JSON_Payload[F("PCBT")] = this->JSON_Data.JSON_Environment.Temperature;
 						JSON_Payload[F("PCBH")] = this->JSON_Data.JSON_Environment.Humidity;
-
-						// Set Device Status Variable
-						JSON_Payload[F("Status")] = this->JSON_Data.JSON_Status.Device_State;
 
 					} else if (_Pack_Type == Pack_Types::Timed) {
 
@@ -2130,9 +2128,8 @@
 
 				// Define JSON Status Structure
 				struct JSON_Status_Structure {
-					uint32_t Device_State = 0;
-					uint32_t Publish_Mask = 0;
-					uint32_t Stop_Mask = 0;
+					uint16_t Device = 0;
+					uint16_t Fault = 0;
 				} JSON_Status;
 
 				// Define JSON
@@ -2237,6 +2234,11 @@
 									Terminal_GSM.Text(14, 44, RED, F("GSM Socket Open Error"));
 								#endif
 							}
+
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							#endif
 
 							// Publish Interrupt Status
 							this->Interrupt.Online = true;

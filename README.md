@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.12.16 (2023-07-17)
+
+* Device status and fault variables updated.
+
 ## 0.12.15 (2023-07-17)
 
 * Interrupt clear function updated.
