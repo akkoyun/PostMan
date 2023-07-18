@@ -2567,6 +2567,7 @@
 
 				}
 
+				// \r\n#MONIZIP: 28601,52,4,855E,BFAB,3,-100,3\r\n\r\nOK\r\n
 				// #MONIZIP: 28601,23,0,855E,CCF3,60,-92,3OK
 				// #MONIZIP: 28601,23,0,855E,CCF3,60,-93,0OK
 				// #MONIZIP: 28601,23,0,855E,CCF3,60,-91,3OK
@@ -2574,7 +2575,7 @@
 				// \r\n#MONIZIP: 28602,65,0,D3D6,5DAA,119,-73,3\r\n\r\nOK\r\n
 
 				// Handle Variables
-				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#MONIZIP: %05d,%02d,%01d,%04X,%04X,%03d,-%02d,%01d\r\n\r\nOK\r\n", &Operator.Code, &Operator.BSIC, &Operator.QUAL, &Operator.Cell_LAC, &Operator.Cell_ID, &Operator.ARFCN, &Operator.dBm, &Operator.TIMADV);
+				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#MONIZIP: %05d,%02d,%01d,%04X,%04X,%03d,-%03d,%01d\r\n\r\nOK\r\n", &Operator.Code, &Operator.BSIC, &Operator.QUAL, &Operator.Cell_LAC, &Operator.Cell_ID, &Operator.ARFCN, &Operator.dBm, &Operator.TIMADV);
 
 				// Calculate Signal Level
 				if (Operator.dBm >= 51 and Operator.dBm < 65) _Operator_Signal = 5;

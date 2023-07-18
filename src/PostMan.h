@@ -39,13 +39,13 @@
 				uint8_t _WD = 0;
 
 				// Initialize Modem Parameters
-				while (!this->Status.Initialize) {
+				while (!this->IoT_Status.Initialize) {
 
 					// Get PowerMon
-					this->Status.Power = Hardware::PowerMonitor();
+					this->IoT_Status.Power = Hardware::PowerMonitor();
 
 					// Control for Power Monitor
-					if (this->Status.Power) {
+					if (this->IoT_Status.Power) {
 
 						// Print Batch Description
 						#ifdef DEBUG
@@ -58,10 +58,10 @@
 						#endif
 
 						// Set Control Variable
-						this->Status.Initialize = true;
+						this->IoT_Status.Initialize = true;
 
 						// AT Command
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -71,17 +71,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::AT()) this->Status.Initialize = false;
+							if (!AT_Command_Set::AT()) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
 
 						// ATE Command (Echo Off)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -91,17 +91,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::ATE(false)) this->Status.Initialize = false;
+							if (!AT_Command_Set::ATE(false)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
 
 						// SIMDET Command (SIM Card Detect)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -114,27 +114,27 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SIMDET(GET, 0, this->Status.SIM_Inserted)) this->Status.Initialize = false;
+							if (!AT_Command_Set::SIMDET(GET, 0, this->IoT_Status.SIM_Inserted)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 
 								// Print SIMDET State
-								if (this->Status.SIM_Inserted) Terminal_GSM.Text(14, 44, GREEN, F("SIM Card Detected"));
-								if (!this->Status.SIM_Inserted) Terminal_GSM.Text(14, 44, RED, F("SIM Card Not Detected"));
+								if (this->IoT_Status.SIM_Inserted) Terminal_GSM.Text(14, 44, GREEN, F("SIM Card Detected"));
+								if (!this->IoT_Status.SIM_Inserted) Terminal_GSM.Text(14, 44, RED, F("SIM Card Not Detected"));
 
 							#endif
 
 							// No SIM Card
-							if (!this->Status.SIM_Inserted) return(false);
+							if (!this->IoT_Status.SIM_Inserted) return(false);
 
 						} else break;
 
 						// SEARCHLIM Command (Search Network)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -144,17 +144,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SEARCHLIM(100, 100)) this->Status.Initialize = false;
+							if (!AT_Command_Set::SEARCHLIM(100, 100)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
 
 						// CFUN Command (Full Functionality)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -164,17 +164,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CFUN(1)) this->Status.Initialize = false;
+							if (!AT_Command_Set::CFUN(1)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
 
 						// CMEE Command (Error Messages)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -184,17 +184,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CMEE(1)) this->Status.Initialize = false;
+							if (!AT_Command_Set::CMEE(1)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
 
 						// FCLASS Command (Connection Mode)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -204,17 +204,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::FCLASS(0)) this->Status.Initialize = false;
+							if (!AT_Command_Set::FCLASS(0)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
 
 						// ATK Command (No Flow Control)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -224,17 +224,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::K(0)) this->Status.Initialize = false;
+							if (!AT_Command_Set::K(0)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
 
 						// CPIN Command (SIM PIN Control)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -244,20 +244,20 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CPIN(this->Status.SIM_PIN)) this->Status.Initialize = false;
+							if (!AT_Command_Set::CPIN(this->IoT_Status.SIM_PIN)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 							// End Function
-							if (this->Status.SIM_PIN != 1) break;
+							if (this->IoT_Status.SIM_PIN != 1) break;
 
 						} else break;
 
 						// CGSN Command (Get IMEI)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -267,23 +267,23 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CGSN(this->Module.IMEI)) this->Status.Initialize = false;
+							if (!AT_Command_Set::CGSN(this->IoT_Module.IMEI)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 								
 								// Print IMEI
-								Terminal_GSM.Text(20, 24, CYAN, String(this->Module.IMEI));
+								Terminal_GSM.Text(20, 24, CYAN, String(this->IoT_Module.IMEI));
 
 							#endif
 
 						} else break;
 
 						// GSN Command (Get Serial Number)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -293,23 +293,23 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GSN(this->Module.Serial_ID)) this->Status.Initialize = false;
+							if (!AT_Command_Set::GSN(this->IoT_Module.Serial_ID)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 								
 								// Print Serial ID
-								Terminal_GSM.Text(21, 29, CYAN, String(this->Module.Serial_ID));
+								Terminal_GSM.Text(21, 29, CYAN, String(this->IoT_Module.Serial_ID));
 							
 							#endif
 
 						} else break;
 
 						// ICCID Command (Get SIM Card ID)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -319,23 +319,23 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CCID(this->Operator.ICCID)) this->Status.Initialize = false;
+							if (!AT_Command_Set::CCID(this->IoT_Operator.ICCID)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 								
 								// Print ICCID
-								Terminal_GSM.Text(22, 20, CYAN, String(this->Operator.ICCID));
+								Terminal_GSM.Text(22, 20, CYAN, String(this->IoT_Operator.ICCID));
 
 							#endif
 
 						} else break;
 
 						// GMI Command (Get Manufacturer)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -345,23 +345,23 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GMI(this->Module.Manufacturer)) this->Status.Initialize = false;
+							if (!AT_Command_Set::GMI(this->IoT_Module.Manufacturer)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14,35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14,35);
 								
 								// Print Manufacturer
-								Terminal_GSM.Text(17, 38, CYAN, String(this->Module.Manufacturer));
+								Terminal_GSM.Text(17, 38, CYAN, String(this->IoT_Module.Manufacturer));
 
 							#endif
 
 						} else break;
 
 						// GMM Command (Get Model)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -371,23 +371,23 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GMM(this->Module.Model)) this->Status.Initialize = false;
+							if (!AT_Command_Set::GMM(this->IoT_Module.Model)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 								
 								// Print Model
-								Terminal_GSM.Text(18, 38, CYAN, String(this->Module.Model));
+								Terminal_GSM.Text(18, 38, CYAN, String(this->IoT_Module.Model));
 
 							#endif
 
 						} else break;
 
 						// GMR Command (Get Firmware Version)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -397,23 +397,23 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GMR(this->Module.Firmware)) this->Status.Initialize = false;
+							if (!AT_Command_Set::GMR(this->IoT_Module.Firmware)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 
 								// Print Firmware Version
-								Terminal_GSM.Text(19, 30, CYAN, String(this->Module.Firmware));
+								Terminal_GSM.Text(19, 30, CYAN, String(this->IoT_Module.Firmware));
 
 							#endif
 
 						} else break;
 
 						// SLED Command (Set Status LED)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -423,17 +423,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SLED(2)) this->Status.Initialize = false;
+							if (!AT_Command_Set::SLED(2)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
 
 						// SLEDSAV Command (Save Status LED)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -443,17 +443,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SLEDSAV()) this->Status.Initialize = false;
+							if (!AT_Command_Set::SLEDSAV()) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
 
 						// E2RI Command (Set RING Indicator)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -463,17 +463,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::E2RI(50, 50)) this->Status.Initialize = false;
+							if (!AT_Command_Set::E2RI(50, 50)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
 
 						// TXMONMODE Command (Set TX Monitor Mode)
-						if (this->Status.Initialize) {
+						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -483,11 +483,11 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::TXMONMODE(1)) this->Status.Initialize = false;
+							if (!AT_Command_Set::TXMONMODE(1)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -503,9 +503,9 @@
 					if (_WD > 2) {
 
 						// Clear States
-						this->Status.Initialize = false;
-						this->Status.SIM_Inserted = false;
-						this->Status.SIM_PIN = 0;
+						this->IoT_Status.Initialize = false;
+						this->IoT_Status.SIM_Inserted = false;
+						this->IoT_Status.SIM_PIN = 0;
 
 						// End Function
 						return(false);
@@ -531,10 +531,10 @@
 				uint8_t _WD = 0;
 
 				// Connect to Internet
-				while (!this->Status.Connection) {
+				while (!this->IoT_Status.Connection) {
 
 					// Control for Initialize
-					if (this->Status.Initialize) {
+					if (this->IoT_Status.Initialize) {
 
 						// Print Batch Description
 						#ifdef DEBUG
@@ -547,10 +547,10 @@
 						#endif
 
 						// Set Control Variable
-						this->Status.Connection = true;
+						this->IoT_Status.Connection = true;
 
 						// COPS Command (Set Operator Selection Mode)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -560,17 +560,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::COPS(0)) this->Status.Initialize = false;
+							if (!AT_Command_Set::COPS(0)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
 
 						// AUTOBND Command (Set Band Selection Mode)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -580,11 +580,11 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::AUTOBND(2)) this->Status.Initialize = false;
+							if (!AT_Command_Set::AUTOBND(2)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Initialize, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -593,7 +593,7 @@
 						uint32_t _Connection_Start_Time = millis();
 
 						// Set CREG Command (Set Network Registration Mode)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -607,11 +607,11 @@
 							uint8_t _Stat = 0;
 
 							// Send Command
-							if (!AT_Command_Set::CREG(true, _Mode, _Stat)) this->Status.Connection = false;
+							if (!AT_Command_Set::CREG(true, _Mode, _Stat)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -630,7 +630,7 @@
 						}
 
 						// Get CREG Command (Get Network Registration Mode)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -663,7 +663,7 @@
 								if (_CREG_Connection_Stat == 0) {
 
 									// Set Variable
-									this->Status.Connection = false;
+									this->IoT_Status.Connection = false;
 
 									// End Function
 									return(false);
@@ -671,7 +671,7 @@
 								} else if (_CREG_Connection_Stat == 1) {
 
 									// Set Variable
-									this->Status.Connection = true;
+									this->IoT_Status.Connection = true;
 
 									// Declare Response Status
 									_Conn_WD = true;
@@ -679,7 +679,7 @@
 								} else if (_CREG_Connection_Stat == 2) {
 
 									// Set Variable
-									this->Status.Connection = false;
+									this->IoT_Status.Connection = false;
 
 									// Declare Response Status
 									_Conn_WD = false;
@@ -700,7 +700,7 @@
 								} else if (_CREG_Connection_Stat == 3) {
 
 									// Set Variable
-									this->Status.Connection = false;
+									this->IoT_Status.Connection = false;
 
 									// Declare Response Status
 									_Conn_WD = false;
@@ -721,7 +721,7 @@
 								} else if (_CREG_Connection_Stat == 4) {
 
 									// Set Variable
-									this->Status.Connection = false;
+									this->IoT_Status.Connection = false;
 
 									// Declare Response Status
 									_Conn_WD = false;
@@ -742,7 +742,7 @@
 								} else if (_CREG_Connection_Stat == 5) {
 
 									// Set Variable
-									this->Status.Connection = false;
+									this->IoT_Status.Connection = false;
 
 									// Declare Response Status
 									_Conn_WD = true;
@@ -764,13 +764,13 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 
 						// Set CGREG Command (Set Network Registration Mode)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -784,11 +784,11 @@
 							uint8_t _Stat = 0;
 
 							// Send Command
-							if (!AT_Command_Set::CGREG(true, _Mode, _Stat)) this->Status.Connection = false;
+							if (!AT_Command_Set::CGREG(true, _Mode, _Stat)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -807,7 +807,7 @@
 						}
 
 						// Get CGREG Command (Get Network Registration Mode)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -840,7 +840,7 @@
 								if (_CGREG_Connection_Stat == 0) {
 
 									// Set Variable
-									this->Status.Connection = false;
+									this->IoT_Status.Connection = false;
 
 									// End Function
 									return(false);
@@ -848,7 +848,7 @@
 								} else if (_CGREG_Connection_Stat == 1) {
 
 									// Set Variable
-									this->Status.Connection = true;
+									this->IoT_Status.Connection = true;
 
 									// Declare Response Status
 									_Conn_WD = true;
@@ -856,7 +856,7 @@
 								} else if (_CGREG_Connection_Stat == 2) {
 
 									// Set Variable
-									this->Status.Connection = false;
+									this->IoT_Status.Connection = false;
 
 									// Declare Response Status
 									_Conn_WD = false;
@@ -877,7 +877,7 @@
 								} else if (_CGREG_Connection_Stat == 3) {
 
 									// Set Variable
-									this->Status.Connection = false;
+									this->IoT_Status.Connection = false;
 
 									// Declare Response Status
 									_Conn_WD = false;
@@ -898,7 +898,7 @@
 								} else if (_CGREG_Connection_Stat == 4) {
 
 									// Set Variable
-									this->Status.Connection = false;
+									this->IoT_Status.Connection = false;
 
 									// Declare Response Status
 									_Conn_WD = false;
@@ -919,7 +919,7 @@
 								} else if (_CGREG_Connection_Stat == 5) {
 
 									// Set Variable
-									this->Status.Connection = false;
+									this->IoT_Status.Connection = false;
 
 									// Declare Response Status
 									_Conn_WD = true;
@@ -941,13 +941,13 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 
 						// CGDCONT Command (Set PDP Context)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -957,17 +957,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CGDCONT(1, "IP", _PDP_APN_)) this->Status.Connection = false;
+							if (!AT_Command_Set::CGDCONT(1, "IP", _PDP_APN_)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 
 						// SGACT Command (Activate PDP Context)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -977,26 +977,26 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SGACT(1, 1, this->Operator.IP_Address)) this->Status.Connection = false;
+							if (!AT_Command_Set::SGACT(1, 1, this->IoT_Operator.IP_Address)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 								
 								// Print IP Address
-								Terminal_GSM.Text(20, 64, CYAN, String(this->Operator.IP_Address));
+								Terminal_GSM.Text(20, 64, CYAN, String(this->IoT_Operator.IP_Address));
 
 							#endif
 
 						} else break;
 
 						// Set Connection Time
-						this->Operator.Connection_Time = ((millis() - _Connection_Start_Time) / 1000);
+						this->IoT_Operator.Connection_Time = ((millis() - _Connection_Start_Time) / 1000);
 
 						// SCFG (Send Port) Command (Send Data Port Configuration)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1006,17 +1006,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SCFG(3, 1, 1500, 90, 1200, 0)) this->Status.Connection = false;
+							if (!AT_Command_Set::SCFG(3, 1, 1500, 90, 1200, 0)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 
 						// SCFGEXT (Send Port) Command (Send Data Port Extended Configuration)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1026,17 +1026,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SCFGEXT(3, 1, 0, 0, 0, 0)) this->Status.Connection = false;
+							if (!AT_Command_Set::SCFGEXT(3, 1, 0, 0, 0, 0)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 
 						// SCFGEXT2 (Send Port) Command (Send Data Port Extended 2 Configuration)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1046,17 +1046,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SCFGEXT2(3, 1, 0, 0, 0, 0)) this->Status.Connection = false;
+							if (!AT_Command_Set::SCFGEXT2(3, 1, 0, 0, 0, 0)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 
 						// SCFG (In Port) Command (In Port Configuration)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1066,17 +1066,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SCFG(2, 1, 1500, 90, 300, 50)) this->Status.Connection = false;
+							if (!AT_Command_Set::SCFG(2, 1, 1500, 90, 300, 50)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 
 						// SCFGEXT (In Port) Command (In Port Extended Configuration)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1086,11 +1086,11 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SCFGEXT(2, 1, 0, 1, 0, 0)) this->Status.Connection = false;
+							if (!AT_Command_Set::SCFGEXT(2, 1, 0, 1, 0, 0)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -1102,7 +1102,7 @@
 						#endif
 
 						// FRWL Command 1 (Firewall Configuration)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1112,17 +1112,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::FRWL(1, _AT_FRWL_1_IP_)) this->Status.Connection = false;
+							if (!AT_Command_Set::FRWL(1, _AT_FRWL_1_IP_)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 
 						// FRWL Command 2 (Firewall Configuration)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1132,17 +1132,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::FRWL(1, _AT_FRWL_2_IP_)) this->Status.Connection = false;
+							if (!AT_Command_Set::FRWL(1, _AT_FRWL_2_IP_)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 
 						// FRWL Command 3 (Firewall Configuration)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1152,17 +1152,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::FRWL(1, _AT_FRWL_3_IP_)) this->Status.Connection = false;
+							if (!AT_Command_Set::FRWL(1, _AT_FRWL_3_IP_)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 
 						// ICMP Command (Ping Configuration)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1172,17 +1172,17 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::ICMP(2)) this->Status.Connection = false;
+							if (!AT_Command_Set::ICMP(2)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 			
 						// MONI Command (Monitor Configuration)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1192,30 +1192,30 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::MONIZIP(this->Operator.Code, this->Operator.LAC, this->Operator.Cell_ID, this->Operator.dBm, this->Operator.Signal)) this->Status.Connection = false;
+							if (!AT_Command_Set::MONIZIP(this->IoT_Operator.Code, this->IoT_Operator.LAC, this->IoT_Operator.Cell_ID, this->IoT_Operator.dBm, this->IoT_Operator.Signal)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
 
 								// Print Signal Level Value
 								Terminal_GSM.Text(18, 65, WHITE, F("[-   ]"));
-								Terminal_GSM.Text(18, 67, CYAN, String(this->Operator.dBm));
+								Terminal_GSM.Text(18, 67, CYAN, String(this->IoT_Operator.dBm));
 
 								// Print Signal Level Bar
 								Terminal_GSM.Text(18, 74, GRAY, F("_____"));
-								for (uint8_t i = 1; i <= this->Operator.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
+								for (uint8_t i = 1; i <= this->IoT_Operator.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
 
 								// Print Operator Value
-								Terminal_GSM.Text(19, 74, CYAN, String(this->Operator.Code));
+								Terminal_GSM.Text(19, 74, CYAN, String(this->IoT_Operator.Code));
 
 								// Print Modem LAC Value
-								Terminal_GSM.Text(21, 75, CYAN, String(this->Operator.LAC, HEX));
+								Terminal_GSM.Text(21, 75, CYAN, String(this->IoT_Operator.LAC, HEX));
 
 								// Print Modem Cell ID Value
-								Terminal_GSM.Text(22, 75, CYAN, String(this->Operator.Cell_ID, HEX));
+								Terminal_GSM.Text(22, 75, CYAN, String(this->IoT_Operator.Cell_ID, HEX));
 
 								// Command Status
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 
 							#endif
 
@@ -1228,7 +1228,7 @@
 						#endif
 
 						// CCLK Command (Real Time Clock Configuration)
-						if (this->Status.Connection) {
+						if (this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1238,18 +1238,18 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second)) this->Status.Connection = false;
+							if (!AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 		
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(17, 75, CYAN, String(this->Operator.Connection_Time));
+							Terminal_GSM.Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
 						#endif
 
 						// Print Command State
@@ -1270,10 +1270,10 @@
 					if (_WD > 4) {
 
 						// Clear States
-						this->Status.SIM_Inserted = false;
-						this->Status.SIM_PIN = 0;
-						this->Status.Initialize = false;
-						this->Status.Connection = false;
+						this->IoT_Status.SIM_Inserted = false;
+						this->IoT_Status.SIM_PIN = 0;
+						this->IoT_Status.Initialize = false;
+						this->IoT_Status.Connection = false;
 
 						// Turn Off Modem
 						Hardware::Power(false);
@@ -1297,10 +1297,10 @@
 			bool Listen(const bool _State) {
 
 				// Check Connection Status
-				if (this->Status.Connection) {
+				if (this->IoT_Status.Connection) {
 
 					// Clear Socket Status
-					this->Status.Socket_State = 0;
+					this->IoT_Status.Socket_State = 0;
 
 					// Print Command State
 					#ifdef DEBUG
@@ -1315,11 +1315,11 @@
 					#endif
 
 					// Send Command
-					AT_Command_Set::SS(2, this->Status.Socket_State);
+					AT_Command_Set::SS(2, this->IoT_Status.Socket_State);
 
 					// Print Command State
 					#ifdef DEBUG
-						Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+						Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 					#endif
 
 					// Print Command State
@@ -1329,16 +1329,16 @@
 						Terminal_GSM.Text(14, 44, CYAN, F("Socket [2] :                        "));
 
 						// Print Socket State
-						if (this->Status.Socket_State == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
-						else if (this->Status.Socket_State == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
-						else if (this->Status.Socket_State == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
-						else if (this->Status.Socket_State == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
-						else if (this->Status.Socket_State == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
+						if (this->IoT_Status.Socket_State == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
+						else if (this->IoT_Status.Socket_State == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
+						else if (this->IoT_Status.Socket_State == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
+						else if (this->IoT_Status.Socket_State == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
+						else if (this->IoT_Status.Socket_State == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
 
 					#endif
 
 					// Activate Socket
-					if (_State and this->Status.Socket_State != 4) {
+					if (_State and this->IoT_Status.Socket_State != 4) {
 
 						// Print Command State
 						#ifdef DEBUG
@@ -1366,7 +1366,7 @@
 						#endif
 
 						// Send Command
-						bool _SS_Command = AT_Command_Set::SS(2, this->Status.Socket_State);
+						bool _SS_Command = AT_Command_Set::SS(2, this->IoT_Status.Socket_State);
 
 						// Print Command State
 						#ifdef DEBUG
@@ -1380,16 +1380,16 @@
 							Terminal_GSM.Text(14, 44, CYAN, F("Socket [2] :                        "));
 							
 							// Print Socket State
-							if (this->Status.Socket_State == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
-							else if (this->Status.Socket_State == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
-							else if (this->Status.Socket_State == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
-							else if (this->Status.Socket_State == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
-							else if (this->Status.Socket_State == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
+							if (this->IoT_Status.Socket_State == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
+							else if (this->IoT_Status.Socket_State == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
+							else if (this->IoT_Status.Socket_State == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
+							else if (this->IoT_Status.Socket_State == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
+							else if (this->IoT_Status.Socket_State == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
 
 						#endif
 
 						// Control Socket
-						if (this->Status.Socket_State != 4) return(false);
+						if (this->IoT_Status.Socket_State != 4) return(false);
 
 						// End Function
 						return(true);
@@ -1397,7 +1397,7 @@
 					}
 
 					// DeActivate Socket
-					if (!_State and this->Status.Socket_State != 0) {
+					if (!_State and this->IoT_Status.Socket_State != 0) {
 
 						// Print Command State
 						#ifdef DEBUG
@@ -1425,11 +1425,11 @@
 						#endif
 
 						// Get Socket Status
-						AT_Command_Set::SS(2, this->Status.Socket_State);
+						AT_Command_Set::SS(2, this->IoT_Status.Socket_State);
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.OK_Decide(this->Status.Connection, 14, 35);
+							Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
 						#endif
 
 						// Print Command State
@@ -1439,16 +1439,16 @@
 							Terminal_GSM.Text(14, 44, CYAN, F("Socket [2] :                        "));
 							
 							// Print Socket State
-							if (this->Status.Socket_State == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
-							else if (this->Status.Socket_State == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
-							else if (this->Status.Socket_State == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
-							else if (this->Status.Socket_State == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
-							else if (this->Status.Socket_State == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
+							if (this->IoT_Status.Socket_State == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
+							else if (this->IoT_Status.Socket_State == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
+							else if (this->IoT_Status.Socket_State == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
+							else if (this->IoT_Status.Socket_State == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
+							else if (this->IoT_Status.Socket_State == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
 
 						#endif
 
 						// Control Socket
-						if (this->Status.Socket_State != 0) return(false);
+						if (this->IoT_Status.Socket_State != 0) return(false);
 
 						// End Function
 						return(true);
@@ -1616,7 +1616,7 @@
 				while (!_Response) {
 
 					// Process Command
-					_Response = AT_Command_Set::MONIZIP(this->Operator.Code, this->Operator.LAC, this->Operator.Cell_ID, this->Operator.dBm, this->Operator.Signal);
+					_Response = AT_Command_Set::MONIZIP(this->IoT_Operator.Code, this->IoT_Operator.LAC, this->IoT_Operator.Cell_ID, this->IoT_Operator.dBm, this->IoT_Operator.Signal);
 
 					// Set WD Variable
 					_Error_WD++;
@@ -1631,20 +1631,20 @@
 
 					// Print Signal Level Value
 					Terminal_GSM.Text(18, 65, WHITE, F("[-   ]"));
-					Terminal_GSM.Text(18, 67, CYAN, String(this->Operator.dBm));
+					Terminal_GSM.Text(18, 67, CYAN, String(this->IoT_Operator.dBm));
 
 					// Print Signal Level Bar
 					Terminal_GSM.Text(18, 74, GRAY, F("_____"));
-					for (uint8_t i = 1; i <= this->Operator.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
+					for (uint8_t i = 1; i <= this->IoT_Operator.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
 
 					// Print Operator Value
-					Terminal_GSM.Text(19, 74, CYAN, String(this->Operator.Code));
+					Terminal_GSM.Text(19, 74, CYAN, String(this->IoT_Operator.Code));
 
 					// Print Modem LAC Value
-					Terminal_GSM.Text(21, 75, CYAN, String(this->Operator.LAC, HEX));
+					Terminal_GSM.Text(21, 75, CYAN, String(this->IoT_Operator.LAC, HEX));
 
 					// Print Modem Cell ID Value
-					Terminal_GSM.Text(22, 75, CYAN, String(this->Operator.Cell_ID, HEX));
+					Terminal_GSM.Text(22, 75, CYAN, String(this->IoT_Operator.Cell_ID, HEX));
 
 				#endif
 
@@ -1709,9 +1709,6 @@
 
 				}
 
-				// Get Data
-				_Send_Data_CallBack(_Pack_Type);
-
 				// Define Device Section
 				JsonObject JSON_Device = JSON.createNestedObject(F("Device"));
 
@@ -1722,7 +1719,7 @@
 					JsonObject JSON_Info = JSON_Device.createNestedObject(F("Info"));
 
 					// Set Device ID Variable
-					JSON_Info[F("ID")] = this->JSON_Data.Device_ID;
+					JSON_Info[F("ID")] = this->PowerStat.Device_ID;
 					
 					// Set Device Hardware Version Variable
 					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Info[F("Hardware")] = F(__Hardware__);
@@ -1787,11 +1784,11 @@
 						JsonObject JSON_Module = JSON_GSM.createNestedObject(F("Module"));
 
 						// Set IoT Parameters
-						JSON_Module[F("Manufacturer")] = this->Module.Manufacturer;
-						JSON_Module[F("Model")] = this->Module.Model;
-						JSON_Module[F("Firmware")] = this->Module.Firmware;
-						JSON_Module[F("Serial")] = this->Module.Serial_ID;
-						JSON_Module[F("IMEI")] = this->Module.IMEI;
+						JSON_Module[F("Manufacturer")] = this->IoT_Module.Manufacturer;
+						JSON_Module[F("Model")] = this->IoT_Module.Model;
+						JSON_Module[F("Firmware")] = this->IoT_Module.Firmware;
+						JSON_Module[F("Serial")] = this->IoT_Module.Serial_ID;
+						JSON_Module[F("IMEI")] = this->IoT_Module.IMEI;
 
 					}
 
@@ -1803,11 +1800,11 @@
 
 					// Set Device GSM Connection Detail Section
 					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Operator[F("SIM_Type")] = 1;
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update)JSON_Operator[F("ICCID")] = this->Operator.ICCID;
-					JSON_Operator[F("Code")] = this->Operator.Code;
-					JSON_Operator[F("dBm")] = this->Operator.dBm;
-					JSON_Operator[F("LAC")] = this->Operator.LAC;
-					JSON_Operator[F("Cell_ID")] = this->Operator.Cell_ID;
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update)JSON_Operator[F("ICCID")] = this->IoT_Operator.ICCID;
+					JSON_Operator[F("Code")] = this->IoT_Operator.Code;
+					JSON_Operator[F("dBm")] = this->IoT_Operator.dBm;
+					JSON_Operator[F("LAC")] = this->IoT_Operator.LAC;
+					JSON_Operator[F("Cell_ID")] = this->IoT_Operator.Cell_ID;
 
 				#endif
 
@@ -1834,8 +1831,10 @@
 					JSON_Payload[F("TimeStamp")] = _TimeStamp;
 
 					// Set Device Status Variable
-					JSON_Payload[F("Device")] = this->JSON_Data.JSON_Status.Device;
-					JSON_Payload[F("Fault")] = this->JSON_Data.JSON_Status.Fault;
+					JSON_Payload[F("Status")] = uint64ToString((uint64_t)this->PowerStat.Status.Status_Register);
+
+					// Get Data
+					_Send_Data_CallBack(_Pack_Type);
 
 					// Set Device ID Variable
 					if (_Pack_Type == Pack_Types::Online) {
@@ -1858,6 +1857,14 @@
 
 					} else if (_Pack_Type == Pack_Types::Timed) {
 
+						// Set Presure Variable
+						JsonArray JSON_Pressure = JSON_Payload.createNestedArray(F("Pressure"));
+						JSON_Pressure.add(this->PowerStat.Pressure.Min);
+						JSON_Pressure.add(this->PowerStat.Pressure.Max);
+						JSON_Pressure.add(this->PowerStat.Pressure.Average);
+						JSON_Pressure.add(this->PowerStat.Pressure.Value);
+						JSON_Pressure.add(this->PowerStat.Pressure.Deviation);
+						JSON_Pressure.add(this->PowerStat.Pressure.Data_Count);
 
 					} else if (_Pack_Type == Pack_Types::Interrupt) {
 
@@ -1871,10 +1878,10 @@
 					} else if (_Pack_Type == Pack_Types::FOTA_Info) {
 
 						// Set Device Environment Variable
-						JSON_Payload[F("File_ID")] = this->FOTA_Variables.File_ID;
-						JSON_Payload[F("Status")] = this->FOTA_Variables.Download_Status;
-						JSON_Payload[F("SD_Size")] = this->FOTA_Variables.SD_File_Size;
-						JSON_Payload[F("Download_Time")] = this->FOTA_Variables.Download_Time;
+						JSON_Payload[F("File_ID")] = this->IoT_FOTA.File_ID;
+						JSON_Payload[F("Status")] = this->IoT_FOTA.Download_Status;
+						JSON_Payload[F("SD_Size")] = this->IoT_FOTA.SD_File_Size;
+						JSON_Payload[F("Download_Time")] = this->IoT_FOTA.Download_Time;
 
 					} else {
 
@@ -1918,29 +1925,6 @@
 
 
 
-			// uint64 to String Converter Function
-			String uint64ToString(uint64_t input) {
-				
-				String result = "";
-				uint8_t base = 16;
-
-				do {
-					
-					char c = input % base;
-					input /= base;
-
-					if (c < 10)
-						c +='0';
-					else
-						c += 'A' - 10;
-				
-					result = c + result;
-
-				} while (input);
-
-				return result;
-
-			}
 
 			// Serial ID Read Function
 			void Get_Serial_ID(char * _Serial_ID) {
@@ -2023,7 +2007,7 @@
 		// Public Functions
 		public:
 
-			// Define Modem Status Structure
+			// Define IoT Status Structure
 			struct Struct_Status {
 				bool 		Power				= false;
 				bool		SIM_Inserted		= false;
@@ -2031,9 +2015,9 @@
 				bool 		Initialize		 	= false;
 				bool		Connection			= false;
 				uint8_t		Socket_State		= 0;
-			} Status;
+			} IoT_Status;
 
-			// Define Module Structure
+			// Define IoT Module Structure
 			struct Struct_Module {
 
 				// Modem IMEI
@@ -2049,9 +2033,9 @@
 				// Modem Firmware Version
 				char 		Firmware[10];
 
-			} Module;
+			} IoT_Module;
 
-			// Define Network Structure
+			// Define IoT Operator Structure
 			struct Struct_Network {
 
 				// SIM ICCID
@@ -2074,16 +2058,16 @@
 				// Connection Time
 				uint8_t 	Connection_Time;
 
-			} Operator;
+			} IoT_Operator;
 
-			// Define Variables
+			// Define IoT FOTA Structure
 			struct Struct_FOTA {
 				uint32_t		File_ID				= 0;
 				uint32_t		Download_Time		= 0;
 				uint32_t		File_Size			= 0;
 				uint32_t		SD_File_Size		= 0;
 				uint8_t 		Download_Status		= 0;
-			} FOTA_Variables;
+			} IoT_FOTA;
 
 			// Define Time Structure
 			struct Struct_Time {
@@ -2095,8 +2079,8 @@
 				uint16_t 	Second				= 0;
 			} Time;
 
-			// Define Modem Interrupt Structure
-			struct Interrupt_Status {
+			// Define Interrupt Structure
+			struct Struct_Interrupt {
 
 				// Send Interrupt
 				bool 		Online				= false;
@@ -2114,11 +2098,51 @@
 
 			} Interrupt;
 
-			// Define JSON Status Structure
-			struct JSON_Device_Structure {
+			// Define PowerStat Structure
+			struct PowerStat {
 
 				// Device ID
 				char Device_ID[17];
+
+				// Define Status Structure
+				struct Struct_Status {
+
+					// Device Status
+					uint32_t Status_Register = 0x00000000;
+
+					// Device Status Buffer
+					uint32_t Buffer_Register = 0x00000000;
+
+					// Publish Mask
+					uint32_t Publish_Mask = 0x0000006F;
+
+					// Stop Mask
+					uint32_t Stop_Mask = 0x00000000;
+
+				} Status;
+
+				// Define Presure Structure
+				struct Struct_Pressure {
+
+					uint16_t Data_Count = 0;
+					float Average = 0;
+					float Min = 0;
+					float Max = 0;
+					float Value = 0;
+					float Median = 0;
+					float Deviation = 0;
+
+				} Pressure;
+
+			} PowerStat;
+
+
+
+
+
+
+			// Define JSON Status Structure
+			struct JSON_Device_Structure {
 
 				// Define JSON Environment Structure
 				struct JSON_Environment_Structure {
@@ -2171,11 +2195,11 @@
 			void Online(void) {
 
 				// Get Serial ID
-				this->Get_Serial_ID(this->JSON_Data.Device_ID);
+				this->Get_Serial_ID(this->PowerStat.Device_ID);
 
 				// Print Command State
 				#ifdef DEBUG
-					Terminal_GSM.Text(5, 63, GREEN, String(this->JSON_Data.Device_ID));
+					Terminal_GSM.Text(5, 63, GREEN, String(this->PowerStat.Device_ID));
 				#endif
 
 				// Get Environment
@@ -2287,7 +2311,10 @@
 			bool Publish(const uint8_t _Pack_Type) {
 
 				// Control for Connection
-				if (this->Status.Connection) {
+				if (this->IoT_Status.Connection) {
+
+					// Set Buffer Variable
+					this->PowerStat.Status.Buffer_Register = this->PowerStat.Status.Status_Register;
 
 					// Clear Interrupt
 					this->Clear_Interrupt(_Pack_Type);
@@ -2471,7 +2498,7 @@
 			void Get(void) {
 
 				// Control for Connection
-				if (this->Status.Connection) {
+				if (this->IoT_Status.Connection) {
 
 					// Handle Ring
 					if (Receive_SRING()) {
@@ -2583,7 +2610,7 @@
 						} else if (_Event == Command_FOTA_Download) {
 
 							// Get File ID
-							this->FOTA_Variables.File_ID = Incoming_JSON["Request"]["Firmware"];
+							this->IoT_FOTA.File_ID = Incoming_JSON["Request"]["Firmware"];
 
 							// Set Command Interrupt
 							this->Interrupt.FOTA_Download = true;
@@ -2685,7 +2712,7 @@
 			bool Download(const uint16_t _File_ID) {
 
 				// Check Connection Status
-				if (this->Status.Connection) {
+				if (this->IoT_Status.Connection) {
 
 					// SD Message
 					#ifdef DEBUG
@@ -2773,7 +2800,7 @@
 								_State = false;
 
 								// Set Download Status
-								this->FOTA_Variables.Download_Status = FOTA_FTP_Open_Error;
+								this->IoT_FOTA.Download_Status = FOTA_FTP_Open_Error;
 
 							}
 
@@ -2821,7 +2848,7 @@
 								_State = false;
 
 								// Set Download Status
-								this->FOTA_Variables.Download_Status = FOTA_FTP_Type_Error;
+								this->IoT_FOTA.Download_Status = FOTA_FTP_Type_Error;
 
 							}
 
@@ -2869,7 +2896,7 @@
 								_State = false;
 
 								// Set Download Status
-								this->FOTA_Variables.Download_Status = FOTA_FTP_Folder_Error;
+								this->IoT_FOTA.Download_Status = FOTA_FTP_Folder_Error;
 
 							}
 
@@ -2895,7 +2922,7 @@
 							while (!_Response) {
 
 								// Send Command
-								_Response = AT_Command_Set::FTPFSIZE(_File_ID, this->FOTA_Variables.File_Size);
+								_Response = AT_Command_Set::FTPFSIZE(_File_ID, this->IoT_FOTA.File_Size);
 
 								// Set WD Variable
 								_WD++;
@@ -2917,7 +2944,7 @@
 								_State = false;
 
 								// Set Download Status
-								this->FOTA_Variables.Download_Status = FOTA_FTP_File_Size_Error;
+								this->IoT_FOTA.Download_Status = FOTA_FTP_File_Size_Error;
 
 							}
 
@@ -2965,7 +2992,7 @@
 								_State = false;
 
 								// Set Download Status
-								this->FOTA_Variables.Download_Status = FOTA_FTP_Get_Error;
+								this->IoT_FOTA.Download_Status = FOTA_FTP_Get_Error;
 
 							}
 
@@ -2973,7 +3000,7 @@
 
 						#ifdef DEBUG
 							Terminal_GSM.Text(17, 113, GREEN, String(_File_ID));
-							Terminal_GSM.Text(19, 112, GREEN, String(this->FOTA_Variables.File_Size));
+							Terminal_GSM.Text(19, 112, GREEN, String(this->IoT_FOTA.File_Size));
 						#endif
 
 						// SD Message
@@ -3034,24 +3061,24 @@
 								if (_Download_State == 2) break;
 
 								// Control for File End
-								if (_SD_Recieve_Size == this->FOTA_Variables.File_Size) _Response = true;
+								if (_SD_Recieve_Size == this->IoT_FOTA.File_Size) _Response = true;
 
 								// Work Delay
 								delay(50);
 
 								// Calculate Download Time
-								this->FOTA_Variables.Download_Time = (millis() - _Download_Start_Time) / 1000;
+								this->IoT_FOTA.Download_Time = (millis() - _Download_Start_Time) / 1000;
 
 								// SD Message
 								#ifdef DEBUG
 									
 									// Print File Size
 									Terminal_GSM.Text(21, 114, CYAN, String("   "));
-									Terminal_GSM.Text(21, 114, CYAN, String(map(_SD_Recieve_Size, 0, this->FOTA_Variables.File_Size, 0, 100)));
+									Terminal_GSM.Text(21, 114, CYAN, String(map(_SD_Recieve_Size, 0, this->IoT_FOTA.File_Size, 0, 100)));
 
 									// Print Download Time
 									Terminal_GSM.Text(22, 111, CYAN, String("    "));
-									Terminal_GSM.Text(22, 111, CYAN, String(this->FOTA_Variables.Download_Time));
+									Terminal_GSM.Text(22, 111, CYAN, String(this->IoT_FOTA.Download_Time));
 
 									Terminal_GSM.Text(20, 112, WHITE, F("       "));
 									Terminal_GSM.Text(20, 112, WHITE, String(_SD_Recieve_Size));
@@ -3059,10 +3086,10 @@
 								#endif
 
 								// End Function
-								if (this->FOTA_Variables.Download_Time > 1200) {
+								if (this->IoT_FOTA.Download_Time > 1200) {
 
 									// Set Download Status
-									this->FOTA_Variables.Download_Status = FOTA_Download_TimeOut;
+									this->IoT_FOTA.Download_Status = FOTA_Download_TimeOut;
 	
 									// Break Loop
 									break;
@@ -3122,7 +3149,7 @@
 							_State = false;
 
 							// Set Download Status
-							this->FOTA_Variables.Download_Status = FOTA_FTP_Close_Error;
+							this->IoT_FOTA.Download_Status = FOTA_FTP_Close_Error;
 
 						}
 
@@ -3135,7 +3162,7 @@
 						#endif
 
 						// Set Download Status
-						this->FOTA_Variables.Download_Status = FOTA_SD_Error;
+						this->IoT_FOTA.Download_Status = FOTA_SD_Error;
 
 					}
 
@@ -3156,22 +3183,22 @@
 						SD_File = SD.open(_FOTA_SD_FileName_, FILE_READ);
 
 						// Get File Size
-						this->FOTA_Variables.SD_File_Size = SD_File.size();
+						this->IoT_FOTA.SD_File_Size = SD_File.size();
 
 						// Control for File Size
-						if (this->FOTA_Variables.File_Size == this->FOTA_Variables.SD_File_Size) {
+						if (this->IoT_FOTA.File_Size == this->IoT_FOTA.SD_File_Size) {
 
 							// SD Message
 							#ifdef GSM_Debug
 								Terminal_GSM.OK_Decide(true, 18, 115);
-								Terminal_GSM.Text(19, 112, GREEN, String(this->FOTA_Variables.SD_File_Size));
+								Terminal_GSM.Text(19, 112, GREEN, String(this->IoT_FOTA.SD_File_Size));
 							#endif
 
 							// Turn SD MUX Enable LOW
 							PORTC &= 0b11111110;
 
 							// Set Download Status
-							this->FOTA_Variables.Download_Status = FOTA_Download_OK;
+							this->IoT_FOTA.Download_Status = FOTA_Download_OK;
 
 							// End Function
 							return(true);
@@ -3181,14 +3208,14 @@
 							// SD Message
 							#ifdef GSM_Debug
 								Terminal_GSM.OK_Decide(false, 18, 115);
-								Terminal_GSM.Text(19, 112, RED, String(this->FOTA_Variables.SD_File_Size));
+								Terminal_GSM.Text(19, 112, RED, String(this->IoT_FOTA.SD_File_Size));
 							#endif
 
 							// Turn SD MUX Enable LOW
 							PORTC &= 0b11111110;
 
 							// Set Download Status
-							this->FOTA_Variables.Download_Status = FOTA_FTP_File_Size_Error;
+							this->IoT_FOTA.Download_Status = FOTA_FTP_File_Size_Error;
 
 							// End Function
 							return(false);
@@ -3204,7 +3231,7 @@
 						PORTC &= 0b11111110;
 
 						// Set Download Status
-						this->FOTA_Variables.Download_Status = FOTA_Download_Not_Save;
+						this->IoT_FOTA.Download_Status = FOTA_Download_Not_Save;
 
 						// End Function
 						return(false);
@@ -3214,7 +3241,7 @@
 				}
 
 				// Set Download Status
-				this->FOTA_Variables.Download_Status = 0;
+				this->IoT_FOTA.Download_Status = 0;
 
 				// End Function
 				return(false);
@@ -3269,6 +3296,30 @@
 
 				// Turn SD MUX Enable LOW
 				PORTC &= 0b11111110;
+
+			}
+
+			// uint64 to String Converter Function
+			String uint64ToString(uint64_t input) {
+				
+				String result = "";
+				uint8_t base = 16;
+
+				do {
+					
+					char c = input % base;
+					input /= base;
+
+					if (c < 10)
+						c +='0';
+					else
+						c += 'A' - 10;
+				
+					result = c + result;
+
+				} while (input);
+
+				return result;
 
 			}
 

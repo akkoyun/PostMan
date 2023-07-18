@@ -1,5 +1,18 @@
 # Release Notes
 
+## 0.13.0 (2023-07-18)
+
+* MONIZIP bug fixed.
+* Status variable changed to IoT_Status.
+* Power variables changed to IoT_Power.
+* Module variables changed to IoT_Module.
+* Operator variables changed to IoT_Operator.
+* FOTA_Variables changed to IoT_FOTA.
+* PowerStat variable added.
+* JSON_Parse function updated.
+* uint64ToString function moved to public.
+* Status bit definitions added.
+
 ## 0.12.16 (2023-07-17)
 
 * Device status and fault variables updated.
