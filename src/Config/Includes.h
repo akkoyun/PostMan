@@ -16,9 +16,6 @@
 			#include <Console.h>
 		#endif
 
-		// Define Terminal Defaults
-		#include "Terminal_Defaults.h"
-
 		// Define Console Library
 		Console Terminal_GSM(Serial_Terminal);
 
@@ -68,6 +65,8 @@
 	// Define Commands
 	#define Command_OK					200
 	#define Command_NOK					201
+	#define Command_Start				256
+	#define Command_Stop				257
 	#define Command_Update				262
 	#define Command_Parameter			500
 
@@ -105,32 +104,5 @@
 	#define FOTA_Download_Size_Error	21
 	#define FOTA_Download_Not_Save		21
 	#define FOTA_SD_Error				30
-
-	// Define Status Bits
-	#define STATUS_PUMP					0
-	#define STATUS_PHASE_R				1
-	#define STATUS_PHASE_S				2
-	#define STATUS_PHASE_T				3
-	#define STATUS_FAULT_TH				5
-	#define STATUS_FAULT_MP				6
-	#define STATUS_FAULT_SA				7
-	#define STATUS_INPUT				8
-	#define STATUS_P_LOW				10
-	#define STATUS_P_HIGH				11
-	#define STATUS_P_DROP				12
-	#define STATUS_P_RISE				13
-	#define STATUS_V_LOW				16
-	#define STATUS_V_HIGH				17
-	#define STATUS_I_HIGH				18
-	#define STATUS_FQ_LOW				19
-	#define STATUS_FQ_HIGH				20
-	#define STATUS_V_IMBALANCE			21
-	#define STATUS_I_IMBALANCE			22
-	#define STATUS_CT_R					26
-	#define STATUS_CT_S					27
-	#define STATUS_CT_T					28
-	#define STATUS_P_SENSOR				29
-	#define STATUS_SD					30
-	#define STATUS_SYSTEM				31
 
 #endif

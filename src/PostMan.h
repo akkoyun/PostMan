@@ -42,7 +42,7 @@
 				while (!this->IoT_Status.Initialize) {
 
 					// Get PowerMon
-					this->IoT_Status.Power = Hardware::PowerMonitor();
+					this->IoT_Status.Power = POWER_MON;
 
 					// Control for Power Monitor
 					if (this->IoT_Status.Power) {
@@ -1209,10 +1209,10 @@
 								Terminal_GSM.Text(19, 74, CYAN, String(this->IoT_Operator.Code));
 
 								// Print Modem LAC Value
-								Terminal_GSM.Text(21, 75, CYAN, String(this->IoT_Operator.LAC, HEX));
+								Terminal_GSM.Text(21, 75, CYAN, String(uint64ToString(this->IoT_Operator.LAC)));
 
 								// Print Modem Cell ID Value
-								Terminal_GSM.Text(22, 75, CYAN, String(this->IoT_Operator.Cell_ID, HEX));
+								Terminal_GSM.Text(22, 75, CYAN, String(uint64ToString(this->IoT_Operator.Cell_ID)));
 
 								// Command Status
 								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
@@ -1547,17 +1547,6 @@
 
 					}
 
-					// Clear FOTA_Info Interrupt
-					case Pack_Types::FOTA_Info: {
-
-						// Clear Interrupt
-						this->Interrupt.FOTA_Info = false;
-
-						// End Case
-						break;
-
-					}
-
 					// Clear FOTA_Download Interrupt
 					case Pack_Types::FOTA_Download: {
 
@@ -1590,7 +1579,6 @@
 						this->Interrupt.Interrupt = false;
 						this->Interrupt.Alarm = false;
 						this->Interrupt.Offline = false;
-						this->Interrupt.FOTA_Info = false;
 						this->Interrupt.FOTA_Download = false;
 						this->Interrupt.FOTA_Burn = false;
 
@@ -1641,10 +1629,10 @@
 					Terminal_GSM.Text(19, 74, CYAN, String(this->IoT_Operator.Code));
 
 					// Print Modem LAC Value
-					Terminal_GSM.Text(21, 75, CYAN, String(this->IoT_Operator.LAC, HEX));
+					Terminal_GSM.Text(21, 75, CYAN, String(uint64ToString(this->IoT_Operator.LAC)));
 
 					// Print Modem Cell ID Value
-					Terminal_GSM.Text(22, 75, CYAN, String(this->IoT_Operator.Cell_ID, HEX));
+					Terminal_GSM.Text(22, 75, CYAN, String(uint64ToString(this->IoT_Operator.Cell_ID)));
 
 				#endif
 
@@ -1803,8 +1791,8 @@
 					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update)JSON_Operator[F("ICCID")] = this->IoT_Operator.ICCID;
 					JSON_Operator[F("Code")] = this->IoT_Operator.Code;
 					JSON_Operator[F("dBm")] = this->IoT_Operator.dBm;
-					JSON_Operator[F("LAC")] = this->IoT_Operator.LAC;
-					JSON_Operator[F("Cell_ID")] = this->IoT_Operator.Cell_ID;
+					JSON_Operator[F("LAC")] = uint64ToString(this->IoT_Operator.LAC);
+					JSON_Operator[F("Cell_ID")] = uint64ToString(this->IoT_Operator.Cell_ID);
 
 				#endif
 
@@ -2085,11 +2073,12 @@
 				// Send Interrupt
 				bool 		Online				= false;
 				bool 		Update				= false;
+				bool		Start				= false;
+				bool 		Stop				= false;
 				bool 		Timed				= false;
 				bool 		Interrupt			= false;
 				bool 		Alarm				= false;
 				bool 		Offline				= false;
-				bool 		FOTA_Info			= false;
 				bool 		FOTA_Download		= false;
 				bool 		FOTA_Burn			= false;
 
@@ -2313,6 +2302,9 @@
 				// Control for Connection
 				if (this->IoT_Status.Connection) {
 
+					// Get Time
+					uint32_t _Time = millis();
+
 					// Set Buffer Variable
 					this->PowerStat.Status.Buffer_Register = this->PowerStat.Status.Status_Register;
 
@@ -2373,6 +2365,15 @@
 									Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
 									Terminal_GSM.Text(14, 44, GREEN, F("Response --> [   ]"));
 									Terminal_GSM.Text(14, 58, YELLOW, String(_Response_Command));
+								#endif
+
+								// Calculate Send Time
+								uint32_t _Send_Duration = millis() - _Time;
+
+								// Print Command State
+								#ifdef DEBUG
+									Terminal_GSM.Text(2, 116, CYAN, F("     "));
+									Terminal_GSM.Text(2, 116, YELLOW, String(_Send_Duration));
 								#endif
 
 								// Command Delay
@@ -2515,10 +2516,6 @@
 						// Get Request Data
 						AT_Command_Set::SRECV(2, _Request_Length, _JSON_Data);
 
-
-
-
-
 						// Declare Variable
 						uint16_t _Event = 0;
 
@@ -2530,11 +2527,6 @@
 
 						// Handle JSON
 						if (!Error) _Event = Incoming_JSON["Request"]["Event"];
-
-
-
-
-
 
 						// Print Command State
 						#ifdef DEBUG
@@ -2562,6 +2554,42 @@
 
 							// Set Command Interrupt
 							this->Interrupt.Update = true;
+
+						} else if (_Event == Command_Start) {
+
+							// Control for pump status
+							if (bitRead(PowerStat.Status.Status_Register, 0) == 1) {
+
+								// Send Response
+								this->Response(200, Command_NOK);
+
+							} else {
+
+								// Send Response
+								this->Response(200, Command_OK);
+
+								// Set Command Interrupt
+								this->Interrupt.Start = true;
+
+							}
+
+						} else if (_Event == Command_Stop) {
+
+							// Control for pump status
+							if (bitRead(PowerStat.Status.Status_Register, 0) == 0) {
+
+								// Send Response
+								this->Response(200, Command_NOK);
+
+							} else {
+
+								// Send Response
+								this->Response(200, Command_OK);
+
+								// Set Command Interrupt
+								this->Interrupt.Stop = true;
+
+							}
 
 						} else if (_Event == Command_Parameter) {
 

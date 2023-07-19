@@ -1,5 +1,17 @@
 # Release Notes
 
+## 0.13.1 (2023-07-19)
+
+* Terminal_Defaults file deleted.
+* Register definitions removed from library.
+* FOTA_Info interrupt removed.
+* LAC and Cell_ID variables changed to HEX string.
+* Start and stop commands added.
+* Send time calculation added.
+* Communication function changed to macro.
+* Power_Switch function changed to macro.
+* LED functions changed to macro.
+
 ## 0.13.0 (2023-07-18)
 
 * MONIZIP bug fixed.

@@ -11,60 +11,16 @@
 		#include "Config/Includes.h"
 	#endif
 
-	// Define LED Colors
-	#ifndef __WHITE__
-		#define	__WHITE__							(uint8_t) 0
-	#endif
-	#ifndef __RED__
-		#define	__RED__								(uint8_t) 1
-	#endif
-	#ifndef __GREEN__
-		#define	__GREEN__							(uint8_t) 2
-	#endif
-	#ifndef __BLUE__
-		#define	__BLUE__							(uint8_t) 3
-	#endif
-	#ifndef __PURPLE__
-		#define	__PURPLE__							(uint8_t) 4
-	#endif
+	// Define Relay Inputs
+	#define POWER_MON (((PINJ) >> (PINJ3)) & 0x01)
+	#define COMMUNICATION(_State) (_State ? PORTJ &= 0b11101111 : PORTJ |= 0b00010000)
+	#define POWER_SWITCH(_State) (_State ? PORTH |= 0b00000100 : PORTH &= 0b11111011)
+	#define STAT_LED(_State) (_State ? PORTH &= 0b11101111 : PORTH |= 0b00010000)
 
 	// Hardware Functions
 	class Hardware {
 
 		private:
-
-			// Enable Communication Buffer.
-			void Communication(const bool _State) {
-
-				// Enable Communication 
-				if (_State) PORTJ &= 0b11101111;
-
-				// Disable Communication
-				if (!_State) PORTJ |= 0b00010000;
-
-			}
-
-			// Power Switch
-			void Power_Switch(const bool _State) {
-
-				// Set GSM Power Enable
-				if (_State) PORTH |= 0b00000100;
-
-				// Set GSM Power Disable
-				if (!_State) PORTH &= 0b11111011;
-			
-			}
-
-			// LED Power Enable
-			void LED(const bool _State) {
-
-				// Set GSM LED Power Enable
-				if (_State) PORTH &= 0b11101111;
-
-				// Set GSM LED Power Disable
-				if (!_State) PORTH |= 0b00010000;
-
-			}
 
 			// On or Off Modem.
 			void OnOff(const uint16_t _Time) {
@@ -79,7 +35,7 @@
 					uint8_t _Delay = _Time / 37;
 
 					// Terminal Bar
-					#ifdef GSM_Debug
+					#ifdef DEBUG
 						Terminal_GSM.Text(14, 4 + i, WHITE, F("▒"));
 					#endif
 
@@ -92,7 +48,7 @@
 				PORTJ &= 0b10111111;
 
 				// Clear Bar
-				#ifdef GSM_Debug
+				#ifdef DEBUG
 					for (uint8_t i = 0; i < 36; i++) Terminal_GSM.Text(14, 4 + i, WHITE, F(" "));
 				#endif
 
@@ -117,24 +73,24 @@
 
 				// Enable GSM Modem Power Switch
 				#ifdef GSM_Power_Switch
-					this->Power_Switch(true);  
+					POWER_SWITCH(true);  
 				#endif
 				
 				// Enable GSM Modem LED Feed
 				#ifdef GSM_LED_Switch
-					this->LED(true);
+					STAT_LED(true);
 				#endif
 
 				// Set Communication Signal LOW
 				#ifdef GSM_Comm_Switch
-					this->Communication(true);
+					COMMUNICATION(true);
 				#endif
 				
 				// Boot Delay
 				delay(2000);
 
 				// Turn On Modem
-				if (this->PowerMonitor()) {
+				if (POWER_MON) {
 
 					// Command Delay
 					delay(300);
@@ -148,7 +104,7 @@
 					this->OnOff(5000);
 
 					// Control for PWMon (PH7)
-					if (this->PowerMonitor()) {
+					if (POWER_MON) {
 
 						// End Function
 						return(true);
@@ -171,7 +127,7 @@
 			bool OFF(void) {
 
 				// Turn Off Modem
-				if (this->PowerMonitor()) {
+				if (POWER_MON) {
 
 					// Turn Off Modem
 					this->OnOff(3000);
@@ -186,7 +142,7 @@
 					while (_Power) {
 
 						// Control for PowerMonitor
-						if (!this->PowerMonitor()) {
+						if (!POWER_MON) {
 
 							// Set Variable
 							_Power = false;
@@ -196,17 +152,17 @@
 
 							// Disable GSM LED Power
 							#ifdef GSM_LED_Switch
-								this->LED(false);
+								STAT_LED(false);
 							#endif
 
 							// Disable GSM Modem Voltage Translator
 							#ifdef GSM_Comm_Switch
-								this->Communication(false);
+								COMMUNICATION(false);
 							#endif
 
 							// Disable GSM Modem Main Power Switch
 							#ifdef GSM_Power_Switch
-								this->Power_Switch(false);  
+								POWER_SWITCH(false);  
 							#endif
 
 						}
@@ -223,17 +179,17 @@
 
 					// Disable GSM LED Power
 					#ifdef GSM_LED_Switch
-						this->LED(false);
+						STAT_LED(false);
 					#endif
 
 					// Disable GSM Modem Voltage Translator
 					#ifdef GSM_Comm_Switch
-						this->Communication(false);
+						COMMUNICATION(false);
 					#endif
 
 					// Disable GSM Modem Main Power Switch
 					#ifdef GSM_Power_Switch
-						this->Power_Switch(false);  
+						POWER_SWITCH(false);  
 					#endif
 
 				}
@@ -253,36 +209,6 @@
 			// Constractor
 			Hardware(void) {
 
-				/*  PORT D
-					PD0 - SCL
-					PD1 - SDA
-					PD2 - RXD1
-					PD3 - TXD1
-					PD4 - Output / Pull Down [NC] 			- ICP1		- [85]
-					PD5 - Output / Pull Down [MCU LED Blue]	- XCK1		- [84]
-					PD6 - Output / Pull Down [MCU LED Green]- T1		- [83]
-					PD7 - Output / Pull Down [MCU LED Red]	- T0		- [82]
-				*/
-				DDRD |= 0b11110000; PORTD &= 0b00001111;
-
-			}
-
-			// Get Power Monitor
-			bool PowerMonitor(void) {
-
-				// Control for PWMon (PJ3)
-				if ((PINJ & (1 << PINJ3)) == (1 << PINJ3)) {
-
-					// End Function
-					return (true);
-
-				} else {
-
-					// End Function
-					return(false);
-
-				}
-
 			}
 
 			// GSM Modem Power Sequence
@@ -300,124 +226,6 @@
 					return(this->OFF());
 
 				}
-
-			}
-
-			// LED Functions
-			void MCU_LED(const uint8_t _Color, const uint8_t _Blink, const uint16_t _Interval) {
-
-				// Red Color
-				if (_Color == __RED__) {
-
-					// Blink
-					for (size_t i = 0; i < _Blink; i++) {
-
-						// Turn ON Red LED
-						PORTD |= 0b10000000;
-
-						// Delay
-						delay(_Interval);
-
-						// Turn OFF Red LED
-						PORTD &= 0b01111111;
-
-						// Delay
-						delay(_Interval);
-
-					}
-
-				}
-				
-				// Green Color
-				if (_Color == __GREEN__) {
-
-					// Blink
-					for (size_t i = 0; i < _Blink; i++) {
-
-						// Turn ON Green LED
-						PORTD |= 0b01000000;
-
-						// Delay
-						delay(_Interval);
-
-						// Turn OFF Green LED
-						PORTD &= 0b10111111;
-
-						// Delay
-						delay(_Interval);
-
-					}
-
-				}
-
-				// Green Color
-				if (_Color == __BLUE__) {
-
-					// Blink
-					for (size_t i = 0; i < _Blink; i++) {
-
-						// Turn ON Blue LED
-						PORTD |= 0b00100000;
-
-						// Delay
-						delay(_Interval);
-
-						// Turn OFF Blue LED
-						PORTD &= 0b11011111;
-
-						// Delay
-						delay(_Interval);
-
-					}
-
-				}
-
-				// Purple Color
-				if (_Color == __PURPLE__) {
-
-					// Blink
-					for (size_t i = 0; i < _Blink; i++) {
-
-						// Turn ON Purple LED
-						PORTD |= 0b10100000;
-
-						// Delay
-						delay(_Interval);
-
-						// Turn OFF Purple LED
-						PORTD &= 0b01011111;
-
-						// Delay
-						delay(_Interval);
-
-					}
-
-				}
-
-				// White Color
-				if (_Color == __WHITE__) {
-
-					// Blink
-					for (size_t i = 0; i < _Blink; i++) {
-
-						// Turn ON White LED
-						PORTD |= 0b11100000;
-
-						// Delay
-						delay(_Interval);
-
-						// Turn OFF White LED
-						PORTD &= 0b01111111;
-
-						// Delay
-						delay(_Interval);
-
-					}
-
-				}
-
-				// Turn OFF all LED
-				PORTD &= 0b00011111;
 
 			}
 
