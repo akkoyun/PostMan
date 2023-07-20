@@ -1900,17 +1900,30 @@
 
 			}
 
+			// Mask Functions
+			void Read_Masks(void) {
 
+				// RTC Object Definitions	
+				I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
+				RV3028 RTC(true, 1);
 
+				// Clear Mask
+				this->PowerStat.Status.Publish_Mask = 0x00000000;
+				this->PowerStat.Status.Stop_Mask = 0x00000000;
 
+				// Set Publish Mask
+				this->PowerStat.Status.Publish_Mask = RTC.Read_EEPROM(EEPROM_PUBLISH_MASK);
+				this->PowerStat.Status.Publish_Mask = (this->PowerStat.Status.Publish_Mask << 8) | RTC.Read_EEPROM(EEPROM_PUBLISH_MASK + 1);
+				this->PowerStat.Status.Publish_Mask = (this->PowerStat.Status.Publish_Mask << 8) | RTC.Read_EEPROM(EEPROM_PUBLISH_MASK + 2);
+				this->PowerStat.Status.Publish_Mask = (this->PowerStat.Status.Publish_Mask << 8) | RTC.Read_EEPROM(EEPROM_PUBLISH_MASK + 3);
 
+				// Set Stop Mask
+				this->PowerStat.Status.Stop_Mask = RTC.Read_EEPROM(EEPROM_STOP_MASK);
+				this->PowerStat.Status.Stop_Mask = (this->PowerStat.Status.Stop_Mask << 8) | RTC.Read_EEPROM(EEPROM_STOP_MASK + 1);
+				this->PowerStat.Status.Stop_Mask = (this->PowerStat.Status.Stop_Mask << 8) | RTC.Read_EEPROM(EEPROM_STOP_MASK + 2);
+				this->PowerStat.Status.Stop_Mask = (this->PowerStat.Status.Stop_Mask << 8) | RTC.Read_EEPROM(EEPROM_STOP_MASK + 3);
 
-
-
-
-
-
-
+			}
 
 
 
@@ -2125,11 +2138,6 @@
 
 			} PowerStat;
 
-
-
-
-
-
 			// Define JSON Status Structure
 			struct JSON_Device_Structure {
 
@@ -2193,6 +2201,9 @@
 
 				// Get Environment
 				this->Get_Environment();
+
+				// Read Masks
+				this->Read_Masks();
 
 				// GSM Connection Squence
 				if (Hardware::Power(false)) {
@@ -2593,44 +2604,363 @@
 
 						} else if (_Event == Command_Parameter) {
 
-							// Declare JSON Object
-							StaticJsonDocument<64> Incoming_JSON;
-
-							// Deserialize the JSON document
-							deserializeJson(Incoming_JSON, _JSON_Data);
+							// Beep Sound
+							#ifdef DEBUG
+								Terminal_GSM.Beep();
+							#endif
 
 							// Handle JSON
 							uint8_t _Address = Incoming_JSON["Request"]["Address"];
-							uint16_t _Value = Incoming_JSON["Request"]["Value"];
+							uint32_t _Value = Incoming_JSON["Request"]["Value"];
 
-							// Control for Address
-							if ((_Address & 0x01) == 0) {
+							// RTC Object Definitions	
+							I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
+							RV3028 RTC(true, 1);
 
-								// 0x1234
-								// HB   LB
-								// 0x12 0x34
+							// Print Command State
+							#ifdef DEBUG
+								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							#endif
 
-								// Handle Low & High Byte
-								uint8_t _Low_Byte = lowByte(_Value);
-								uint8_t _High_Byte = highByte(_Value);
+							// Online Interval Update
+							#ifdef EEPROM_Online_Interval
 
-								// RTC Object Definitions	
-								I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
-								RV3028 RTC(true, 1);
+								if (_Address == EEPROM_Online_Interval) {
 
-								// Update EEPROM
-								bool _Response_High = RTC.Write_EEPROM(_Address, _High_Byte);
-								bool _Response_Low = RTC.Write_EEPROM(_Address + 0x01, _Low_Byte);
+									// Update EEPROM
+									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_Online_Interval, (uint8_t)_Value);
 
-								// Set Response Code
-								if (_Response_High and _Response_Low) _Response = Command_OK;
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Online Interval Update"));
+										Terminal_GSM.Text(10, 72, CYAN, String(_Value));
+									#endif
 
-							} else {
+									// Set Response Code
+									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
 
-								// Declare Response
-								_Response = Command_NOK;
+								} 
 
-							}
+							#endif
+
+							// Offline Interval Update
+							#ifdef EEPROM_Offline_Interval
+
+								if (_Address == EEPROM_Offline_Interval) {
+
+									// Update EEPROM
+									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_Offline_Interval, _Value);
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Offline Interval Update"));
+										Terminal_GSM.Text(11, 72, CYAN, String(_Value / 60));
+									#endif
+
+									// Set Response Code
+									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// Min Voltage Update
+							#ifdef EEPROM_V_Min
+
+								if (_Address == EEPROM_V_Min) {
+
+									// Handle Low & High Byte
+									uint8_t _Low_Byte = lowByte(_Value);
+									uint8_t _High_Byte = highByte(_Value);
+
+									// Update EEPROM
+									bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_V_Min, _High_Byte);
+									bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_V_Min + 0x01, _Low_Byte);
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("EEPROM Min Voltage Update"));
+									#endif
+
+									// Set Response Code
+									_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// Max Voltage Update
+							#ifdef EEPROM_V_Max
+
+								if (_Address == EEPROM_V_Max) {
+
+									// Handle Low & High Byte
+									uint8_t _Low_Byte = lowByte(_Value);
+									uint8_t _High_Byte = highByte(_Value);
+
+									// Update EEPROM
+									bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_V_Max, _High_Byte);
+									bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_V_Max + 0x01, _Low_Byte);
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("EEPROM Max Voltage Update"));
+									#endif
+
+									// Set Response Code
+									_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// Max Current Update
+							#ifdef EEPROM_I_Max
+
+								if (_Address == EEPROM_I_Max) {
+
+									// Handle Low & High Byte
+									uint8_t _Low_Byte = lowByte(_Value);
+									uint8_t _High_Byte = highByte(_Value);
+
+									// Update EEPROM
+									bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_I_Max, _High_Byte);
+									bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_I_Max + 0x01, _Low_Byte);
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("EEPROM Max Current Update"));
+									#endif
+
+									// Set Response Code
+									_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// Min Frequency Update
+							#ifdef EEPROM_FQ_Min
+
+								if (_Address == EEPROM_FQ_Min) {
+
+									// Update EEPROM
+									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_FQ_Min, _Value);
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Min Frequency Update"));
+									#endif
+
+									// Set Response Code
+									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// Max Frequency Update
+							#ifdef EEPROM_FQ_Max
+
+								if (_Address == EEPROM_FQ_Max) {
+
+									// Update EEPROM
+									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_FQ_Max, _Value);
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Max Frequency Update"));
+									#endif
+
+									// Set Response Code
+									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// Max VIMB Update
+							#ifdef EEPROM_VIMB_Max
+
+								if (_Address == EEPROM_VIMB_Max) {
+
+									// Update EEPROM
+									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_VIMB_Max, _Value);
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Max VIMB Update"));
+									#endif
+
+									// Set Response Code
+									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// Max IIMB Update
+							#ifdef EEPROM_IIMB_Max
+
+								if (_Address == EEPROM_IIMB_Max) {
+
+									// Update EEPROM
+									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_IIMB_Max, _Value);
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Max IIMB Update"));
+									#endif
+
+									// Set Response Code
+									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// Max Pressure Regresion Update
+							#ifdef EEPROM_P_Regression
+
+								if (_Address == EEPROM_P_Regression) {
+
+									// Update EEPROM
+									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_P_Regression, _Value);
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Min P Slope Update"));
+									#endif
+
+									// Set Response Code
+									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// Max Pressure Update
+							#ifdef EEPROM_PMAX
+
+								if (_Address == EEPROM_PMAX) {
+
+									// Handle Low & High Byte
+									uint8_t _Low_Byte = lowByte(_Value);
+									uint8_t _High_Byte = highByte(_Value);
+
+									// Update EEPROM
+									bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_PMAX, _High_Byte);
+									bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_PMAX + 0x01, _Low_Byte);
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("EEPROM P Max Update"));
+									#endif
+
+									// Set Response Code
+									_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// Min Pressure Update
+							#ifdef EEPROM_PMIN
+
+								if (_Address == EEPROM_PMIN) {
+
+									// Handle Low & High Byte
+									uint8_t _Low_Byte = lowByte(_Value);
+									uint8_t _High_Byte = highByte(_Value);
+
+									// Update EEPROM
+									bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_PMIN, _High_Byte);
+									bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_PMIN + 0x01, _Low_Byte);
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("EEPROM P Min Update"));
+									#endif
+
+									// Set Response Code
+									_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// STOP Mask Update
+							#ifdef EEPROM_STOP_MASK
+
+								if (_Address == EEPROM_STOP_MASK) {
+
+									// Handle Value
+									uint8_t _Payload[4];
+									
+									// Convert Value to Bytes
+									for (int i = 0; i < 4; i++) {
+										_Payload[i] = (_Value >> (8 * i)) & 0xFF;
+									}
+
+									// Update EEPROM
+									bool _EEPROM_Response_MSB_1 = RTC.Write_EEPROM(EEPROM_STOP_MASK, _Payload[3]);
+									bool _EEPROM_Response_MSB_2 = RTC.Write_EEPROM(EEPROM_STOP_MASK + 0x01, _Payload[2]);
+									bool _EEPROM_Response_LSB_1 = RTC.Write_EEPROM(EEPROM_STOP_MASK + 0x02, _Payload[1]);
+									bool _EEPROM_Response_LSB_2 = RTC.Write_EEPROM(EEPROM_STOP_MASK + 0x03, _Payload[0]);
+
+									// Set Variable
+									PowerStat.Status.Stop_Mask = _Value;
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_MSB_1 and _EEPROM_Response_MSB_2 and _EEPROM_Response_LSB_1 and _EEPROM_Response_LSB_2) ? GREEN : RED), F("EEPROM STOP Mask Update"));
+									#endif
+
+									// Set Response Code
+									_Response = ((_EEPROM_Response_MSB_1 and _EEPROM_Response_MSB_2 and _EEPROM_Response_LSB_1 and _EEPROM_Response_LSB_2) ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// PUBLISH Mask Update
+							#ifdef EEPROM_PUBLISH_MASK
+
+								if (_Address == EEPROM_PUBLISH_MASK) {
+
+									// Handle Value
+									uint8_t _Payload[4];
+									
+									// Convert Value to Bytes
+									for (int i = 0; i < 4; i++) {
+										_Payload[i] = (_Value >> (8 * i)) & 0xFF;
+									}
+
+									// Update EEPROM
+									bool _EEPROM_Response_MSB_1 = RTC.Write_EEPROM(EEPROM_PUBLISH_MASK, _Payload[3]);
+									bool _EEPROM_Response_MSB_2 = RTC.Write_EEPROM(EEPROM_PUBLISH_MASK + 0x01, _Payload[2]);
+									bool _EEPROM_Response_LSB_1 = RTC.Write_EEPROM(EEPROM_PUBLISH_MASK + 0x02, _Payload[1]);
+									bool _EEPROM_Response_LSB_2 = RTC.Write_EEPROM(EEPROM_PUBLISH_MASK + 0x03, _Payload[0]);
+
+									// Set Variable
+									PowerStat.Status.Publish_Mask = _Value;
+
+									// Print Command State
+									#ifdef DEBUG
+										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_MSB_1 and _EEPROM_Response_MSB_2 and _EEPROM_Response_LSB_1 and _EEPROM_Response_LSB_2) ? GREEN : RED), F("EEPROM PUBLISH Mask Update"));
+									#endif
+
+									// Set Response Code
+									_Response = ((_EEPROM_Response_MSB_1 and _EEPROM_Response_MSB_2 and _EEPROM_Response_LSB_1 and _EEPROM_Response_LSB_2) ? Command_OK : Command_NOK);
+
+								} 
+
+							#endif
+
+							// Print Command State
+							#ifdef DEBUG
+								if (_Response == Command_NOK) Terminal_GSM.Text(14, 44, RED, F("EEPROM Address Error"));
+							#endif
 
 							// Send Response
 							this->Response(200, _Response);
@@ -2660,11 +2990,6 @@
 							_Command_CallBack(_Event, _JSON_Data);
 
 						}
-
-						// Print Command State
-						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-						#endif
 
 					}
 

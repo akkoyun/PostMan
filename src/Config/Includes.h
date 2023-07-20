@@ -77,20 +77,21 @@
 	#define Command_Reset				999
 
 	// EEPROM Address Table
-	#define EEPROM_Online_Interval		0x00
-	#define EEPROM_Offline_Interval		0x02
-	#define EEPROM_Alarm_Duration		0x04
-	#define EEPROM_V_Min				0x0A
-	#define EEPROM_V_Max				0x0C
-	#define EEPROM_I_Max				0x0E
-	#define EEPROM_FQ_Min				0x10
-	#define EEPROM_FQ_Max				0x12
-	#define EEPROM_VIMB_Max				0x14
-	#define EEPROM_IIMB_Max				0x16
+//	#define EEPROM_Online_Interval		0x00
+	#define EEPROM_Offline_Interval		0x01
+	#define EEPROM_V_Min				0x06
+	#define EEPROM_V_Max				0x08
+	#define EEPROM_I_Max				0x0A
+	#define EEPROM_FQ_Min				0x0C
+	#define EEPROM_FQ_Max				0x0D
+	#define EEPROM_VIMB_Max				0x10
+	#define EEPROM_IIMB_Max				0x11
+	#define EEPROM_PMIN					0x1A
+	#define EEPROM_PMAX					0x1C
 	#define EEPROM_P_Regression			0x1E
-	#define EEPROM_PMAX					0x20
-	#define EEPROM_Current_Ratio		0x28
-	#define EEPROM_Fault_Control		0x2A
+	#define EEPROM_STOP_MASK			0x20
+	#define EEPROM_PUBLISH_MASK			0x24
+
 
 	// Define FOTA Status
 	#define FOTA_Download_OK			1

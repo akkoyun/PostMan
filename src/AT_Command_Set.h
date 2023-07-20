@@ -2849,7 +2849,7 @@
 					0, 		// Read Order
 					0, 		// Data Order
 					1000, 	// Time Out
-					40		// Buffer Size
+					60		// Buffer Size
 				};
 
 				// Declare Buffer
@@ -2889,6 +2889,8 @@
 				}
 
 				// \r\n#SS: 2,4,5.26.173.230,80\r\n\r\nOK\r\n
+				// \r\n#SS: 2,2,5.26.173.230,80,213.14.250.214,54883\r\n\r\nOK\r\n
+				// \r\n#SS: 2,2,000.000.000.000,80,000.000.000.000,54883\r\n\r\nOK\r\n
 
 				// Handle State
 				_State = (Buffer_Variable[9] - 48);

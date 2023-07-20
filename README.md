@@ -1,5 +1,14 @@
 # Release Notes
 
+## 0.13.2 (2023-07-20)
+
+* Delete EEPROM adres on definition.
+* Read_Masks function added.
+* Read masks on online procedure added.
+* Command update JSON object updated.
+* Command update function updated.
+* SS function buffer size updated.
+
 ## 0.13.1 (2023-07-19)
 
 * Terminal_Defaults file deleted.
