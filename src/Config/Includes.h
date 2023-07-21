@@ -6,20 +6,7 @@
 		#include "Config/Config.h"
 	#endif
 
-	// Serial Communications Definations
-	#define Serial_Terminal 			Serial
 
-	// Define Console Library
-	#ifdef GSM_Debug
-
-		#ifndef __Console__
-			#include <Console.h>
-		#endif
-
-		// Define Console Library
-		Console Terminal_GSM(Serial_Terminal);
-
-	#endif
 
 	// Define JSON Handler
 	#include <ArduinoJson.h>
@@ -105,5 +92,15 @@
 	#define FOTA_Download_Size_Error	21
 	#define FOTA_Download_Not_Save		21
 	#define FOTA_SD_Error				30
+
+	// Define HTTP Headers
+	#define HTTP_OK						200
+	#define HTTP_Accepted				202
+	#define HTTP_NoContent				204
+	#define HTTP_BadRequest				400
+	#define HTTP_NotFound				404
+	#define HTTP_MethodNotAllowed		405
+	#define HTTP_NotAcceptable			406
+
 
 #endif

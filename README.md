@@ -1,5 +1,25 @@
 # Release Notes
 
+## 0.13.3 (2023-07-21)
+
+* Terminal Console moved from includes to class.
+* HTTP headers added to definitions.
+* Send_JSON_Size definition added.
+* Hardware class updated and moved to postman class.
+* Power pin macros added.
+* IoT_Status, IoT_Module, IoT_Operator and IoT_FOTA classes moved to postman class.
+* On and Off functions added to postman class.
+* On and Off functions updated.
+* IoT_Status.Power variable removed.
+* Console library GSM_Command function adepted.
+* Some function ends updated.
+* Command variables added to class.
+* GET and Publish functions updated.
+* EEPROM get variables limit constant added.
+* FOTA download function moved to class internal.
+* Hardware.h file removed from library.
+* FTPRECV timeout updated.
+
 ## 0.13.2 (2023-07-20)
 
 * Delete EEPROM adres on definition.

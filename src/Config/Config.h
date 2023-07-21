@@ -12,8 +12,12 @@
 	#endif
 
 	// Define Packet Size
+	#define Send_JSON_Size		1024
 	#define Recieve_JSON_Size	128
 	#define Response_JSON_Size	32
+
+	// Serial Communications Definations
+	#define Serial_Terminal 			Serial
 
 	// Define Operator Defaults
 	#ifndef _PDP_APN_

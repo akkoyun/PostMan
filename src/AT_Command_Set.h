@@ -3696,7 +3696,7 @@
 					false, 	// Response State
 					0, 		// Read Order
 					0, 		// Data Order
-					10000,	// Time Out
+					15000,	// Time Out
 					255		// Buffer Size
 				};
 
@@ -3778,9 +3778,6 @@
 					// Handle CME Error
 					if (_CME == 606) _State = 1;
 					if (_CME == 614) _State = 2;
-
-					Serial.println("-------");
-					Serial.println(_CME);
 
 				}
 

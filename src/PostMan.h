@@ -16,21 +16,274 @@
 		#include "AT_Command_Set.h"
 	#endif
 
-	// Define Library Includes
-	#ifndef __PostMan_Hardware__
-		#include "Hardware.h"
+	// Define Console Library
+	#ifdef DEBUG
+
+		// Define Console Library
+		#ifndef __Console__
+			#include <Console.h>
+		#endif
+
 	#endif
 
+	// Define PIN Macros
+	#define POWER_MON (((PINJ) >> (PINJ3)) & 0x01)
+	#define COMMUNICATION(_State) (_State ? PORTJ &= 0b11101111 : PORTJ |= 0b00010000)
+	#define POWER_SWITCH(_State) (_State ? PORTH |= 0b00000100 : PORTH &= 0b11111011)
+	#define STAT_LED(_State) (_State ? PORTH &= 0b11101111 : PORTH |= 0b00010000)
+	#define ONOFF_SIGNAL(_State) (_State ? PORTJ |= 0b01000000 : PORTJ &= 0b10111111)
+	#define SHUTDOWN_SIGNAL(_State) (_State ? PORTJ |= 0b00100000 : PORTJ &= 0b11011111)
+
 	// Cloud Functions
-	class PostMan : private AT_Command_Set, private Hardware {
+	class PostMan : private AT_Command_Set, private Console {
 
 		// Private Functions
 		private:
+
+			// Define IoT Status Structure
+			struct Struct_Status {
+				bool		SIM_Inserted		= false;
+				uint8_t		SIM_PIN				= 0;
+				bool 		Initialize		 	= false;
+				bool		Connection			= false;
+				uint8_t		Socket_State		= 0;
+			} IoT_Status;
+
+			// Define IoT Module Structure
+			struct Struct_Module {
+
+				// Modem IMEI
+				char 		IMEI[17];
+
+				// GSM Serial ID
+				uint32_t	Serial_ID 			= 0;
+
+				// Manufacturer and Model
+				uint8_t 	Manufacturer 		= 0;
+				uint8_t 	Model 				= 0;
+
+				// Modem Firmware Version
+				char 		Firmware[10];
+
+			} IoT_Module;
+
+			// Define IoT Operator Structure
+			struct Struct_Network {
+
+				// SIM ICCID
+				char 		ICCID[21];
+
+				// Operator
+				uint16_t 	Code 				= 0;
+
+				// Location
+				uint16_t	LAC					= 0;
+				uint16_t	Cell_ID				= 0;
+
+				// Signal Level
+				uint8_t 	dBm					= 0;
+				uint8_t		Signal				= 0;
+
+				// IP Address
+				char 		IP_Address[16];
+
+				// Connection Time
+				uint8_t 	Connection_Time;
+
+			} IoT_Operator;
+
+			// Define IoT FOTA Structure
+			struct Struct_FOTA {
+				uint32_t		File_ID				= 0;
+				uint32_t		Download_Time		= 0;
+				uint32_t		File_Size			= 0;
+				uint32_t		SD_File_Size		= 0;
+				uint8_t 		Download_Status		= 0;
+			} IoT_FOTA;
 
 			// Define CallBack Functions
 			void (*_Send_Data_CallBack)(uint8_t);
 			void (*_Send_Response_CallBack)(uint16_t, uint8_t);
 			void (*_Command_CallBack)(uint16_t, char*);
+
+			// Power ON Sequence of Modem
+			bool ON(void) {
+
+				// Enable GSM Modem Power Switch
+				#ifdef GSM_Power_Switch
+					POWER_SWITCH(true);  
+				#endif
+				
+				// Enable GSM Modem LED Feed
+				#ifdef GSM_LED_Switch
+					STAT_LED(true);
+				#endif
+
+				// Set Communication Signal LOW
+				#ifdef GSM_Comm_Switch
+					COMMUNICATION(true);
+				#endif
+				
+				// Boot Delay
+				delay(2000);
+
+				// Turn On Modem
+				if (POWER_MON) {
+
+					// Command Delay
+					delay(300);
+
+					// End Function
+					return (true);
+
+				} else {
+
+					// Set On/Off Signal HIGH
+					ONOFF_SIGNAL(true);
+
+					// Command Delay
+					for (uint8_t i = 0; i < 36; i++) {
+
+						// Calculate Delay (2000)
+						uint8_t _Delay = 5000 / 37;
+
+						// Terminal Bar
+						#ifdef DEBUG
+							Console::Text(14, 4 + i, WHITE, F("▒"));
+						#endif
+
+						// Wait
+						delay(_Delay); 
+
+					}
+
+					// Set On/Off Signal LOW [PJ6]
+					ONOFF_SIGNAL(false);
+
+					// Clear Bar
+					#ifdef DEBUG
+						for (uint8_t i = 0; i < 36; i++) Console::Text(14, 4 + i, WHITE, F(" "));
+					#endif
+
+					// Control for PWMon (PH7)
+					if (POWER_MON) {
+
+						// End Function
+						return(true);
+
+					} else {
+
+						// Set Shut Down Signal HIGH
+						SHUTDOWN_SIGNAL(true);
+
+						// Command Delay
+						delay(200);
+
+						// Set Shut Down Signal LOW
+						SHUTDOWN_SIGNAL(false);
+
+					}
+
+				}
+
+				// End Function
+				return (false);
+
+			}
+
+			// Power OFF Sequence of Modem
+			bool OFF(void) {
+
+				// Turn Off Modem
+				if (POWER_MON) {
+
+					// Set On/Off Signal HIGH
+					ONOFF_SIGNAL(true);
+
+					// Command Delay
+					for (uint8_t i = 0; i < 36; i++) {
+
+						// Calculate Delay (2000)
+						uint8_t _Delay = 3000 / 37;
+
+						// Terminal Bar
+						#ifdef DEBUG
+							Console::Text(14, 4 + i, WHITE, F("▒"));
+						#endif
+
+						// Wait
+						delay(_Delay); 
+
+					}
+
+					// Set On/Off Signal LOW [PJ6]
+					ONOFF_SIGNAL(false);
+
+					// Clear Bar
+					#ifdef DEBUG
+						for (uint8_t i = 0; i < 36; i++) Console::Text(14, 4 + i, WHITE, F(" "));
+					#endif
+
+					// Set Variable
+					bool _Power = true;
+
+					// Read Current Time
+					const uint32_t _Current_Time = millis();
+
+					// Control for Power Monitor
+					while (_Power) {
+
+						// Control for PowerMonitor
+						if (!POWER_MON) {
+
+							// Set Variable
+							_Power = false;
+
+							// Disable GSM LED Power
+							#ifdef GSM_LED_Switch
+								STAT_LED(false);
+							#endif
+
+							// Disable GSM Modem Voltage Translator
+							#ifdef GSM_Comm_Switch
+								COMMUNICATION(false);
+							#endif
+
+							// Disable GSM Modem Main Power Switch
+							#ifdef GSM_Power_Switch
+								POWER_SWITCH(false);  
+							#endif
+
+						}
+
+						// Handle for timeout
+						if (millis() - _Current_Time >= 15000) break;;
+
+					}
+					
+				} else {
+
+					// Disable GSM LED Power
+					#ifdef GSM_LED_Switch
+						STAT_LED(false);
+					#endif
+
+					// Disable GSM Modem Voltage Translator
+					#ifdef GSM_Comm_Switch
+						COMMUNICATION(false);
+					#endif
+
+					// Disable GSM Modem Main Power Switch
+					#ifdef GSM_Power_Switch
+						POWER_SWITCH(false);  
+					#endif
+
+				}
+
+				// End Function
+				return (true);
+
+			}
 
             // Initialize GSM Modem
 			bool Initialize(void) {
@@ -41,19 +294,16 @@
 				// Initialize Modem Parameters
 				while (!this->IoT_Status.Initialize) {
 
-					// Get PowerMon
-					this->IoT_Status.Power = POWER_MON;
-
 					// Control for Power Monitor
-					if (this->IoT_Status.Power) {
+					if (POWER_MON) {
 
 						// Print Batch Description
 						#ifdef DEBUG
 
 							// Print Description
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, CYAN, F("Initializing Modem"));
-							Terminal_GSM.Text(14, 34, WHITE, F("[    ]"));
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, CYAN, F("Initializing Modem"));
+							Console::Text(14, 34, WHITE, F("[    ]"));
 
 						#endif
 
@@ -65,9 +315,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT"));
 							#endif
 
 							// Send Command
@@ -75,7 +323,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -85,9 +333,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("ATE0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("ATE0"));
 							#endif
 
 							// Send Command
@@ -95,7 +341,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -105,12 +351,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-
-								// Print Command State
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+SIMDET?"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
-
+								Console::GSM_Command(14, 4, F("AT+SIMDET?"));
 							#endif
 
 							// Send Command
@@ -120,11 +361,11 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 
 								// Print SIMDET State
-								if (this->IoT_Status.SIM_Inserted) Terminal_GSM.Text(14, 44, GREEN, F("SIM Card Detected"));
-								if (!this->IoT_Status.SIM_Inserted) Terminal_GSM.Text(14, 44, RED, F("SIM Card Not Detected"));
+								if (this->IoT_Status.SIM_Inserted) Console::Text(14, 44, GREEN, F("SIM Card Detected"));
+								if (!this->IoT_Status.SIM_Inserted) Console::Text(14, 44, RED, F("SIM Card Not Detected"));
 
 							#endif
 
@@ -138,9 +379,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#SEARCHLIM=100,100"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#SEARCHLIM=100,100"));
 							#endif
 
 							// Send Command
@@ -148,7 +387,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -158,9 +397,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+CFUN=1,0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+CFUN=1,0"));
 							#endif
 
 							// Send Command
@@ -168,7 +405,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -178,9 +415,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+CMEE=1"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+CMEE=1"));
 							#endif
 
 							// Send Command
@@ -188,7 +423,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -198,9 +433,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+FCLASS=0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+FCLASS=0"));
 							#endif
 
 							// Send Command
@@ -208,7 +441,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -218,9 +451,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT&K0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT&K0"));
 							#endif
 
 							// Send Command
@@ -228,7 +459,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -238,9 +469,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+CPIN?"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+CPIN?"));
 							#endif
 
 							// Send Command
@@ -248,7 +477,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 							// End Function
@@ -261,9 +490,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+CGSN"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+CGSN"));
 							#endif
 
 							// Send Command
@@ -273,10 +500,10 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 								
 								// Print IMEI
-								Terminal_GSM.Text(20, 24, CYAN, String(this->IoT_Module.IMEI));
+								Console::Text(20, 24, CYAN, String(this->IoT_Module.IMEI));
 
 							#endif
 
@@ -287,9 +514,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+GSN"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+GSN"));
 							#endif
 
 							// Send Command
@@ -299,10 +524,10 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 								
 								// Print Serial ID
-								Terminal_GSM.Text(21, 29, CYAN, String(this->IoT_Module.Serial_ID));
+								Console::Text(21, 29, CYAN, String(this->IoT_Module.Serial_ID));
 							
 							#endif
 
@@ -313,9 +538,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+CCID"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+CCID"));
 							#endif
 
 							// Send Command
@@ -325,10 +548,10 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 								
 								// Print ICCID
-								Terminal_GSM.Text(22, 20, CYAN, String(this->IoT_Operator.ICCID));
+								Console::Text(22, 20, CYAN, String(this->IoT_Operator.ICCID));
 
 							#endif
 
@@ -339,9 +562,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+GMI"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+GMI"));
 							#endif
 
 							// Send Command
@@ -351,10 +572,10 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14,35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14,35);
 								
 								// Print Manufacturer
-								Terminal_GSM.Text(17, 38, CYAN, String(this->IoT_Module.Manufacturer));
+								Console::Text(17, 38, CYAN, String(this->IoT_Module.Manufacturer));
 
 							#endif
 
@@ -365,9 +586,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+GMM"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+GMM"));
 							#endif
 
 							// Send Command
@@ -377,10 +596,10 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 								
 								// Print Model
-								Terminal_GSM.Text(18, 38, CYAN, String(this->IoT_Module.Model));
+								Console::Text(18, 38, CYAN, String(this->IoT_Module.Model));
 
 							#endif
 
@@ -391,9 +610,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+GMR"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+GMR"));
 							#endif
 
 							// Send Command
@@ -403,10 +620,10 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 
 								// Print Firmware Version
-								Terminal_GSM.Text(19, 30, CYAN, String(this->IoT_Module.Firmware));
+								Console::Text(19, 30, CYAN, String(this->IoT_Module.Firmware));
 
 							#endif
 
@@ -417,9 +634,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#SLED=2"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#SLED=2"));
 							#endif
 
 							// Send Command
@@ -427,7 +642,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -437,9 +652,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#SLEDSAV"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#SLEDSAV"));
 							#endif
 
 							// Send Command
@@ -447,7 +660,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -457,9 +670,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#E2RI=50,50"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#E2RI=50,50"));
 							#endif
 
 							// Send Command
@@ -467,7 +678,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -477,9 +688,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#TXMONMODE=1"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#TXMONMODE=1"));
 							#endif
 
 							// Send Command
@@ -487,30 +696,60 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
 
+						// Initialize Complete
+						return(true);
+
 					} else {
 
+						// Print Modem Not ON
+						#ifdef DEBUG
+
+							// Print Description
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, CYAN, F("Power ON Modem"));
+
+						#endif
+
 						// Power ON Modem
-						Hardware::Power(true);
+						this->ON();
 
 					}
 
 					// Handle WatchDog
 					if (_WD > 2) {
 
+						// Print Initializing Failed
+						#ifdef DEBUG
+
+							// Print Description
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, RED, F("Initializing Failed"));
+
+						#endif
+
 						// Clear States
 						this->IoT_Status.Initialize = false;
 						this->IoT_Status.SIM_Inserted = false;
 						this->IoT_Status.SIM_PIN = 0;
 
-						// End Function
+						// Not Initialized
 						return(false);
 
 					} else {
+
+						// Print Initializing Failed
+						#ifdef DEBUG
+
+							// Print Description
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, YELLOW, F("Retry Initializing"));
+
+						#endif
 
 						// Set WatchDog Variable
 						_WD++;
@@ -519,8 +758,8 @@
 
 				}
 
-				// End Function
-				return(true);
+				// Not Initialized
+				return(false);
 				
 			}
 
@@ -540,9 +779,9 @@
 						#ifdef DEBUG
 
 							// Print Description
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, CYAN, F("Connecting"));
-							Terminal_GSM.Text(14, 34, WHITE, F("[    ]"));
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, CYAN, F("Connecting"));
+							Console::Text(14, 34, WHITE, F("[    ]"));
 
 						#endif
 
@@ -554,9 +793,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+COPS=0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+COPS=0"));
 							#endif
 
 							// Send Command
@@ -564,7 +801,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -574,9 +811,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#AUTOBND=2"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#AUTOBND=2"));
 							#endif
 
 							// Send Command
@@ -584,7 +819,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -597,9 +832,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+CREG=1"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+CREG=1"));
 							#endif
 
 							// Declare Local Variables
@@ -611,7 +844,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -621,7 +854,7 @@
 
 							// Print Connection Time
 							#ifdef DEBUG
-								Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+								Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 							#endif
 
 							// Connection Wait Delay
@@ -634,9 +867,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+CREG?"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+CREG?"));
 							#endif
 
 							// Set Connection WatchDog
@@ -655,8 +886,8 @@
 
 								// Print Command State
 								#ifdef DEBUG
-									Terminal_GSM.Text(14, 35, CYAN, F("    "));
-									Terminal_GSM.Text(14, 36, RED, String(_CREG_Connection_Stat));
+									Console::Text(14, 35, CYAN, F("    "));
+									Console::Text(14, 36, RED, String(_CREG_Connection_Stat));
 								#endif
 
 								// Control for Connection
@@ -689,7 +920,7 @@
 
 										// Print Connection Time
 										#ifdef DEBUG
-											Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+											Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 										#endif
 
 										// Connection Wait Delay
@@ -710,7 +941,7 @@
 
 										// Print Connection Time
 										#ifdef DEBUG
-											Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+											Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 										#endif
 
 										// Connection Wait Delay
@@ -731,7 +962,7 @@
 
 										// Print Connection Time
 										#ifdef DEBUG
-											Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+											Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 										#endif
 
 										// Connection Wait Delay
@@ -751,7 +982,7 @@
 
 								// Print Command State
 								#ifdef DEBUG
-									Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+									Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 								#endif
 
 								// Set WD Variable
@@ -764,7 +995,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -774,9 +1005,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+CGREG=1"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+CGREG=1"));
 							#endif
 
 							// Declare Local Variables
@@ -788,7 +1017,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -798,7 +1027,7 @@
 
 							// Print Connection Time
 							#ifdef DEBUG
-								Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+								Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 							#endif
 
 							// Connection Wait Delay
@@ -811,9 +1040,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+CGREG?"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+CGREG?"));
 							#endif
 
 							// Set Connection WatchDog
@@ -832,8 +1059,8 @@
 
 								// Print Command State
 								#ifdef DEBUG
-									Terminal_GSM.Text(14, 35, CYAN, F("    "));
-									Terminal_GSM.Text(14, 36, RED, String(_CGREG_Connection_Stat));
+									Console::Text(14, 35, CYAN, F("    "));
+									Console::Text(14, 36, RED, String(_CGREG_Connection_Stat));
 								#endif
 
 								// Control for Connection
@@ -866,7 +1093,7 @@
 
 										// Print Connection Time
 										#ifdef DEBUG
-											Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+											Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 										#endif
 
 										// Connection Wait Delay
@@ -887,7 +1114,7 @@
 
 										// Print Connection Time
 										#ifdef DEBUG
-											Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+											Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 										#endif
 
 										// Connection Wait Delay
@@ -908,7 +1135,7 @@
 
 										// Print Connection Time
 										#ifdef DEBUG
-											Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+											Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 										#endif
 
 										// Connection Wait Delay
@@ -928,7 +1155,7 @@
 
 								// Print Command State
 								#ifdef DEBUG
-									Terminal_GSM.Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+									Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
 								#endif
 
 								// Set WD Variable
@@ -941,7 +1168,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -951,9 +1178,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+CGDCONT=1,IP,mgbs"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+CGDCONT=1,IP,mgbs"));
 							#endif
 
 							// Send Command
@@ -961,7 +1186,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -971,9 +1196,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#SGACT=1,1"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#SGACT=1,1"));
 							#endif
 
 							// Send Command
@@ -983,10 +1206,10 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 								
 								// Print IP Address
-								Terminal_GSM.Text(20, 64, CYAN, String(this->IoT_Operator.IP_Address));
+								Console::Text(20, 64, CYAN, String(this->IoT_Operator.IP_Address));
 
 							#endif
 
@@ -1000,9 +1223,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFG=3,1,1500,90,1200,0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#SCFG=3,1,1500,90,1200,0"));
 							#endif
 
 							// Send Command
@@ -1010,7 +1231,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -1020,9 +1241,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFGEXT=3,1,0,0,0,0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#SCFGEXT=3,1,0,0,0,0"));
 							#endif
 
 							// Send Command
@@ -1030,7 +1249,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -1040,9 +1259,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFGEXT2=3,1,0,0,0,0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#SCFGEXT2=3,1,0,0,0,0"));
 							#endif
 
 							// Send Command
@@ -1050,7 +1267,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -1060,9 +1277,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFG=2,1,1500,90,300,50"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#SCFG=2,1,1500,90,300,50"));
 							#endif
 
 							// Send Command
@@ -1070,7 +1285,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -1080,9 +1295,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#SCFGEXT=2,1,0,1,0,0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#SCFGEXT=2,1,0,1,0,0"));
 							#endif
 
 							// Send Command
@@ -1090,15 +1303,15 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, CYAN, F("Setting Firewall"));
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, CYAN, F("Setting Firewall"));
 						#endif
 
 						// FRWL Command 1 (Firewall Configuration)
@@ -1106,9 +1319,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#FRWL=1,***"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#FRWL=1,***"));
 							#endif
 
 							// Send Command
@@ -1116,7 +1327,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -1126,9 +1337,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#FRWL=1,***"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#FRWL=1,***"));
 							#endif
 
 							// Send Command
@@ -1136,7 +1345,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -1146,9 +1355,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#FRWL=1,***"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#FRWL=1,***"));
 							#endif
 
 							// Send Command
@@ -1156,7 +1363,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -1166,9 +1373,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#ICMP=2"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#ICMP=2"));
 							#endif
 
 							// Send Command
@@ -1176,7 +1381,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
@@ -1186,9 +1391,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#MONIZIP"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT#MONIZIP"));
 							#endif
 
 							// Send Command
@@ -1198,24 +1401,24 @@
 							#ifdef DEBUG
 
 								// Print Signal Level Value
-								Terminal_GSM.Text(18, 65, WHITE, F("[-   ]"));
-								Terminal_GSM.Text(18, 67, CYAN, String(this->IoT_Operator.dBm));
+								Console::Text(18, 65, WHITE, F("[-   ]"));
+								Console::Text(18, 67, CYAN, String(this->IoT_Operator.dBm));
 
 								// Print Signal Level Bar
-								Terminal_GSM.Text(18, 74, GRAY, F("_____"));
-								for (uint8_t i = 1; i <= this->IoT_Operator.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
+								Console::Text(18, 74, GRAY, F("_____"));
+								for (uint8_t i = 1; i <= this->IoT_Operator.Signal; i++) Console::Text(18, 73 + i, CYAN, F("X"));
 
 								// Print Operator Value
-								Terminal_GSM.Text(19, 74, CYAN, String(this->IoT_Operator.Code));
+								Console::Text(19, 74, CYAN, String(this->IoT_Operator.Code));
 
 								// Print Modem LAC Value
-								Terminal_GSM.Text(21, 75, CYAN, String(uint64ToString(this->IoT_Operator.LAC)));
+								Console::Text(21, 75, CYAN, String(uint64ToString(this->IoT_Operator.LAC)));
 
 								// Print Modem Cell ID Value
-								Terminal_GSM.Text(22, 75, CYAN, String(uint64ToString(this->IoT_Operator.Cell_ID)));
+								Console::Text(22, 75, CYAN, String(uint64ToString(this->IoT_Operator.Cell_ID)));
 
 								// Command Status
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 
 							#endif
 
@@ -1223,8 +1426,8 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, CYAN, F("Updating RTC"));
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, CYAN, F("Updating RTC"));
 						#endif
 
 						// CCLK Command (Real Time Clock Configuration)
@@ -1232,9 +1435,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT+CCLK"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::GSM_Command(14, 4, F("AT+CCLK"));
 							#endif
 
 							// Send Command
@@ -1242,24 +1443,32 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 						} else break;
 		
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
 						#endif
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 4, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 4, CYAN, F("PostOffice Connected"));
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 4, CYAN, F("                                    "));
+							Console::Text(14, 4, CYAN, F("PostOffice Connected"));
 						#endif
 
+						// Connection Success
+						return(true);
+
 					} else {
+
+						// Print Command State
+						#ifdef DEBUG
+							Console::Text(14, 4, CYAN, F("                                    "));
+							Console::Text(14, 4, CYAN, F("Modem Not Ready"));
+						#endif
 
 						// Initialize Modem
 						this->Initialize();
@@ -1269,6 +1478,12 @@
 					// Handle WatchDog
 					if (_WD > 4) {
 
+						// Print Command State
+						#ifdef DEBUG
+							Console::Text(14, 4, CYAN, F("                                    "));
+							Console::Text(14, 4, RED, F("Connection Failed"));
+						#endif
+
 						// Clear States
 						this->IoT_Status.SIM_Inserted = false;
 						this->IoT_Status.SIM_PIN = 0;
@@ -1276,20 +1491,22 @@
 						this->IoT_Status.Connection = false;
 
 						// Turn Off Modem
-						Hardware::Power(false);
+						this->OFF();
 
-						// End Function
+						// Connection Failed
 						return(false);
+
+					} else {
+
+						// Set WatchDog Variable
+						_WD++;
 
 					}
 
-					// Set WatchDog Variable
-					_WD++;
-
 				}
 								
-				// End Function
-				return(true);
+				// Connection Failed
+				return(false);
 
 			}
 
@@ -1304,14 +1521,12 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Terminal_GSM.Text(14, 34, WHITE, F("[    ]"));
+						Console::Text(14, 34, WHITE, F("[    ]"));
 					#endif
 
 					// Print Command State
 					#ifdef DEBUG
-						Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-						Terminal_GSM.Text(14, 4, WHITE, F("AT#SS=2"));
-						Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+						Console::GSM_Command(14, 4, F("AT#SS=2"));
 					#endif
 
 					// Send Command
@@ -1319,22 +1534,7 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
-					#endif
-
-					// Print Command State
-					#ifdef DEBUG
-
-						// Print Socket State
-						Terminal_GSM.Text(14, 44, CYAN, F("Socket [2] :                        "));
-
-						// Print Socket State
-						if (this->IoT_Status.Socket_State == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
-						else if (this->IoT_Status.Socket_State == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
-						else if (this->IoT_Status.Socket_State == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
-						else if (this->IoT_Status.Socket_State == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
-						else if (this->IoT_Status.Socket_State == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
-
+						Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 					#endif
 
 					// Activate Socket
@@ -1342,9 +1542,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-							Terminal_GSM.Text(14, 4, WHITE, F("AT#SL=2,1,80,255"));
-							Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							Console::GSM_Command(14, 4, F("AT#SL=2,1,80,255"));
 						#endif
 
 						// Activate Socket for Listen
@@ -1352,7 +1550,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.OK_Decide(_SL_Command, 14, 35);
+							Console::OK_Decide(_SL_Command, 14, 35);
 						#endif
 
 						// Command Delay
@@ -1360,9 +1558,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-							Terminal_GSM.Text(14, 4, WHITE, F("AT#SS=2"));
-							Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							Console::GSM_Command(14, 4, F("AT#SS=2"));
 						#endif
 
 						// Send Command
@@ -1370,21 +1566,21 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.OK_Decide(_SS_Command, 14, 35);
+							Console::OK_Decide(_SS_Command, 14, 35);
 						#endif
 
 						// Print Command State
 						#ifdef DEBUG
 							
 							// Print Socket State
-							Terminal_GSM.Text(14, 44, CYAN, F("Socket [2] :                        "));
+							Console::Text(14, 44, CYAN, F("Socket [2] :                        "));
 							
 							// Print Socket State
-							if (this->IoT_Status.Socket_State == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
-							else if (this->IoT_Status.Socket_State == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
-							else if (this->IoT_Status.Socket_State == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
-							else if (this->IoT_Status.Socket_State == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
-							else if (this->IoT_Status.Socket_State == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
+							if (this->IoT_Status.Socket_State == 0) Console::Text(14, 57, RED, F("Closed"));
+							else if (this->IoT_Status.Socket_State == 1) Console::Text(14, 57, GREEN, F("Active Transfer"));
+							else if (this->IoT_Status.Socket_State == 2) Console::Text(14, 57, GREEN, F("Suspended"));
+							else if (this->IoT_Status.Socket_State == 3) Console::Text(14, 57, GREEN, F("Pending Data"));
+							else if (this->IoT_Status.Socket_State == 4) Console::Text(14, 57, GREEN, F("Listening"));
 
 						#endif
 
@@ -1401,9 +1597,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-							Terminal_GSM.Text(14, 4, WHITE, F("AT#SL=2,0,80,255"));
-							Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							Console::GSM_Command(14, 4, F("AT#SL=2,0,80,255"));
 						#endif
 
 						// DeActivate Socket for Listen
@@ -1411,7 +1605,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.OK_Decide(_SL_Command, 14, 35);
+							Console::OK_Decide(_SL_Command, 14, 35);
 						#endif
 
 						// Command Delay
@@ -1419,9 +1613,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-							Terminal_GSM.Text(14, 4, WHITE, F("AT#SS=2"));
-							Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							Console::GSM_Command(14, 4, F("AT#SS=2"));
 						#endif
 
 						// Get Socket Status
@@ -1429,21 +1621,21 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.OK_Decide(this->IoT_Status.Connection, 14, 35);
+							Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 						#endif
 
 						// Print Command State
 						#ifdef DEBUG
 							
 							// Print Socket State
-							Terminal_GSM.Text(14, 44, CYAN, F("Socket [2] :                        "));
+							Console::Text(14, 44, CYAN, F("Socket [2] :                        "));
 							
 							// Print Socket State
-							if (this->IoT_Status.Socket_State == 0) Terminal_GSM.Text(14, 57, RED, F("Closed"));
-							else if (this->IoT_Status.Socket_State == 1) Terminal_GSM.Text(14, 57, GREEN, F("Active Transfer"));
-							else if (this->IoT_Status.Socket_State == 2) Terminal_GSM.Text(14, 57, GREEN, F("Suspended"));
-							else if (this->IoT_Status.Socket_State == 3) Terminal_GSM.Text(14, 57, GREEN, F("Pending Data"));
-							else if (this->IoT_Status.Socket_State == 4) Terminal_GSM.Text(14, 57, GREEN, F("Listening"));
+							if (this->IoT_Status.Socket_State == 0) Console::Text(14, 57, RED, F("Closed"));
+							else if (this->IoT_Status.Socket_State == 1) Console::Text(14, 57, GREEN, F("Active Transfer"));
+							else if (this->IoT_Status.Socket_State == 2) Console::Text(14, 57, GREEN, F("Suspended"));
+							else if (this->IoT_Status.Socket_State == 3) Console::Text(14, 57, GREEN, F("Pending Data"));
+							else if (this->IoT_Status.Socket_State == 4) Console::Text(14, 57, GREEN, F("Listening"));
 
 						#endif
 
@@ -1455,15 +1647,16 @@
 
 					}
 
-					// Print Command State
-					#ifdef DEBUG
-						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-					#endif
-
 					// End Function
-					return(true);
+					return(false);
 
 				} else { 
+
+					// Print Command State
+					#ifdef DEBUG
+						Console::Text(14, 4, CYAN, F("                                    "));
+						Console::Text(14, 4, RED, F("Modem Not Connected"));
+					#endif
 
 					// End Function
 					return(false);
@@ -1472,122 +1665,6 @@
 
 				// End Function
 				return(false);
-
-			}
-
-			// Clear Interrupt Function
-			void Clear_Interrupt(uint8_t _Pack_Type) {
-
-				// Clear Interrupt
-				switch (_Pack_Type) {
-
-					// Clear Online Interrupt
-					case Pack_Types::Online: {
-
-						// Clear Interrupt
-						this->Interrupt.Online = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear Timed Interrupt
-					case Pack_Types::Timed: {
-
-						// Clear Interrupt
-						this->Interrupt.Timed = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear Update Interrupt
-					case Pack_Types::Update: {
-
-						// Clear Interrupt
-						this->Interrupt.Update = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear Interrupt Interrupt
-					case Pack_Types::Interrupt: {
-
-						// Clear Interrupt
-						this->Interrupt.Interrupt = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear Alarm Interrupt
-					case Pack_Types::Alarm: {
-
-						// Clear Interrupt
-						this->Interrupt.Alarm = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear Offline Interrupt
-					case Pack_Types::Offline: {
-
-						// Clear Interrupt
-						this->Interrupt.Offline = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear FOTA_Download Interrupt
-					case Pack_Types::FOTA_Download: {
-
-						// Clear Interrupt
-						this->Interrupt.FOTA_Download = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear FOTA_Burn Interrupt
-					case Pack_Types::FOTA_Burn: {
-
-						// Clear Interrupt
-						this->Interrupt.FOTA_Burn = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear Other Interrupt
-					default: {
-
-						// Clear All Interrupts
-						this->Interrupt.Online = false;
-						this->Interrupt.Update = false;
-						this->Interrupt.Timed = false;
-						this->Interrupt.Interrupt = false;
-						this->Interrupt.Alarm = false;
-						this->Interrupt.Offline = false;
-						this->Interrupt.FOTA_Download = false;
-						this->Interrupt.FOTA_Burn = false;
-
-						// End Case
-						break;
-
-					}
-
-				}
 
 			}
 
@@ -1618,21 +1695,21 @@
 				#ifdef DEBUG
 
 					// Print Signal Level Value
-					Terminal_GSM.Text(18, 65, WHITE, F("[-   ]"));
-					Terminal_GSM.Text(18, 67, CYAN, String(this->IoT_Operator.dBm));
+					Console::Text(18, 65, WHITE, F("[-   ]"));
+					Console::Text(18, 67, CYAN, String(this->IoT_Operator.dBm));
 
 					// Print Signal Level Bar
-					Terminal_GSM.Text(18, 74, GRAY, F("_____"));
-					for (uint8_t i = 1; i <= this->IoT_Operator.Signal; i++) Terminal_GSM.Text(18, 73 + i, CYAN, F("X"));
+					Console::Text(18, 74, GRAY, F("_____"));
+					for (uint8_t i = 1; i <= this->IoT_Operator.Signal; i++) Console::Text(18, 73 + i, CYAN, F("X"));
 
 					// Print Operator Value
-					Terminal_GSM.Text(19, 74, CYAN, String(this->IoT_Operator.Code));
+					Console::Text(19, 74, CYAN, String(this->IoT_Operator.Code));
 
 					// Print Modem LAC Value
-					Terminal_GSM.Text(21, 75, CYAN, String(uint64ToString(this->IoT_Operator.LAC)));
+					Console::Text(21, 75, CYAN, String(uint64ToString(this->IoT_Operator.LAC)));
 
 					// Print Modem Cell ID Value
-					Terminal_GSM.Text(22, 75, CYAN, String(uint64ToString(this->IoT_Operator.Cell_ID)));
+					Console::Text(22, 75, CYAN, String(uint64ToString(this->IoT_Operator.Cell_ID)));
 
 				#endif
 
@@ -1648,10 +1725,10 @@
 				#define JSON_Segment_Payload
 
 				// Clear Pack
-				memset(this->JSON_Data.JSON_Pack, '\0', 1024);
+				memset(this->JSON_Data.JSON_Pack, '\0', Send_JSON_Size);
 
 				// Define JSON
-				StaticJsonDocument<1024> JSON;
+				StaticJsonDocument<Send_JSON_Size> JSON;
 
 				// Set Device ID Variable
 				if (_Pack_Type == Pack_Types::Online) {
@@ -1739,12 +1816,12 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Terminal_GSM.Text(5, 113, CYAN, String(Battery_Gauge.Instant_Voltage(), 2));
-						Terminal_GSM.Text(6, 112, CYAN, String(Battery_Gauge.Temperature(), 2));
-						Terminal_GSM.Text(7, 110, CYAN, String(Battery_Gauge.Average_Current(), 2));
-						Terminal_GSM.Text(8, 112, CYAN, String(Battery_Gauge.State_Of_Charge(), 2));
-						Terminal_GSM.Text(9, 112, CYAN, String(Battery_Gauge.Design_Capacity()));
-						Terminal_GSM.Text(10, 112, CYAN, String(Battery_Gauge.Instant_Capacity()));
+						Console::Text(5, 113, CYAN, String(Battery_Gauge.Instant_Voltage(), 2));
+						Console::Text(6, 112, CYAN, String(Battery_Gauge.Temperature(), 2));
+						Console::Text(7, 110, CYAN, String(Battery_Gauge.Average_Current(), 2));
+						Console::Text(8, 112, CYAN, String(Battery_Gauge.State_Of_Charge(), 2));
+						Console::Text(9, 112, CYAN, String(Battery_Gauge.Design_Capacity()));
+						Console::Text(10, 112, CYAN, String(Battery_Gauge.Instant_Capacity()));
 					#endif
 
 					// Charger
@@ -1886,17 +1963,118 @@
 
 				// Print Command State
 				#ifdef DEBUG
-					Terminal_GSM.Text(25, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(0, 75));
-					Terminal_GSM.Text(26, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(75, 150));
-					Terminal_GSM.Text(27, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(150, 225));
-					Terminal_GSM.Text(28, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(225, 300));
-					Terminal_GSM.Text(29, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(300, 375));
-					Terminal_GSM.Text(30, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(375, 450));
-					Terminal_GSM.Text(31, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(450, 525));
+					Console::Text(25, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(0, 75));
+					Console::Text(26, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(75, 150));
+					Console::Text(27, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(150, 225));
+					Console::Text(28, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(225, 300));
+					Console::Text(29, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(300, 375));
+					Console::Text(30, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(375, 450));
+					Console::Text(31, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(450, 525));
 				#endif
 
 				// End Function
 				return(_JSON_Size);
+
+			}
+
+
+
+
+
+
+
+
+
+
+			// Clear Interrupt Function
+			void Clear_Interrupt(uint8_t _Pack_Type) {
+
+				// Clear Interrupt
+				switch (_Pack_Type) {
+
+					// Clear Online Interrupt
+					case Pack_Types::Online: {
+
+						// Clear Interrupt
+						this->Interrupt.Online = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear Timed Interrupt
+					case Pack_Types::Timed: {
+
+						// Clear Interrupt
+						this->Interrupt.Timed = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear Update Interrupt
+					case Pack_Types::Update: {
+
+						// Clear Interrupt
+						this->Interrupt.Update = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear Interrupt Interrupt
+					case Pack_Types::Interrupt: {
+
+						// Clear Interrupt
+						this->Interrupt.Interrupt = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear Alarm Interrupt
+					case Pack_Types::Alarm: {
+
+						// Clear Interrupt
+						this->Interrupt.Alarm = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear Offline Interrupt
+					case Pack_Types::Offline: {
+
+						// Clear Interrupt
+						this->Interrupt.Offline = false;
+
+						// End Case
+						break;
+
+					}
+
+					// Clear Other Interrupt
+					default: {
+
+						// Clear All Interrupts
+						this->Interrupt.Online = false;
+						this->Interrupt.Update = false;
+						this->Interrupt.Timed = false;
+						this->Interrupt.Interrupt = false;
+						this->Interrupt.Alarm = false;
+						this->Interrupt.Offline = false;
+
+						// End Case
+						break;
+
+					}
+
+				}
 
 			}
 
@@ -1924,8 +2102,6 @@
 				this->PowerStat.Status.Stop_Mask = (this->PowerStat.Status.Stop_Mask << 8) | RTC.Read_EEPROM(EEPROM_STOP_MASK + 3);
 
 			}
-
-
 
 			// Serial ID Read Function
 			void Get_Serial_ID(char * _Serial_ID) {
@@ -1996,8 +2172,8 @@
 
 				// Print Command State
 				#ifdef DEBUG
-					Terminal_GSM.Text(8, 72, CYAN, String(_Sensor.Temperature(), 2));
-					Terminal_GSM.Text(9, 72, CYAN, String(_Sensor.Humidity(), 2));
+					Console::Text(8, 72, CYAN, String(_Sensor.Temperature(), 2));
+					Console::Text(9, 72, CYAN, String(_Sensor.Humidity(), 2));
 				#endif
 
 			}
@@ -2007,68 +2183,6 @@
 
 		// Public Functions
 		public:
-
-			// Define IoT Status Structure
-			struct Struct_Status {
-				bool 		Power				= false;
-				bool		SIM_Inserted		= false;
-				uint8_t		SIM_PIN				= 0;
-				bool 		Initialize		 	= false;
-				bool		Connection			= false;
-				uint8_t		Socket_State		= 0;
-			} IoT_Status;
-
-			// Define IoT Module Structure
-			struct Struct_Module {
-
-				// Modem IMEI
-				char 		IMEI[17];
-
-				// GSM Serial ID
-				uint32_t	Serial_ID 			= 0;
-
-				// Manufacturer and Model
-				uint8_t 	Manufacturer 		= 0;
-				uint8_t 	Model 				= 0;
-
-				// Modem Firmware Version
-				char 		Firmware[10];
-
-			} IoT_Module;
-
-			// Define IoT Operator Structure
-			struct Struct_Network {
-
-				// SIM ICCID
-				char 		ICCID[21];
-
-				// Operator
-				uint16_t 	Code 				= 0;
-
-				// Location
-				uint16_t	LAC					= 0;
-				uint16_t	Cell_ID				= 0;
-
-				// Signal Level
-				uint8_t 	dBm					= 0;
-				uint8_t		Signal				= 0;
-
-				// IP Address
-				char 		IP_Address[16];
-
-				// Connection Time
-				uint8_t 	Connection_Time;
-
-			} IoT_Operator;
-
-			// Define IoT FOTA Structure
-			struct Struct_FOTA {
-				uint32_t		File_ID				= 0;
-				uint32_t		Download_Time		= 0;
-				uint32_t		File_Size			= 0;
-				uint32_t		SD_File_Size		= 0;
-				uint8_t 		Download_Status		= 0;
-			} IoT_FOTA;
 
 			// Define Time Structure
 			struct Struct_Time {
@@ -2086,14 +2200,10 @@
 				// Send Interrupt
 				bool 		Online				= false;
 				bool 		Update				= false;
-				bool		Start				= false;
-				bool 		Stop				= false;
 				bool 		Timed				= false;
 				bool 		Interrupt			= false;
 				bool 		Alarm				= false;
 				bool 		Offline				= false;
-				bool 		FOTA_Download		= false;
-				bool 		FOTA_Burn			= false;
 
 				// Ring Interrupt
 				bool 		Ring				= false;
@@ -2122,6 +2232,23 @@
 					uint32_t Stop_Mask = 0x00000000;
 
 				} Status;
+
+				// Define Command Variable
+				struct Struct_Command {
+					bool 		Interval_Update			= false;
+					bool		Energy_Limit_Update		= false;
+					bool		Pressure_Limit_Update	= false;
+					bool		Mask_Update				= false;
+					bool		Start					= false;
+					bool 		Stop					= false;
+				} Command;
+
+
+
+
+
+
+
 
 				// Define Presure Structure
 				struct Struct_Pressure {
@@ -2154,17 +2281,19 @@
 				} JSON_Status;
 
 				// Define JSON
-				char JSON_Pack[1024];
+				char JSON_Pack[Send_JSON_Size];
 
 			} JSON_Data;
 
 			// PostMan Constructor
-			PostMan(Stream &_Serial) : AT_Command_Set(_Serial) {
+			PostMan(Stream &_Serial) : AT_Command_Set(_Serial), Console(Serial_Terminal) {
 
 				// Clear Interrupt
 				this->Clear_Interrupt(0);
 
 			}
+
+			// ************************************************************
 
 			// CallBack Definitions
 			void Event_PackData(void (*_Send_Data_CallBack)(uint8_t)) {
@@ -2196,7 +2325,7 @@
 
 				// Print Command State
 				#ifdef DEBUG
-					Terminal_GSM.Text(5, 63, GREEN, String(this->PowerStat.Device_ID));
+					Console::Text(5, 63, GREEN, String(this->PowerStat.Device_ID));
 				#endif
 
 				// Get Environment
@@ -2206,15 +2335,15 @@
 				this->Read_Masks();
 
 				// GSM Connection Squence
-				if (Hardware::Power(false)) {
+				if (this->OFF()) {
 
 					// GSM Initialize Sequence
 					if (this->Initialize()) {
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, CYAN, F("GSM Initialized"));
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, CYAN, F("GSM Initialized"));
 						#endif
 
 						// GSM Connect Sequence
@@ -2222,8 +2351,8 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-								Terminal_GSM.Text(14, 44, CYAN, F("GSM Connected"));
+								Console::Text(14, 44, CYAN, F("                                    "));
+								Console::Text(14, 44, CYAN, F("GSM Connected"));
 							#endif
 
 							// Define RTC
@@ -2237,8 +2366,8 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-								Terminal_GSM.Text(14, 44, CYAN, F("Device Time Updated"));
+								Console::Text(14, 44, CYAN, F("                                    "));
+								Console::Text(14, 44, CYAN, F("Device Time Updated"));
 							#endif
 
 							// GSM Socket Open Sequence
@@ -2246,22 +2375,22 @@
 
 								// Print Command State
 								#ifdef DEBUG
-									Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-									Terminal_GSM.Text(14, 44, CYAN, F("GSM Socket Listening"));
+									Console::Text(14, 44, CYAN, F("                                    "));
+									Console::Text(14, 44, CYAN, F("GSM Socket Listening"));
 								#endif
 
 							} else {
 
 								// Print Command State
 								#ifdef DEBUG
-									Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-									Terminal_GSM.Text(14, 44, RED, F("GSM Socket Open Error"));
+									Console::Text(14, 44, CYAN, F("                                    "));
+									Console::Text(14, 44, RED, F("GSM Socket Open Error"));
 								#endif
 							}
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+								Console::Text(14, 44, CYAN, F("                                    "));
 							#endif
 
 							// Publish Interrupt Status
@@ -2271,12 +2400,12 @@
 							
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-								Terminal_GSM.Text(14, 44, RED, F("GSM Connect Error"));
+								Console::Text(14, 44, CYAN, F("                                    "));
+								Console::Text(14, 44, RED, F("GSM Connect Error"));
 							#endif
 
 							// Power Down GSM
-							Hardware::Power(false);
+							this->OFF();
 
 						}
 
@@ -2284,12 +2413,12 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, RED, F("GSM Initialize Error"));
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, RED, F("GSM Initialize Error"));
 						#endif
 
 						// Power Down GSM
-						Hardware::Power(false);
+						this->OFF();
 
 					}
 
@@ -2297,8 +2426,8 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-						Terminal_GSM.Text(14, 44, RED, F("GSM Power Down Error"));
+						Console::Text(14, 44, CYAN, F("                                    "));
+						Console::Text(14, 44, RED, F("GSM Power Down Error"));
 					#endif
 
 				}
@@ -2319,144 +2448,201 @@
 					// Set Buffer Variable
 					this->PowerStat.Status.Buffer_Register = this->PowerStat.Status.Status_Register;
 
-					// Clear Interrupt
-					this->Clear_Interrupt(_Pack_Type);
+					// Print Command State
+					#ifdef DEBUG
+						Console::Text(14, 44, CYAN, F("                                    "));
+						Console::Text(14, 44, GREEN, F("Connecting to Server..."));
+					#endif
 
 					// Open Connection
 					if (AT_Command_Set::ATSD(3, 0, 80, 255, 88, 1, _BackEnd_Server_)) {
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, GREEN, F("Open Connection"));
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, GREEN, F("Parsing JSON Pack..."));
 						#endif
 
 						// Parse JSON
 						this->Parse_JSON(_Pack_Type);
 
-						// Send Data
-						AT_Command_Set::SSEND(3, 2, 0, _BackEnd_Server_, _BackEnd_EndPoint_, this->JSON_Data.JSON_Pack);
-
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, GREEN, F("Pack Sended"));
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, GREEN, F("Sending Pack..."));
 						#endif
 
-						// Declare Ring Status
-						uint16_t _Length;
+						// Sending Data
+						if (AT_Command_Set::SSEND(3, 2, 0, _BackEnd_Server_, _BackEnd_EndPoint_, this->JSON_Data.JSON_Pack)) {
 
-						// Get Ring Port
-						if (AT_Command_Set::Send_SRING(_Length)) {
+							// Print Command State
+							#ifdef DEBUG
+								Console::Text(14, 44, CYAN, F("                                    "));
+								Console::Text(14, 44, GREEN, F("Waiting Response..."));
+							#endif
 
-							// Declare Response Variable
-							char _Response[32];
-							memset(_Response, '\0', 32);
-							
-							// Declare Response Command
-							uint16_t _Response_Command;
+							// Declare Ring Length
+							uint16_t _Length;
 
-							// Command Delay
-							delay(50);
+							// Get Ring Port
+							if (AT_Command_Set::Send_SRING(_Length)) {
 
-							// Get Request Data
-							if (AT_Command_Set::SRECV(3, _Length, _Response)) {
-
-								// Define JSON Object
-								StaticJsonDocument<32> Incoming_JSON;
-
-								// Deserialize the JSON document
-								deserializeJson(Incoming_JSON, _Response);
-								
-								// Get Response Command
-								_Response_Command = Incoming_JSON["Event"];
-
-								// Print Command State
-								#ifdef DEBUG
-									Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-									Terminal_GSM.Text(14, 44, GREEN, F("Response --> [   ]"));
-									Terminal_GSM.Text(14, 58, YELLOW, String(_Response_Command));
-								#endif
-
-								// Calculate Send Time
-								uint32_t _Send_Duration = millis() - _Time;
-
-								// Print Command State
-								#ifdef DEBUG
-									Terminal_GSM.Text(2, 116, CYAN, F("     "));
-									Terminal_GSM.Text(2, 116, YELLOW, String(_Send_Duration));
-								#endif
+								// Declare Response Variable
+								char _Response[Response_JSON_Size];
+								memset(_Response, '\0', Response_JSON_Size);
 
 								// Command Delay
 								delay(50);
 
-								// Close Socket
-								AT_Command_Set::SH(3);
-
-								// Port Control
-								this->Listen(true);
-
-								// Send Data CallBack
-								_Send_Response_CallBack(_Response_Command, 0);
-
-								// Clear JSON Print
+								// Print Command State
 								#ifdef DEBUG
-									for (size_t i = 3; i < 79; i++) {
-										Terminal_GSM.Text(25, i, CYAN, F(" "));
-										Terminal_GSM.Text(26, i, CYAN, F(" "));
-										Terminal_GSM.Text(27, i, CYAN, F(" "));
-										Terminal_GSM.Text(28, i, CYAN, F(" "));
-										Terminal_GSM.Text(29, i, CYAN, F(" "));
-										Terminal_GSM.Text(30, i, CYAN, F(" "));
-										Terminal_GSM.Text(31, i, CYAN, F(" "));
-									}
+									Console::Text(14, 44, CYAN, F("                                    "));
+									Console::Text(14, 44, GREEN, F("Getting Response..."));
 								#endif
 
-								// Handle Response
-								if (_Response_Command == 200) {
+								// Get Request Data
+								if (AT_Command_Set::SRECV(3, _Length, _Response)) {
 
-									// End Function
-									return(true);
+									// Define JSON Object
+									StaticJsonDocument<Response_JSON_Size> Incoming_JSON;
 
-								} else if (_Response_Command == 201) {
+									// Deserialize the JSON document
+									deserializeJson(Incoming_JSON, _Response);
+									
+									// Get Response Command
+									uint16_t _Response_Command = Incoming_JSON["Event"];
 
 									// Print Command State
 									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-										Terminal_GSM.Text(14, 44, RED, F("Wrong Data Format"));
+										Console::Text(14, 44, CYAN, F("                                    "));
+										Console::Text(14, 44, GREEN, F("Response --> [   ]"));
+										Console::Text(14, 58, YELLOW, String(_Response_Command));
 									#endif
 
+									// Calculate Send Time
+									uint32_t _Send_Duration = millis() - _Time;
+
+									// Print Command State
+									#ifdef DEBUG
+										Console::Text(2, 116, CYAN, F("     "));
+										Console::Text(2, 116, YELLOW, String(_Send_Duration));
+									#endif
+
+									// Command Delay
+									delay(50);
+
+									// Print Command State
+									#ifdef DEBUG
+										Console::Text(14, 44, CYAN, F("                                    "));
+										Console::Text(14, 44, GREEN, F("Closing Socket..."));
+									#endif
+
+									// Closing Socket
+									if (AT_Command_Set::SH(3)) {
+
+										// Control for Incoming Call
+										this->Listen(true);
+
+										// Send Data CallBack
+										_Send_Response_CallBack(_Response_Command, 0);
+
+										// Clear JSON Print
+										#ifdef DEBUG
+											for (size_t i = 3; i < 79; i++) {
+												Console::Text(25, i, CYAN, F(" "));
+												Console::Text(26, i, CYAN, F(" "));
+												Console::Text(27, i, CYAN, F(" "));
+												Console::Text(28, i, CYAN, F(" "));
+												Console::Text(29, i, CYAN, F(" "));
+												Console::Text(30, i, CYAN, F(" "));
+												Console::Text(31, i, CYAN, F(" "));
+											}
+										#endif
+
+										// Clear Interrupt
+										this->Clear_Interrupt(_Pack_Type);
+
+										// Handle Response
+										if (_Response_Command == 200) {
+
+											// Print Command State
+											#ifdef DEBUG
+												Console::Text(14, 44, CYAN, F("                                    "));
+												Console::Text(14, 44, GREEN, F("Pack Saved"));
+											#endif
+
+											// End Function
+											return(true);
+
+										} else if (_Response_Command == 201) {
+
+											// Print Command State
+											#ifdef DEBUG
+												Console::Text(14, 44, CYAN, F("                                    "));
+												Console::Text(14, 44, RED, F("Wrong Data Format"));
+											#endif
+
+											// End Function
+											return(true);
+
+										}
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, CYAN, F("                                    "));
+											Console::Text(14, 44, RED, F("Closing Socket Error."));
+										#endif
+
+										// Clear JSON Print
+										#ifdef DEBUG
+											for (size_t i = 3; i < 79; i++) {
+												Console::Text(25, i, CYAN, F(" "));
+												Console::Text(26, i, CYAN, F(" "));
+												Console::Text(27, i, CYAN, F(" "));
+												Console::Text(28, i, CYAN, F(" "));
+												Console::Text(29, i, CYAN, F(" "));
+												Console::Text(30, i, CYAN, F(" "));
+												Console::Text(31, i, CYAN, F(" "));
+											}
+										#endif
+
+									}
+
+								} else {
+
+									// Send Data CallBack Error
+									_Send_Response_CallBack(0, 1);
+
+									// Print Command State
+									#ifdef DEBUG
+										Console::Text(14, 44, CYAN, F("                                    "));
+										Console::Text(14, 44, GREEN, F("Server Don't Response"));
+									#endif
+
+									// Port Control
+									this->Listen(true);
+
 									// End Function
-									return(true);
-
+									return(false);
+						
 								}
-
+								
 							} else {
 
 								// Send Data CallBack Error
-								_Send_Response_CallBack(0, 1);
-
-								// Print Command State
-								#ifdef DEBUG
-									Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-									Terminal_GSM.Text(14, 44, GREEN, F("Server Don't Response"));
-								#endif
+								_Send_Response_CallBack(0, 2);
 
 								// Port Control
 								this->Listen(true);
 
 								// End Function
 								return(false);
-					
+
 							}
-							
+
 						} else {
-
-							// Send Data CallBack Error
-							_Send_Response_CallBack(0, 2);
-
-							// Port Control
-							this->Listen(true);
 
 							// End Function
 							return(false);
@@ -2470,8 +2656,8 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, RED, F("Socket Dial Error"));
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, RED, F("Socket Dial Error"));
 						#endif
 
 						// Port Control
@@ -2482,15 +2668,12 @@
 
 					}
 
-					// End Function
-					return(true);
-
 				} else {
 
 					// Print Command State
 					#ifdef DEBUG
-						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-						Terminal_GSM.Text(14, 44, RED, F("No Connection"));
+						Console::Text(14, 44, CYAN, F("                                    "));
+						Console::Text(14, 44, RED, F("No Connection"));
 					#endif
 
 					// LOG JSON Data
@@ -2504,6 +2687,9 @@
 
 				}
 
+				// End Function
+				return(false);
+
 			}
 
 			// Get Server Command Function
@@ -2512,23 +2698,27 @@
 				// Control for Connection
 				if (this->IoT_Status.Connection) {
 
-					// Handle Ring
-					if (Receive_SRING()) {
+					// Wait for Sring
+					if (AT_Command_Set::Receive_SRING()) {
 
-						// Declare Request Length
+						// Declare Request Pack Length
 						uint16_t _Request_Length;
 
 						// Answer Socket
 						AT_Command_Set::SA(2, 1, _Request_Length);
 
-						// Declare Variable
+						// Declare JSON Variable
 						char _JSON_Data[Recieve_JSON_Size];
+						memset(_JSON_Data, '\0', Recieve_JSON_Size);
+
+						// Print Command State
+						#ifdef DEBUG
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, GREEN, F("Recieving Response..."));
+						#endif
 
 						// Get Request Data
 						AT_Command_Set::SRECV(2, _Request_Length, _JSON_Data);
-
-						// Declare Variable
-						uint16_t _Event = 0;
 
 						// Declare JSON Object
 						StaticJsonDocument<Recieve_JSON_Size> Incoming_JSON;
@@ -2536,34 +2726,43 @@
 						// Deserialize the JSON document
 						DeserializationError Error = deserializeJson(Incoming_JSON, _JSON_Data);
 
+						// Declare Event Variable
+						uint16_t _Event = 0;
+
 						// Handle JSON
 						if (!Error) _Event = Incoming_JSON["Request"]["Event"];
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-							Terminal_GSM.Text(14, 44, GREEN, F("Response --> [   ]"));
-							Terminal_GSM.Text(14, 58, YELLOW, String(_Event));
+							Console::Text(14, 44, CYAN, F("                                    "));
+							Console::Text(14, 44, GREEN, F("Response --> [   ]"));
+							Console::Text(14, 58, YELLOW, String(_Event));
 						#endif
 
 						// Declare Response
 						uint8_t _Response = Command_NOK;
+						uint16_t _Response_HTTP_Status = HTTP_NotFound;
 
 						// Handle Command
 						if (_Event == Command_Reset) {
 
-							// Send Response
-							this->Response(200, Command_OK);
+							// Beep Sound
+							#ifdef DEBUG
+								Console::Beep();
+							#endif
 
-							// Reset
+							// Send Response
+							this->Response(HTTP_OK, Command_OK);
+
+							// Reset Device
 							Reset();
 
 						} else if (_Event == Command_Update) {
 
 							// Send Response
-							this->Response(200, Command_OK);
+							this->Response(HTTP_OK, Command_OK);
 
-							// Set Command Interrupt
+							// Set Command
 							this->Interrupt.Update = true;
 
 						} else if (_Event == Command_Start) {
@@ -2571,16 +2770,19 @@
 							// Control for pump status
 							if (bitRead(PowerStat.Status.Status_Register, 0) == 1) {
 
+								// Set Command
+								this->PowerStat.Command.Start = false;
+
 								// Send Response
-								this->Response(200, Command_NOK);
+								this->Response(HTTP_MethodNotAllowed, Command_NOK);
 
 							} else {
 
 								// Send Response
-								this->Response(200, Command_OK);
+								this->Response(HTTP_OK, Command_OK);
 
-								// Set Command Interrupt
-								this->Interrupt.Start = true;
+								// Set Command
+								this->PowerStat.Command.Start = true;
 
 							}
 
@@ -2589,16 +2791,19 @@
 							// Control for pump status
 							if (bitRead(PowerStat.Status.Status_Register, 0) == 0) {
 
+								// Set Command
+								this->PowerStat.Command.Stop = false;
+
 								// Send Response
-								this->Response(200, Command_NOK);
+								this->Response(HTTP_MethodNotAllowed, Command_NOK);
 
 							} else {
 
 								// Send Response
-								this->Response(200, Command_OK);
+								this->Response(HTTP_OK, Command_OK);
 
-								// Set Command Interrupt
-								this->Interrupt.Stop = true;
+								// Set Command
+								this->PowerStat.Command.Stop = true;
 
 							}
 
@@ -2606,7 +2811,7 @@
 
 							// Beep Sound
 							#ifdef DEBUG
-								Terminal_GSM.Beep();
+								Console::Beep();
 							#endif
 
 							// Handle JSON
@@ -2619,7 +2824,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
+								Console::Text(14, 44, CYAN, F("                                    "));
 							#endif
 
 							// Online Interval Update
@@ -2627,17 +2832,40 @@
 
 								if (_Address == EEPROM_Online_Interval) {
 
-									// Update EEPROM
-									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_Online_Interval, (uint8_t)_Value);
+									// Handle Interval
+									if (_Value >= 2 and _Value <= 30) {
 
-									// Print Command State
-									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Online Interval Update"));
-										Terminal_GSM.Text(10, 72, CYAN, String(_Value));
-									#endif
+										// Update EEPROM
+										bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_Online_Interval, (uint8_t)_Value);
 
-									// Set Response Code
-									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("Online Interval Update"));
+										#endif
+
+										// Set Response Code
+										_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+										// Set Command
+										this->PowerStat.Command.Interval_Update = true;
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, RED, F("Interval Out of Range"));
+										#endif
+
+										// Set Response Code
+										_Response = Command_NOK;
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = HTTP_NotAcceptable;
+
+									}
 
 								} 
 
@@ -2648,17 +2876,40 @@
 
 								if (_Address == EEPROM_Offline_Interval) {
 
-									// Update EEPROM
-									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_Offline_Interval, _Value);
+									// Handle Interval
+									if (_Value >= 30 and _Value <= 60) {
 
-									// Print Command State
-									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Offline Interval Update"));
-										Terminal_GSM.Text(11, 72, CYAN, String(_Value / 60));
-									#endif
+										// Update EEPROM
+										bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_Offline_Interval, (uint8_t)_Value);
 
-									// Set Response Code
-									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("Offline Interval Update"));
+										#endif
+
+										// Set Response Code
+										_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+										// Set Command
+										this->PowerStat.Command.Interval_Update = true;
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, RED, F("Interval Out of Range"));
+										#endif
+
+										// Set Response Code
+										_Response = Command_NOK;
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = HTTP_NotAcceptable;
+
+									}
 
 								} 
 
@@ -2669,21 +2920,45 @@
 
 								if (_Address == EEPROM_V_Min) {
 
-									// Handle Low & High Byte
-									uint8_t _Low_Byte = lowByte(_Value);
-									uint8_t _High_Byte = highByte(_Value);
+									// Handle Voltage
+									if (_Value >= 150 and _Value <= 300) {
 
-									// Update EEPROM
-									bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_V_Min, _High_Byte);
-									bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_V_Min + 0x01, _Low_Byte);
+										// Handle Low & High Byte
+										uint8_t _Low_Byte = lowByte(_Value);
+										uint8_t _High_Byte = highByte(_Value);
 
-									// Print Command State
-									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("EEPROM Min Voltage Update"));
-									#endif
+										// Update EEPROM
+										bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_V_Min, _High_Byte);
+										bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_V_Min + 0x01, _Low_Byte);
 
-									// Set Response Code
-									_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("Min Voltage Limit Update"));
+										#endif
+
+										// Set Response Code
+										_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+										// Set Command
+										this->PowerStat.Command.Energy_Limit_Update = true;
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, RED, F("Limit Out of Range"));
+										#endif
+
+										// Set Response Code
+										_Response = Command_NOK;
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = HTTP_NotAcceptable;
+
+									}
 
 								} 
 
@@ -2694,21 +2969,45 @@
 
 								if (_Address == EEPROM_V_Max) {
 
-									// Handle Low & High Byte
-									uint8_t _Low_Byte = lowByte(_Value);
-									uint8_t _High_Byte = highByte(_Value);
+									// Handle Voltage
+									if (_Value >= 150 and _Value <= 300) {
 
-									// Update EEPROM
-									bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_V_Max, _High_Byte);
-									bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_V_Max + 0x01, _Low_Byte);
+										// Handle Low & High Byte
+										uint8_t _Low_Byte = lowByte(_Value);
+										uint8_t _High_Byte = highByte(_Value);
 
-									// Print Command State
-									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("EEPROM Max Voltage Update"));
-									#endif
+										// Update EEPROM
+										bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_V_Max, _High_Byte);
+										bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_V_Max + 0x01, _Low_Byte);
 
-									// Set Response Code
-									_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("Max Voltage Limit Update"));
+										#endif
+
+										// Set Response Code
+										_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+										// Set Command
+										this->PowerStat.Command.Energy_Limit_Update = true;
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, RED, F("Limit Out of Range"));
+										#endif
+
+										// Set Response Code
+										_Response = Command_NOK;
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = HTTP_NotAcceptable;
+
+									}
 
 								} 
 
@@ -2719,21 +3018,45 @@
 
 								if (_Address == EEPROM_I_Max) {
 
-									// Handle Low & High Byte
-									uint8_t _Low_Byte = lowByte(_Value);
-									uint8_t _High_Byte = highByte(_Value);
+									// Handle Current
+									if (_Value >= 0 and _Value <= 5) {
 
-									// Update EEPROM
-									bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_I_Max, _High_Byte);
-									bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_I_Max + 0x01, _Low_Byte);
+										// Handle Low & High Byte
+										uint8_t _Low_Byte = lowByte(_Value);
+										uint8_t _High_Byte = highByte(_Value);
 
-									// Print Command State
-									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("EEPROM Max Current Update"));
-									#endif
+										// Update EEPROM
+										bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_I_Max, _High_Byte);
+										bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_I_Max + 0x01, _Low_Byte);
 
-									// Set Response Code
-									_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("Max Current Limit Update"));
+										#endif
+
+										// Set Response Code
+										_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+										// Set Command
+										this->PowerStat.Command.Energy_Limit_Update = true;
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, RED, F("Limit Out of Range"));
+										#endif
+
+										// Set Response Code
+										_Response = Command_NOK;
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = HTTP_NotAcceptable;
+
+									}
 
 								} 
 
@@ -2744,16 +3067,40 @@
 
 								if (_Address == EEPROM_FQ_Min) {
 
-									// Update EEPROM
-									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_FQ_Min, _Value);
+									// Handle Frequency
+									if (_Value >= 40 and _Value <= 60) {
 
-									// Print Command State
-									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Min Frequency Update"));
-									#endif
+										// Update EEPROM
+										bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_FQ_Min, (uint8_t)_Value);
 
-									// Set Response Code
-									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("Min Frequency Limit Update"));
+										#endif
+
+										// Set Response Code
+										_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+										// Set Command
+										this->PowerStat.Command.Energy_Limit_Update = true;
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, RED, F("Frequency Out of Range"));
+										#endif
+
+										// Set Response Code
+										_Response = Command_NOK;
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = HTTP_NotAcceptable;
+
+									}
 
 								} 
 
@@ -2764,16 +3111,40 @@
 
 								if (_Address == EEPROM_FQ_Max) {
 
-									// Update EEPROM
-									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_FQ_Max, _Value);
+									// Handle Frequency
+									if (_Value >= 40 and _Value <= 60) {
 
-									// Print Command State
-									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Max Frequency Update"));
-									#endif
+										// Update EEPROM
+										bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_FQ_Max, (uint8_t)_Value);
 
-									// Set Response Code
-									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("Max Frequency Limit Update"));
+										#endif
+
+										// Set Response Code
+										_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+										// Set Command
+										this->PowerStat.Command.Energy_Limit_Update = true;
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, RED, F("Frequency Out of Range"));
+										#endif
+
+										// Set Response Code
+										_Response = Command_NOK;
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = HTTP_NotAcceptable;
+
+									}
 
 								} 
 
@@ -2784,16 +3155,40 @@
 
 								if (_Address == EEPROM_VIMB_Max) {
 
-									// Update EEPROM
-									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_VIMB_Max, _Value);
+									// Handle Voltage Imbalance
+									if (_Value >= 2 and _Value <= 20) {
 
-									// Print Command State
-									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Max VIMB Update"));
-									#endif
+										// Update EEPROM
+										bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_VIMB_Max, (uint8_t)_Value);
 
-									// Set Response Code
-									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("Max VIMB Limit Update"));
+										#endif
+
+										// Set Response Code
+										_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+										// Set Command
+										this->PowerStat.Command.Energy_Limit_Update = true;
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, RED, F("VIMB Out of Range"));
+										#endif
+
+										// Set Response Code
+										_Response = Command_NOK;
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = HTTP_NotAcceptable;
+
+									}
 
 								} 
 
@@ -2804,16 +3199,40 @@
 
 								if (_Address == EEPROM_IIMB_Max) {
 
-									// Update EEPROM
-									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_IIMB_Max, _Value);
+									// Handle Current Imbalance
+									if (_Value >= 2 and _Value <= 20) {
 
-									// Print Command State
-									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Max IIMB Update"));
-									#endif
+										// Update EEPROM
+										bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_IIMB_Max, (uint8_t)_Value);
 
-									// Set Response Code
-									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("Max IIMB Limit Update"));
+										#endif
+
+										// Set Response Code
+										_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+										// Set Command
+										this->PowerStat.Command.Energy_Limit_Update = true;
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, RED, F("IIMB Out of Range"));
+										#endif
+
+										// Set Response Code
+										_Response = Command_NOK;
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = HTTP_NotAcceptable;
+
+									}
 
 								} 
 
@@ -2824,16 +3243,40 @@
 
 								if (_Address == EEPROM_P_Regression) {
 
-									// Update EEPROM
-									bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_P_Regression, _Value);
+									// Handle Pressure Regression
+									if (_Value >= 2 and _Value <= 20) {
 
-									// Print Command State
-									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("EEPROM Min P Slope Update"));
-									#endif
+										// Update EEPROM
+										bool _EEPROM_Response = RTC.Write_EEPROM(EEPROM_P_Regression, (uint8_t)_Value);
 
-									// Set Response Code
-									_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, (_EEPROM_Response ? GREEN : RED), F("Max P Slope Limit Update"));
+										#endif
+
+										// Set Response Code
+										_Response = (_EEPROM_Response ? Command_OK : Command_NOK);
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+										// Set Command
+										this->PowerStat.Command.Pressure_Limit_Update = true;
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, RED, F("P Slope Out of Range"));
+										#endif
+
+										// Set Response Code
+										_Response = Command_NOK;
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = HTTP_NotAcceptable;
+
+									}
 
 								} 
 
@@ -2844,21 +3287,45 @@
 
 								if (_Address == EEPROM_PMAX) {
 
-									// Handle Low & High Byte
-									uint8_t _Low_Byte = lowByte(_Value);
-									uint8_t _High_Byte = highByte(_Value);
+									// Handle Pressure Max Limit
+									if (_Value >= 0 and _Value <= 10) {
 
-									// Update EEPROM
-									bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_PMAX, _High_Byte);
-									bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_PMAX + 0x01, _Low_Byte);
+										// Handle Low & High Byte
+										uint8_t _Low_Byte = lowByte(_Value);
+										uint8_t _High_Byte = highByte(_Value);
 
-									// Print Command State
-									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("EEPROM P Max Update"));
-									#endif
+										// Update EEPROM
+										bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_PMAX, _High_Byte);
+										bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_PMAX + 0x01, _Low_Byte);
 
-									// Set Response Code
-									_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("Max Pressure Limit Update"));
+										#endif
+
+										// Set Response Code
+										_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+										// Set Command
+										this->PowerStat.Command.Pressure_Limit_Update = true;
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, RED, F("Pressure Limit Out of Range"));
+										#endif
+
+										// Set Response Code
+										_Response = Command_NOK;
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = HTTP_NotAcceptable;
+
+									}
 
 								} 
 
@@ -2869,21 +3336,45 @@
 
 								if (_Address == EEPROM_PMIN) {
 
-									// Handle Low & High Byte
-									uint8_t _Low_Byte = lowByte(_Value);
-									uint8_t _High_Byte = highByte(_Value);
+									// Handle Pressure Min Limit
+									if (_Value >= 0 and _Value <= 10) {
 
-									// Update EEPROM
-									bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_PMIN, _High_Byte);
-									bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_PMIN + 0x01, _Low_Byte);
+										// Handle Low & High Byte
+										uint8_t _Low_Byte = lowByte(_Value);
+										uint8_t _High_Byte = highByte(_Value);
 
-									// Print Command State
-									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("EEPROM P Min Update"));
-									#endif
+										// Update EEPROM
+										bool _EEPROM_Response_H = RTC.Write_EEPROM(EEPROM_PMIN, _High_Byte);
+										bool _EEPROM_Response_L = RTC.Write_EEPROM(EEPROM_PMIN + 0x01, _Low_Byte);
 
-									// Set Response Code
-									_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, ((_EEPROM_Response_H and _EEPROM_Response_L) ? GREEN : RED), F("Min Pressure Limit Update"));
+										#endif
+
+										// Set Response Code
+										_Response = ((_EEPROM_Response_H and _EEPROM_Response_L) ? Command_OK : Command_NOK);
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+										// Set Command
+										this->PowerStat.Command.Pressure_Limit_Update = true;
+
+									} else {
+
+										// Print Command State
+										#ifdef DEBUG
+											Console::Text(14, 44, RED, F("Pressure Limit Out of Range"));
+										#endif
+
+										// Set Response Code
+										_Response = Command_NOK;
+
+										// Set Response HTTP Status
+										_Response_HTTP_Status = HTTP_NotAcceptable;
+
+									}
 
 								} 
 
@@ -2898,9 +3389,10 @@
 									uint8_t _Payload[4];
 									
 									// Convert Value to Bytes
-									for (int i = 0; i < 4; i++) {
-										_Payload[i] = (_Value >> (8 * i)) & 0xFF;
-									}
+									for (uint8_t i = 0; i < 4; i++) _Payload[i] = (_Value >> (8 * i)) & 0xFF;
+
+									// MSB1 MSB2 LSB1 LSB2
+									// 0x00 0x00 0x00 0x00
 
 									// Update EEPROM
 									bool _EEPROM_Response_MSB_1 = RTC.Write_EEPROM(EEPROM_STOP_MASK, _Payload[3]);
@@ -2913,11 +3405,17 @@
 
 									// Print Command State
 									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_MSB_1 and _EEPROM_Response_MSB_2 and _EEPROM_Response_LSB_1 and _EEPROM_Response_LSB_2) ? GREEN : RED), F("EEPROM STOP Mask Update"));
+										Console::Text(14, 44, ((_EEPROM_Response_MSB_1 and _EEPROM_Response_MSB_2 and _EEPROM_Response_LSB_1 and _EEPROM_Response_LSB_2) ? GREEN : RED), F("STOP Mask Update"));
 									#endif
 
 									// Set Response Code
 									_Response = ((_EEPROM_Response_MSB_1 and _EEPROM_Response_MSB_2 and _EEPROM_Response_LSB_1 and _EEPROM_Response_LSB_2) ? Command_OK : Command_NOK);
+
+									// Set Response HTTP Status
+									_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+									// Set Command
+									this->PowerStat.Command.Mask_Update = true;
 
 								} 
 
@@ -2932,9 +3430,10 @@
 									uint8_t _Payload[4];
 									
 									// Convert Value to Bytes
-									for (int i = 0; i < 4; i++) {
-										_Payload[i] = (_Value >> (8 * i)) & 0xFF;
-									}
+									for (uint8_t i = 0; i < 4; i++) _Payload[i] = (_Value >> (8 * i)) & 0xFF;
+
+									// MSB1 MSB2 LSB1 LSB2
+									// 0x00 0x00 0x00 0x00
 
 									// Update EEPROM
 									bool _EEPROM_Response_MSB_1 = RTC.Write_EEPROM(EEPROM_PUBLISH_MASK, _Payload[3]);
@@ -2947,11 +3446,17 @@
 
 									// Print Command State
 									#ifdef DEBUG
-										Terminal_GSM.Text(14, 44, ((_EEPROM_Response_MSB_1 and _EEPROM_Response_MSB_2 and _EEPROM_Response_LSB_1 and _EEPROM_Response_LSB_2) ? GREEN : RED), F("EEPROM PUBLISH Mask Update"));
+										Console::Text(14, 44, ((_EEPROM_Response_MSB_1 and _EEPROM_Response_MSB_2 and _EEPROM_Response_LSB_1 and _EEPROM_Response_LSB_2) ? GREEN : RED), F("EEPROM PUBLISH Mask Update"));
 									#endif
 
 									// Set Response Code
 									_Response = ((_EEPROM_Response_MSB_1 and _EEPROM_Response_MSB_2 and _EEPROM_Response_LSB_1 and _EEPROM_Response_LSB_2) ? Command_OK : Command_NOK);
+
+									// Set Response HTTP Status
+									_Response_HTTP_Status = (_Response ? HTTP_OK : HTTP_MethodNotAllowed);
+
+									// Set Command
+									this->PowerStat.Command.Mask_Update = true;
 
 								} 
 
@@ -2959,39 +3464,55 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								if (_Response == Command_NOK) Terminal_GSM.Text(14, 44, RED, F("EEPROM Address Error"));
+								if (_Response == Command_NOK) Console::Text(14, 44, RED, F("EEPROM Address Error"));
 							#endif
 
 							// Send Response
-							this->Response(200, _Response);
+							this->Response(_Response_HTTP_Status, _Response);
 
 						} else if (_Event == Command_FOTA_Download) {
 
 							// Get File ID
 							this->IoT_FOTA.File_ID = Incoming_JSON["Request"]["Firmware"];
 
-							// Set Command Interrupt
-							this->Interrupt.FOTA_Download = true;
+							// Control for File ID
+							if (this->IoT_FOTA.File_ID != 0) {
 
-							// Send Response
-							this->Response(200, Command_OK);
+								// Send Response
+								this->Response(200, Command_OK);
+
+								// Download Firmware
+								this->Download();
+
+								// Publish FOTA Info
+								this->Publish(FOTA_Info);
+
+							} else {
+
+								// Send Response
+								this->Response(HTTP_NotAcceptable, Command_NOK);
+								
+							}
 
 						} else if (_Event == Command_FOTA_Burn) {
 
 							// Send Response
-							this->Response(200, Command_OK);
+							this->Response(HTTP_OK, Command_OK);
 
-							// Set Command Interrupt
-							this->Interrupt.FOTA_Burn = true;
+							// Command Delay
+							delay(500);
+
+							// Enable FOTA
+							FOTA_BURN(true);
 
 						} else {
 
-							// Send Data CallBack
-							_Command_CallBack(_Event, _JSON_Data);
+							// Send Response
+							this->Response(HTTP_NotFound, Command_NOK);
 
 						}
 
-					}
+					} 
 
 					// Clear Interrupt
 					this->Interrupt.Ring = false;
@@ -3008,6 +3529,7 @@
 
 				// Declare Response Array
 				char _Response_JSON[Response_JSON_Size];
+				memset(_Response_JSON, '\0', Response_JSON_Size);
 
 				// Declare JSON Object
 				StaticJsonDocument<Response_JSON_Size> Response_JSON;
@@ -3026,8 +3548,8 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Terminal_GSM.Text(14, 44, CYAN, F("                                    "));
-						Terminal_GSM.Text(14, 44, GREEN, F("Response Sended"));
+						Console::Text(14, 44, CYAN, F("                                    "));
+						Console::Text(14, 44, GREEN, F("Response Sended"));
 					#endif
 
 					// Command Delay
@@ -3062,19 +3584,19 @@
 			}
 
 			// Firmware Download Function
-			bool Download(const uint16_t _File_ID) {
+			bool Download(void) {
 
 				// Check Connection Status
 				if (this->IoT_Status.Connection) {
 
 					// SD Message
 					#ifdef DEBUG
-						Terminal_GSM.Text(14, 44, GREEN, F("                               "));
-						Terminal_GSM.Text(14, 44, GREEN, F("Firmware download started."));
+						Console::Text(14, 44, GREEN, F("                               "));
+						Console::Text(14, 44, GREEN, F("Firmware download started."));
 					#endif
 
 					// Activate SD Mux
-					DDRC |= 0b00000001; PORTC |= 0b00000001;
+					SD_MUX(true);
 					
 					// SD Wait Delay
 					delay(200);
@@ -3090,8 +3612,8 @@
 
 						// SD Message
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, GREEN, F("                               "));
-							Terminal_GSM.Text(14, 44, GREEN, F("File Exist and Deleted."));
+							Console::Text(14, 44, GREEN, F("                               "));
+							Console::Text(14, 44, GREEN, F("File Exist and Deleted."));
 						#endif
 
 						// Command Delay
@@ -3120,9 +3642,9 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPOPEN=***,***,***"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::Text(14, 4, GRAY, F(".............................."));
+								Console::Text(14, 4, WHITE, F("AT#FTPOPEN=***,***,***"));
+								Console::Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// AT#FTPOPEN="165.227.154.147","fota","123456",1\r\n
@@ -3143,7 +3665,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(_Response, 14, 35);
+								Console::OK_Decide(_Response, 14, 35);
 							#endif
 
 							// Set Function Variable
@@ -3168,9 +3690,9 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPTYPE=0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::Text(14, 4, GRAY, F(".............................."));
+								Console::Text(14, 4, WHITE, F("AT#FTPTYPE=0"));
+								Console::Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// AT#FTPTYPE=0\r\n
@@ -3191,7 +3713,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(_Response, 14, 35);
+								Console::OK_Decide(_Response, 14, 35);
 							#endif
 
 							// Set Function Variable
@@ -3216,9 +3738,9 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPCWD=\"firmware\""));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::Text(14, 4, GRAY, F(".............................."));
+								Console::Text(14, 4, WHITE, F("AT#FTPCWD=\"firmware\""));
+								Console::Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// AT#FTPCWD="firmware"\r\n
@@ -3239,7 +3761,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(_Response, 14, 35);
+								Console::OK_Decide(_Response, 14, 35);
 							#endif
 
 							// Set Function Variable
@@ -3264,9 +3786,9 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPFSIZE=\"xxx.hex\""));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::Text(14, 4, GRAY, F(".............................."));
+								Console::Text(14, 4, WHITE, F("AT#FTPFSIZE=\"xxx.hex\""));
+								Console::Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// AT#FTPFSIZE="6.hex"\r\n
@@ -3275,7 +3797,7 @@
 							while (!_Response) {
 
 								// Send Command
-								_Response = AT_Command_Set::FTPFSIZE(_File_ID, this->IoT_FOTA.File_Size);
+								_Response = AT_Command_Set::FTPFSIZE(this->IoT_FOTA.File_ID, this->IoT_FOTA.File_Size);
 
 								// Set WD Variable
 								_WD++;
@@ -3287,7 +3809,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(_Response, 14, 35);
+								Console::OK_Decide(_Response, 14, 35);
 							#endif
 
 							// Set Function Variable
@@ -3312,9 +3834,9 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-								Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPGETPKT=\"xxx.hex\",0"));
-								Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+								Console::Text(14, 4, GRAY, F(".............................."));
+								Console::Text(14, 4, WHITE, F("AT#FTPGETPKT=\"xxx.hex\",0"));
+								Console::Text(14, 35, BLUE, F(" .. "));
 							#endif
 
 							// AT#FTPGETPKT="6.hex",0\r\n
@@ -3323,7 +3845,7 @@
 							while (!_Response) {
 
 								// Send Command
-								_Response = AT_Command_Set::FTPGETPKT(_File_ID, 0);
+								_Response = AT_Command_Set::FTPGETPKT(this->IoT_FOTA.File_ID, 0);
 
 								// Set WD Variable
 								_WD++;
@@ -3335,7 +3857,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Terminal_GSM.OK_Decide(_Response, 14, 35);
+								Console::OK_Decide(_Response, 14, 35);
 							#endif
 
 							// Set Function Variable
@@ -3352,14 +3874,14 @@
 						}
 
 						#ifdef DEBUG
-							Terminal_GSM.Text(17, 113, GREEN, String(_File_ID));
-							Terminal_GSM.Text(19, 112, GREEN, String(this->IoT_FOTA.File_Size));
+							Console::Text(17, 113, GREEN, String(this->IoT_FOTA.File_ID));
+							Console::Text(19, 112, GREEN, String(this->IoT_FOTA.File_Size));
 						#endif
 
 						// SD Message
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, GREEN, F("                               "));
-							Terminal_GSM.Text(14, 44, GREEN, F("SD Opened"));
+							Console::Text(14, 44, GREEN, F("                               "));
+							Console::Text(14, 44, GREEN, F("SD Opened"));
 						#endif
 
 						// Get Time
@@ -3375,8 +3897,8 @@
 
 						// SD Message
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, GREEN, F("                               "));
-							Terminal_GSM.Text(14, 44, GREEN, F("Downloading"));
+							Console::Text(14, 44, GREEN, F("                               "));
+							Console::Text(14, 44, GREEN, F("Downloading"));
 						#endif
 
 						// Get Data Pack From Buffer
@@ -3426,15 +3948,15 @@
 								#ifdef DEBUG
 									
 									// Print File Size
-									Terminal_GSM.Text(21, 114, CYAN, String("   "));
-									Terminal_GSM.Text(21, 114, CYAN, String(map(_SD_Recieve_Size, 0, this->IoT_FOTA.File_Size, 0, 100)));
+									Console::Text(21, 114, CYAN, String("   "));
+									Console::Text(21, 114, CYAN, String(map(_SD_Recieve_Size, 0, this->IoT_FOTA.File_Size, 0, 100)));
 
 									// Print Download Time
-									Terminal_GSM.Text(22, 111, CYAN, String("    "));
-									Terminal_GSM.Text(22, 111, CYAN, String(this->IoT_FOTA.Download_Time));
+									Console::Text(22, 111, CYAN, String("    "));
+									Console::Text(22, 111, CYAN, String(this->IoT_FOTA.Download_Time));
 
-									Terminal_GSM.Text(20, 112, WHITE, F("       "));
-									Terminal_GSM.Text(20, 112, WHITE, String(_SD_Recieve_Size));
+									Console::Text(20, 112, WHITE, F("       "));
+									Console::Text(20, 112, WHITE, String(_SD_Recieve_Size));
 
 								#endif
 
@@ -3459,8 +3981,8 @@
 
 							// SD Message
 							#ifdef DEBUG
-								Terminal_GSM.Text(14, 44, GREEN, F("                               "));
-								Terminal_GSM.Text(14, 44, GREEN, F("SD Closed"));
+								Console::Text(14, 44, GREEN, F("                               "));
+								Console::Text(14, 44, GREEN, F("SD Closed"));
 							#endif
 
 						}
@@ -3471,9 +3993,9 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 4, GRAY, F(".............................."));
-							Terminal_GSM.Text(14, 4, WHITE, F("AT#FTPCLOSE"));
-							Terminal_GSM.Text(14, 35, BLUE, F(" .. "));
+							Console::Text(14, 4, GRAY, F(".............................."));
+							Console::Text(14, 4, WHITE, F("AT#FTPCLOSE"));
+							Console::Text(14, 35, BLUE, F(" .. "));
 						#endif
 
 						// Process Command
@@ -3492,7 +4014,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Terminal_GSM.OK_Decide(_Response, 14, 35);
+							Console::OK_Decide(_Response, 14, 35);
 						#endif
 
 						// Set Function Variable
@@ -3510,8 +4032,8 @@
 
 						// SD Message
 						#ifdef DEBUG
-							Terminal_GSM.Text(14, 44, GREEN, F("                               "));
-							Terminal_GSM.Text(14, 44, RED, F("File Not Opened"));
+							Console::Text(14, 44, GREEN, F("                               "));
+							Console::Text(14, 44, RED, F("File Not Opened"));
 						#endif
 
 						// Set Download Status
@@ -3521,12 +4043,12 @@
 
 					// FOTA Download Status
 					#ifdef DEBUG
-						Terminal_GSM.Text(17, 113, GREEN, F("      "));
-						Terminal_GSM.Text(18, 115, GREEN, F("    "));
-						Terminal_GSM.Text(19, 112, GREEN, F("       "));
-						Terminal_GSM.Text(20, 112, GREEN, F("       "));
-						Terminal_GSM.Text(21, 114, GREEN, F("    "));
-						Terminal_GSM.Text(22, 111, GREEN, F("     "));
+						Console::Text(17, 113, GREEN, F("      "));
+						Console::Text(18, 115, GREEN, F("    "));
+						Console::Text(19, 112, GREEN, F("       "));
+						Console::Text(20, 112, GREEN, F("       "));
+						Console::Text(21, 114, GREEN, F("    "));
+						Console::Text(22, 111, GREEN, F("     "));
 					#endif
 
 					// Control for Existing File
@@ -3543,12 +4065,12 @@
 
 							// SD Message
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(true, 18, 115);
-								Terminal_GSM.Text(19, 112, GREEN, String(this->IoT_FOTA.SD_File_Size));
+								Console::OK_Decide(true, 18, 115);
+								Console::Text(19, 112, GREEN, String(this->IoT_FOTA.SD_File_Size));
 							#endif
 
-							// Turn SD MUX Enable LOW
-							PORTC &= 0b11111110;
+							// Turn Off SD MUX
+							SD_MUX(false);
 
 							// Set Download Status
 							this->IoT_FOTA.Download_Status = FOTA_Download_OK;
@@ -3560,15 +4082,15 @@
 
 							// SD Message
 							#ifdef GSM_Debug
-								Terminal_GSM.OK_Decide(false, 18, 115);
-								Terminal_GSM.Text(19, 112, RED, String(this->IoT_FOTA.SD_File_Size));
+								Console::OK_Decide(false, 18, 115);
+								Console::Text(19, 112, RED, String(this->IoT_FOTA.SD_File_Size));
 							#endif
-
-							// Turn SD MUX Enable LOW
-							PORTC &= 0b11111110;
 
 							// Set Download Status
 							this->IoT_FOTA.Download_Status = FOTA_FTP_File_Size_Error;
+
+							// Turn Off SD MUX
+							SD_MUX(false);
 
 							// End Function
 							return(false);
@@ -3580,8 +4102,8 @@
 
 					} else {
 
-						// Turn SD MUX Enable LOW
-						PORTC &= 0b11111110;
+						// Turn Off SD MUX
+						SD_MUX(false);
 
 						// Set Download Status
 						this->IoT_FOTA.Download_Status = FOTA_Download_Not_Save;
@@ -3638,8 +4160,8 @@
 
 					// Console Print
 					#ifdef DEBUG
-						Terminal_GSM.Text(14, 44, RED, F("                               "));
-						Terminal_GSM.Text(14, 44, RED, F("Error : Pack Writen to SD Card."));
+						Console::Text(14, 44, RED, F("                               "));
+						Console::Text(14, 44, RED, F("Error : Pack Writen to SD Card."));
 					#endif
 
 					// Clear Pack
