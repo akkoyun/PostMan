@@ -102,6 +102,9 @@
 			} IoT_FOTA;
 
 			// Define CallBack Functions
+			void (*_Environment_CallBack)(float&, float&);
+			void (*_Battery_CallBack)(float&, float&, float&, float&, uint16_t&, uint16_t&, uint8_t&);
+
 			void (*_Send_Data_CallBack)(uint8_t);
 			void (*_Send_Response_CallBack)(uint16_t, uint8_t);
 			void (*_Command_CallBack)(uint16_t, char*);
@@ -1725,7 +1728,7 @@
 				#define JSON_Segment_Payload
 
 				// Clear Pack
-				memset(this->JSON_Data.JSON_Pack, '\0', Send_JSON_Size);
+				memset(this->JSON_Pack, '\0', Send_JSON_Size);
 
 				// Define JSON
 				StaticJsonDocument<Send_JSON_Size> JSON;
@@ -1800,39 +1803,26 @@
 					// Define Power Section
 					JsonObject JSON_Battery = JSON_Device["Power"].createNestedObject("Battery");
 
-					// Battery Object
-					I2C_Functions I2C_MAX17055(__I2C_Addr_MAX17055__, true, 4);
+					// Declare Variables
+					float _IV = 0.0;
+					float _AC = 0.0;
+					float _SOC = 0.0;
+					float _Temp = 0.0;
+					uint16_t _DCAP = 0;
+					uint16_t _ICAP = 0;
+					uint8_t _State = 0;
 
-					// Create Charger Object
-					MAX17055 Battery_Gauge(true, 4);
-
-					// Set Battery Variables
-					JSON_Battery[F("IV")] = Battery_Gauge.Instant_Voltage();
-					JSON_Battery[F("AC")] = Battery_Gauge.Average_Current();
-					JSON_Battery[F("SOC")] = Battery_Gauge.State_Of_Charge();
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("T")] = Battery_Gauge.Temperature();
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("FB")] = Battery_Gauge.Design_Capacity();
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("IB")] = Battery_Gauge.Instant_Capacity();
-
-					// Print Command State
-					#ifdef DEBUG
-						Console::Text(5, 113, CYAN, String(Battery_Gauge.Instant_Voltage(), 2));
-						Console::Text(6, 112, CYAN, String(Battery_Gauge.Temperature(), 2));
-						Console::Text(7, 110, CYAN, String(Battery_Gauge.Average_Current(), 2));
-						Console::Text(8, 112, CYAN, String(Battery_Gauge.State_Of_Charge(), 2));
-						Console::Text(9, 112, CYAN, String(Battery_Gauge.Design_Capacity()));
-						Console::Text(10, 112, CYAN, String(Battery_Gauge.Instant_Capacity()));
-					#endif
-
-					// Charger
-					I2C_Functions I2C_BQ24298(__I2C_Addr_BQ24298__, true, 5);
-
-					// Create Charger Object
-					BQ24298 Charger(false, true, 5);
+					// Get Battery Variables
+					_Battery_CallBack(_IV, _AC, _SOC, _Temp, _DCAP, _ICAP, _State);
 
 					// Set Battery Variables
-					JSON_Battery[F("Charge")] = Charger.Charge_Status();
-
+					JSON_Battery[F("IV")] = _IV;
+					JSON_Battery[F("AC")] = _AC;
+					JSON_Battery[F("SOC")] = _SOC;
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("T")] = _Temp;
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("FB")] = _DCAP;
+					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("IB")] = _ICAP;
+					JSON_Battery[F("Charge")] = _State;
 
 				#endif
 
@@ -1904,21 +1894,29 @@
 					// Set Device ID Variable
 					if (_Pack_Type == Pack_Types::Online) {
 
+						// Declare Variables
+						float _Temperature = 0.0;
+						float _Humidity = 0.0;
+
 						// Get Environment
-						this->Get_Environment();
+						_Environment_CallBack(_Temperature, _Humidity);
 
 						// Set Device Environment Variable
-						JSON_Payload[F("PCBT")] = this->JSON_Data.JSON_Environment.Temperature;
-						JSON_Payload[F("PCBH")] = this->JSON_Data.JSON_Environment.Humidity;
+						JSON_Payload[F("PCBT")] = _Temperature;
+						JSON_Payload[F("PCBH")] = _Humidity;
 
 					} else if (_Pack_Type == Pack_Types::Update) {
 
+						// Declare Variables
+						float _Temperature = 0.0;
+						float _Humidity = 0.0;
+
 						// Get Environment
-						this->Get_Environment();
+						_Environment_CallBack(_Temperature, _Humidity);
 
 						// Set Device Environment Variable
-						JSON_Payload[F("PCBT")] = this->JSON_Data.JSON_Environment.Temperature;
-						JSON_Payload[F("PCBH")] = this->JSON_Data.JSON_Environment.Humidity;
+						JSON_Payload[F("PCBT")] = _Temperature;
+						JSON_Payload[F("PCBH")] = _Humidity;
 
 					} else if (_Pack_Type == Pack_Types::Timed) {
 
@@ -1959,17 +1957,17 @@
 				JSON.garbageCollect();
 
 				// Serialize JSON	
-				uint16_t _JSON_Size = serializeJson(JSON, this->JSON_Data.JSON_Pack);
+				uint16_t _JSON_Size = serializeJson(JSON, this->JSON_Pack);
 
 				// Print Command State
 				#ifdef DEBUG
-					Console::Text(25, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(0, 75));
-					Console::Text(26, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(75, 150));
-					Console::Text(27, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(150, 225));
-					Console::Text(28, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(225, 300));
-					Console::Text(29, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(300, 375));
-					Console::Text(30, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(375, 450));
-					Console::Text(31, 4, WHITE,String(this->JSON_Data.JSON_Pack).substring(450, 525));
+					Console::Text(25, 4, WHITE,String(this->JSON_Pack).substring(0, 75));
+					Console::Text(26, 4, WHITE,String(this->JSON_Pack).substring(75, 150));
+					Console::Text(27, 4, WHITE,String(this->JSON_Pack).substring(150, 225));
+					Console::Text(28, 4, WHITE,String(this->JSON_Pack).substring(225, 300));
+					Console::Text(29, 4, WHITE,String(this->JSON_Pack).substring(300, 375));
+					Console::Text(30, 4, WHITE,String(this->JSON_Pack).substring(375, 450));
+					Console::Text(31, 4, WHITE,String(this->JSON_Pack).substring(450, 525));
 				#endif
 
 				// End Function
@@ -1977,6 +1975,67 @@
 
 			}
 
+			// Serial ID Read Function
+			void Get_Serial_ID(char * _Serial_ID) {
+				
+				// Define Variable
+				uint64_t _Serial = 0x00;
+				uint8_t _Read_Byte;
+
+				// Define I2C Device
+				I2C_Functions I2C_DS28C(__I2C_Addr_DS28C__, true, 2);
+
+				// Set DS28C to I2C Mode
+				I2C_DS28C.Write_Register(0x08, 0x01, false);
+
+				// Send CRC  Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x07);
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 40-47 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x06);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 32-39 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x05);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 24-31 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x04);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 16-23 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x03);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 08-15 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x02);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send 00-07 bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x01);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Send Device Family bit Read Request to DS28C and read
+				_Read_Byte = I2C_DS28C.Read_Register(0x00);
+				_Serial = _Serial << 8;
+				_Serial |= (uint64_t)_Read_Byte;
+
+				// Set Array
+				String(uint64ToString(_Serial)).toCharArray(_Serial_ID, 17);
+
+				// Print Command State
+				#ifdef DEBUG
+					Console::Text(5, 63, GREEN, String(this->PowerStat.Device_ID));
+				#endif
+
+			}
 
 
 
@@ -2103,86 +2162,14 @@
 
 			}
 
-			// Serial ID Read Function
-			void Get_Serial_ID(char * _Serial_ID) {
-				
-				// Define Variable
-				uint64_t _Serial = 0x00;
-				uint8_t _Read_Byte;
-
-				// Define I2C Device
-				I2C_Functions I2C_DS28C(__I2C_Addr_DS28C__, true, 2);
-
-				// Set DS28C to I2C Mode
-				I2C_DS28C.Write_Register(0x08, 0x01, false);
-
-				// Send CRC  Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x07);
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 40-47 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x06);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 32-39 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x05);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 24-31 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x04);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 16-23 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x03);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 08-15 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x02);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send 00-07 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x01);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Send Device Family bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x00);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
-
-				// Set Array
-				String(uint64ToString(_Serial)).toCharArray(_Serial_ID, 17);
-
-			}
-
-			// Environment Read Function
-			void Get_Environment(void) {
-				
-				// Define Sensor Object
-				HDC2010 _Sensor(true, 3, 10, true);
-
-				// Set Device Environment Variable
-				this->JSON_Data.JSON_Environment.Temperature = _Sensor.Temperature();
-				this->JSON_Data.JSON_Environment.Humidity = _Sensor.Humidity();
-
-				// Print Command State
-				#ifdef DEBUG
-					Console::Text(8, 72, CYAN, String(_Sensor.Temperature(), 2));
-					Console::Text(9, 72, CYAN, String(_Sensor.Humidity(), 2));
-				#endif
-
-			}
-
 			// Reset Function
 			void(* Reset) (void) = 0;
 
 		// Public Functions
 		public:
+
+			// Define JSON
+			char JSON_Pack[Send_JSON_Size];
 
 			// Define Time Structure
 			struct Struct_Time {
@@ -2265,26 +2252,6 @@
 
 			} PowerStat;
 
-			// Define JSON Status Structure
-			struct JSON_Device_Structure {
-
-				// Define JSON Environment Structure
-				struct JSON_Environment_Structure {
-					float Temperature;
-					float Humidity;
-				} JSON_Environment;
-
-				// Define JSON Status Structure
-				struct JSON_Status_Structure {
-					uint16_t Device = 0;
-					uint16_t Fault = 0;
-				} JSON_Status;
-
-				// Define JSON
-				char JSON_Pack[Send_JSON_Size];
-
-			} JSON_Data;
-
 			// PostMan Constructor
 			PostMan(Stream &_Serial) : AT_Command_Set(_Serial), Console(Serial_Terminal) {
 
@@ -2296,6 +2263,19 @@
 			// ************************************************************
 
 			// CallBack Definitions
+			void Environment_CallBack(void (*_Environment_CallBack)(float&, float&)) {
+
+				// Set CallBack Functions
+				this->_Environment_CallBack = _Environment_CallBack;
+
+			}
+			void Battery_CallBack(void (*_Battery_CallBack)(float&, float&, float&, float&, uint16_t&, uint16_t&, uint8_t&)) {
+
+				// Set CallBack Functions
+				this->_Battery_CallBack = _Battery_CallBack;
+
+			}
+
 			void Event_PackData(void (*_Send_Data_CallBack)(uint8_t)) {
 
 				// Set CallBack Functions
@@ -2323,13 +2303,10 @@
 				// Get Serial ID
 				this->Get_Serial_ID(this->PowerStat.Device_ID);
 
-				// Print Command State
-				#ifdef DEBUG
-					Console::Text(5, 63, GREEN, String(this->PowerStat.Device_ID));
-				#endif
 
-				// Get Environment
-				this->Get_Environment();
+
+
+
 
 				// Read Masks
 				this->Read_Masks();
@@ -2473,7 +2450,7 @@
 						#endif
 
 						// Sending Data
-						if (AT_Command_Set::SSEND(3, 2, 0, _BackEnd_Server_, _BackEnd_EndPoint_, this->JSON_Data.JSON_Pack)) {
+						if (AT_Command_Set::SSEND(3, 2, 0, _BackEnd_Server_, _BackEnd_EndPoint_, this->JSON_Pack)) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -4147,7 +4124,7 @@
 					LOG_File.flush();
 
 					// Print Data
-					LOG_File.println(this->JSON_Data.JSON_Pack);
+					LOG_File.println(this->JSON_Pack);
 
 					// Print Line Feed
 					LOG_File.println("");
@@ -4165,7 +4142,7 @@
 					#endif
 
 					// Clear Pack
-					memset(this->JSON_Data.JSON_Pack, '\0', 1024);
+					memset(this->JSON_Pack, '\0', 1024);
 
 				}
 

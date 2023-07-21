@@ -1,5 +1,13 @@
 # Release Notes
 
+## 0.13.4 (2023-07-21)
+
+* Environment and Battery libraries removed from library.
+* Environment callback function added.
+* Battery callback function added.
+* JSON_Data structure deleted.
+* JSON parse function updated.
+
 ## 0.13.3 (2023-07-21)
 
 * Terminal Console moved from includes to class.
