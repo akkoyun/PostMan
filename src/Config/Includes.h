@@ -20,50 +20,60 @@
 	#include <SPI.h>
 	#include "SD.h"
 
+	// Define Pack Types
+	#ifndef PowerStat_Pack_Types
+		#define Pack_Online						1
+		#define Pack_Update						2
+		#define Pack_Timed						3
+		#define Pack_Interrupt					4
+		#define Pack_Alarm						5
+		#define Pack_Offline					6
+		#define Pack_FOTA_Info					90
+		#define Pack_FOTA_Download				91
+		#define Pack_FOTA_Burn					99
+	#endif
 
-	// PostOffice Pack Types
-	enum Pack_Types {
-		Online			= 1,
-		Update			= 2,
-		Timed			= 3,
-		Interrupt		= 4,
-		Alarm			= 5,
-		Offline			= 6,
-		FOTA_Info		= 90,
-		FOTA_Download	= 91,
-		FOTA_Burn		= 99
-	};
+	// Define PowerStat Commands
+	#ifndef PowerStat_Commands
 
-	// Define Commands
-	#define Command_OK					200
-	#define Command_NOK					201
-	#define Command_Start				256
-	#define Command_Stop				257
-	#define Command_Update				262
-	#define Command_Parameter			500
+		// Define Reset Command
+		#define Command_OK					200
+		#define Command_NOK					201
 
-	#define Command_Interval			301
-	#define Command_Current_Ratio		801
-	#define Command_FOTA_Download		900
-	#define Command_FOTA_Burn			901
-	#define Command_Reset				999
+		// Define Pump Commands
+		#define Command_Start				256
+		#define Command_Stop				257
 
+		// Define Device Commands
+		#define Command_Update				262
+		#define Command_Reset				999
+
+		// Define Device Configuration Commands
+		#define Command_Parameter			500
+
+		// Define FOTA Commands
+		#define Command_FOTA_Download		900
+		#define Command_FOTA_Burn			901
+
+	#endif
+	
 	// EEPROM Address Table
-//	#define EEPROM_Online_Interval		0x00
-	#define EEPROM_Offline_Interval		0x01
-	#define EEPROM_V_Min				0x06
-	#define EEPROM_V_Max				0x08
-	#define EEPROM_I_Max				0x0A
-	#define EEPROM_FQ_Min				0x0C
-	#define EEPROM_FQ_Max				0x0D
-	#define EEPROM_VIMB_Max				0x10
-	#define EEPROM_IIMB_Max				0x11
-	#define EEPROM_PMIN					0x1A
-	#define EEPROM_PMAX					0x1C
-	#define EEPROM_P_Regression			0x1E
-	#define EEPROM_STOP_MASK			0x20
-	#define EEPROM_PUBLISH_MASK			0x24
-
+	#ifndef PowerStat_EEPROM
+		#define EEPROM_Online_Interval		0x00
+		#define EEPROM_Offline_Interval		0x01
+		#define EEPROM_V_Min				0x06
+		#define EEPROM_V_Max				0x08
+		#define EEPROM_I_Max				0x0A
+		#define EEPROM_FQ_Min				0x0C
+		#define EEPROM_FQ_Max				0x0D
+		#define EEPROM_VIMB_Max				0x10
+		#define EEPROM_IIMB_Max				0x11
+		#define EEPROM_PMIN					0x1A
+		#define EEPROM_PMAX					0x1C
+		#define EEPROM_P_Regression			0x1E
+		#define EEPROM_STOP_MASK			0x20
+		#define EEPROM_PUBLISH_MASK			0x24
+	#endif
 
 	// Define FOTA Status
 	#define FOTA_Download_OK			1

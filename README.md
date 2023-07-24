@@ -1,5 +1,23 @@
 # Release Notes
 
+## 0.13.7 (2023-07-24)
+
+* No DEBUG version updated.
+* Pressure callback function added.
+
+## 0.13.6 (2023-07-24)
+
+* Pack type definitions added.
+* Includes file updated.
+* Start and Stop callback functions added.
+* ON and OFF functions moved to public.
+* Get_Serial_ID function deleted.
+* Mask read function deleted.
+* Pressure variables deleted.
+* Fake ring clear function added to Online procedure.
+* GET function updated.
+* Max and Min pressure limit control updated.
+
 ## 0.13.4 (2023-07-21)
 
 * Environment and Battery libraries removed from library.

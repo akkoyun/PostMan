@@ -104,189 +104,14 @@
 			// Define CallBack Functions
 			void (*_Environment_CallBack)(float&, float&);
 			void (*_Battery_CallBack)(float&, float&, float&, float&, uint16_t&, uint16_t&, uint8_t&);
+			void (*_Start_Pump_CallBack)(void);
+			void (*_Stop_Pump_CallBack)(void);
+			void (*_Pressure_CallBack)(float&, float&, float&, float&, float&, float&, uint16_t&);
+
 
 			void (*_Send_Data_CallBack)(uint8_t);
 			void (*_Send_Response_CallBack)(uint16_t, uint8_t);
 			void (*_Command_CallBack)(uint16_t, char*);
-
-			// Power ON Sequence of Modem
-			bool ON(void) {
-
-				// Enable GSM Modem Power Switch
-				#ifdef GSM_Power_Switch
-					POWER_SWITCH(true);  
-				#endif
-				
-				// Enable GSM Modem LED Feed
-				#ifdef GSM_LED_Switch
-					STAT_LED(true);
-				#endif
-
-				// Set Communication Signal LOW
-				#ifdef GSM_Comm_Switch
-					COMMUNICATION(true);
-				#endif
-				
-				// Boot Delay
-				delay(2000);
-
-				// Turn On Modem
-				if (POWER_MON) {
-
-					// Command Delay
-					delay(300);
-
-					// End Function
-					return (true);
-
-				} else {
-
-					// Set On/Off Signal HIGH
-					ONOFF_SIGNAL(true);
-
-					// Command Delay
-					for (uint8_t i = 0; i < 36; i++) {
-
-						// Calculate Delay (2000)
-						uint8_t _Delay = 5000 / 37;
-
-						// Terminal Bar
-						#ifdef DEBUG
-							Console::Text(14, 4 + i, WHITE, F("▒"));
-						#endif
-
-						// Wait
-						delay(_Delay); 
-
-					}
-
-					// Set On/Off Signal LOW [PJ6]
-					ONOFF_SIGNAL(false);
-
-					// Clear Bar
-					#ifdef DEBUG
-						for (uint8_t i = 0; i < 36; i++) Console::Text(14, 4 + i, WHITE, F(" "));
-					#endif
-
-					// Control for PWMon (PH7)
-					if (POWER_MON) {
-
-						// End Function
-						return(true);
-
-					} else {
-
-						// Set Shut Down Signal HIGH
-						SHUTDOWN_SIGNAL(true);
-
-						// Command Delay
-						delay(200);
-
-						// Set Shut Down Signal LOW
-						SHUTDOWN_SIGNAL(false);
-
-					}
-
-				}
-
-				// End Function
-				return (false);
-
-			}
-
-			// Power OFF Sequence of Modem
-			bool OFF(void) {
-
-				// Turn Off Modem
-				if (POWER_MON) {
-
-					// Set On/Off Signal HIGH
-					ONOFF_SIGNAL(true);
-
-					// Command Delay
-					for (uint8_t i = 0; i < 36; i++) {
-
-						// Calculate Delay (2000)
-						uint8_t _Delay = 3000 / 37;
-
-						// Terminal Bar
-						#ifdef DEBUG
-							Console::Text(14, 4 + i, WHITE, F("▒"));
-						#endif
-
-						// Wait
-						delay(_Delay); 
-
-					}
-
-					// Set On/Off Signal LOW [PJ6]
-					ONOFF_SIGNAL(false);
-
-					// Clear Bar
-					#ifdef DEBUG
-						for (uint8_t i = 0; i < 36; i++) Console::Text(14, 4 + i, WHITE, F(" "));
-					#endif
-
-					// Set Variable
-					bool _Power = true;
-
-					// Read Current Time
-					const uint32_t _Current_Time = millis();
-
-					// Control for Power Monitor
-					while (_Power) {
-
-						// Control for PowerMonitor
-						if (!POWER_MON) {
-
-							// Set Variable
-							_Power = false;
-
-							// Disable GSM LED Power
-							#ifdef GSM_LED_Switch
-								STAT_LED(false);
-							#endif
-
-							// Disable GSM Modem Voltage Translator
-							#ifdef GSM_Comm_Switch
-								COMMUNICATION(false);
-							#endif
-
-							// Disable GSM Modem Main Power Switch
-							#ifdef GSM_Power_Switch
-								POWER_SWITCH(false);  
-							#endif
-
-						}
-
-						// Handle for timeout
-						if (millis() - _Current_Time >= 15000) break;;
-
-					}
-					
-				} else {
-
-					// Disable GSM LED Power
-					#ifdef GSM_LED_Switch
-						STAT_LED(false);
-					#endif
-
-					// Disable GSM Modem Voltage Translator
-					#ifdef GSM_Comm_Switch
-						COMMUNICATION(false);
-					#endif
-
-					// Disable GSM Modem Main Power Switch
-					#ifdef GSM_Power_Switch
-						POWER_SWITCH(false);  
-					#endif
-
-				}
-
-				// End Function
-				return (true);
-
-			}
 
             // Initialize GSM Modem
 			bool Initialize(void) {
@@ -1548,12 +1373,20 @@
 							Console::GSM_Command(14, 4, F("AT#SL=2,1,80,255"));
 						#endif
 
-						// Activate Socket for Listen
-						bool _SL_Command = AT_Command_Set::SL(2, 1, 80, 255);
-
 						// Print Command State
 						#ifdef DEBUG
+
+							// Activate Socket for Listen
+							bool _SL_Command = AT_Command_Set::SL(2, 1, 80, 255);
+
+							// Print Command State
 							Console::OK_Decide(_SL_Command, 14, 35);
+
+						#else
+
+							// Activate Socket for Listen
+							AT_Command_Set::SL(2, 1, 80, 255);
+
 						#endif
 
 						// Command Delay
@@ -1564,12 +1397,20 @@
 							Console::GSM_Command(14, 4, F("AT#SS=2"));
 						#endif
 
-						// Send Command
-						bool _SS_Command = AT_Command_Set::SS(2, this->IoT_Status.Socket_State);
-
 						// Print Command State
 						#ifdef DEBUG
+
+							// Send Command
+							bool _SS_Command = AT_Command_Set::SS(2, this->IoT_Status.Socket_State);
+
+							// Print Command State
 							Console::OK_Decide(_SS_Command, 14, 35);
+
+						#else
+
+							// Send Command
+							AT_Command_Set::SS(2, this->IoT_Status.Socket_State);
+
 						#endif
 
 						// Print Command State
@@ -1603,12 +1444,20 @@
 							Console::GSM_Command(14, 4, F("AT#SL=2,0,80,255"));
 						#endif
 
-						// DeActivate Socket for Listen
-						bool _SL_Command = AT_Command_Set::SL(2, 0, 80, 255);
-
 						// Print Command State
 						#ifdef DEBUG
+
+							// DeActivate Socket for Listen
+							bool _SL_Command = AT_Command_Set::SL(2, 0, 80, 255);
+
+							// Print Command State
 							Console::OK_Decide(_SL_Command, 14, 35);
+
+						#else
+
+							// DeActivate Socket for Listen
+							AT_Command_Set::SL(2, 0, 80, 255);
+
 						#endif
 
 						// Command Delay
@@ -1734,38 +1583,38 @@
 				StaticJsonDocument<Send_JSON_Size> JSON;
 
 				// Set Device ID Variable
-				if (_Pack_Type == Pack_Types::Online) {
+				if (_Pack_Type == Pack_Online) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Online"));
 
-				} else if (_Pack_Type == Pack_Types::Update) {
+				} else if (_Pack_Type == Pack_Update) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Update"));
 
-				} else if (_Pack_Type == Pack_Types::Timed) {
+				} else if (_Pack_Type == Pack_Timed) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Timed"));
 
-				} else if (_Pack_Type == Pack_Types::Interrupt) {
+				} else if (_Pack_Type == Pack_Interrupt) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Interrupt"));
 
 					// Get Data
-				} else if (_Pack_Type == Pack_Types::Alarm) {
+				} else if (_Pack_Type == Pack_Alarm) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Alarm"));
 
-				} else if (_Pack_Type == Pack_Types::Offline) {
+				} else if (_Pack_Type == Pack_Offline) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Offline"));
 
-				} else if (_Pack_Type == Pack_Types::FOTA_Info) {
+				} else if (_Pack_Type == Pack_FOTA_Info) {
 
 					// Set Command
 					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("FOTA_Download"));
@@ -1790,10 +1639,10 @@
 					JSON_Info[F("ID")] = this->PowerStat.Device_ID;
 					
 					// Set Device Hardware Version Variable
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Info[F("Hardware")] = F(__Hardware__);
+					if (_Pack_Type == Pack_Online or _Pack_Type == Pack_Update) JSON_Info[F("Hardware")] = F(__Hardware__);
 
 					// Set Device Firmware Version Variable
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Info[F("Firmware")] = F(__Firmware__);
+					if (_Pack_Type == Pack_Online or _Pack_Type == Pack_Update) JSON_Info[F("Firmware")] = F(__Firmware__);
 
 				#endif
 
@@ -1819,9 +1668,9 @@
 					JSON_Battery[F("IV")] = _IV;
 					JSON_Battery[F("AC")] = _AC;
 					JSON_Battery[F("SOC")] = _SOC;
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("T")] = _Temp;
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("FB")] = _DCAP;
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Battery[F("IB")] = _ICAP;
+					if (_Pack_Type == Pack_Online or _Pack_Type == Pack_Update) JSON_Battery[F("T")] = _Temp;
+					if (_Pack_Type == Pack_Online or _Pack_Type == Pack_Update) JSON_Battery[F("FB")] = _DCAP;
+					if (_Pack_Type == Pack_Online or _Pack_Type == Pack_Update) JSON_Battery[F("IB")] = _ICAP;
 					JSON_Battery[F("Charge")] = _State;
 
 				#endif
@@ -1833,7 +1682,7 @@
 					JsonObject JSON_GSM = JSON_Device["IoT"].createNestedObject(F("GSM"));
 
 					// Get GSM Parameters
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) {
+					if (_Pack_Type == Pack_Online or _Pack_Type == Pack_Update) {
 
 						// Define IoT Module
 						JsonObject JSON_Module = JSON_GSM.createNestedObject(F("Module"));
@@ -1854,8 +1703,8 @@
 					this->Update_Connection_Variables();
 
 					// Set Device GSM Connection Detail Section
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update) JSON_Operator[F("SIM_Type")] = 1;
-					if (_Pack_Type == Pack_Types::Online or _Pack_Type == Pack_Types::Update)JSON_Operator[F("ICCID")] = this->IoT_Operator.ICCID;
+					if (_Pack_Type == Pack_Online or _Pack_Type == Pack_Update) JSON_Operator[F("SIM_Type")] = 1;
+					if (_Pack_Type == Pack_Online or _Pack_Type == Pack_Update)JSON_Operator[F("ICCID")] = this->IoT_Operator.ICCID;
 					JSON_Operator[F("Code")] = this->IoT_Operator.Code;
 					JSON_Operator[F("dBm")] = this->IoT_Operator.dBm;
 					JSON_Operator[F("LAC")] = uint64ToString(this->IoT_Operator.LAC);
@@ -1873,8 +1722,8 @@
 					RV3028 RTC(true, 1);
 
 					// Declare TimeStamp Variable
-					char _TimeStamp[25];
-					memset(_TimeStamp, '\0', 25);
+					char _TimeStamp[26];
+					memset(_TimeStamp, '\0', 26);
 
 					// Handle TimeStamp
 					sprintf(_TimeStamp, "20%02hhu-%02hhu-%02hhu %02hhu:%02hhu:%02hhu", RTC.Get_Year(), RTC.Get_Month(), RTC.Get_Date(), RTC.Get_Hour(), RTC.Get_Minute(), RTC.Get_Second());
@@ -1892,7 +1741,7 @@
 					_Send_Data_CallBack(_Pack_Type);
 
 					// Set Device ID Variable
-					if (_Pack_Type == Pack_Types::Online) {
+					if (_Pack_Type == Pack_Online) {
 
 						// Declare Variables
 						float _Temperature = 0.0;
@@ -1905,7 +1754,7 @@
 						JSON_Payload[F("PCBT")] = _Temperature;
 						JSON_Payload[F("PCBH")] = _Humidity;
 
-					} else if (_Pack_Type == Pack_Types::Update) {
+					} else if (_Pack_Type == Pack_Update) {
 
 						// Declare Variables
 						float _Temperature = 0.0;
@@ -1918,27 +1767,42 @@
 						JSON_Payload[F("PCBT")] = _Temperature;
 						JSON_Payload[F("PCBH")] = _Humidity;
 
-					} else if (_Pack_Type == Pack_Types::Timed) {
+					} else if (_Pack_Type == Pack_Timed) {
+
+						// Declare Pressure Variables
+						float _Instant = 0.0;
+						float _Min = 0.0;
+						float _Max = 0.0;
+						float _Avg = 0.0;
+						float _Deviation = 0.0;
+						float _Slope = 0.0;
+						uint16_t _Count = 0;
+
+						// Get Environment
+						_Pressure_CallBack(_Instant, _Min, _Max, _Avg, _Deviation, _Slope, _Count);
 
 						// Set Presure Variable
 						JsonArray JSON_Pressure = JSON_Payload.createNestedArray(F("Pressure"));
-						JSON_Pressure.add(this->PowerStat.Pressure.Min);
-						JSON_Pressure.add(this->PowerStat.Pressure.Max);
-						JSON_Pressure.add(this->PowerStat.Pressure.Average);
-						JSON_Pressure.add(this->PowerStat.Pressure.Value);
-						JSON_Pressure.add(this->PowerStat.Pressure.Deviation);
-						JSON_Pressure.add(this->PowerStat.Pressure.Data_Count);
 
-					} else if (_Pack_Type == Pack_Types::Interrupt) {
+						// Set Presure Variable
+						JSON_Pressure.add(_Instant);
+						JSON_Pressure.add(_Min);
+						JSON_Pressure.add(_Max);
+						JSON_Pressure.add(_Avg);
+						JSON_Pressure.add(_Deviation);
+						JSON_Pressure.add(_Slope);
+						JSON_Pressure.add(_Count);
 
-
-					} else if (_Pack_Type == Pack_Types::Alarm) {
-
-
-					} else if (_Pack_Type == Pack_Types::Offline) {
+					} else if (_Pack_Type == Pack_Interrupt) {
 
 
-					} else if (_Pack_Type == Pack_Types::FOTA_Info) {
+					} else if (_Pack_Type == Pack_Alarm) {
+
+
+					} else if (_Pack_Type == Pack_Offline) {
+
+
+					} else if (_Pack_Type == Pack_FOTA_Info) {
 
 						// Set Device Environment Variable
 						JSON_Payload[F("File_ID")] = this->IoT_FOTA.File_ID;
@@ -1975,190 +1839,52 @@
 
 			}
 
-			// Serial ID Read Function
-			void Get_Serial_ID(char * _Serial_ID) {
-				
-				// Define Variable
-				uint64_t _Serial = 0x00;
-				uint8_t _Read_Byte;
+			// LOG JSON Pack Function
+			void JSON_LOG(void) {
 
-				// Define I2C Device
-				I2C_Functions I2C_DS28C(__I2C_Addr_DS28C__, true, 2);
+				// Declare LOG File Object
+				File LOG_File;
 
-				// Set DS28C to I2C Mode
-				I2C_DS28C.Write_Register(0x08, 0x01, false);
+				// Activate Mux
+				SD_MUX(true); delay(200);
 
-				// Send CRC  Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x07);
-				_Serial |= (uint64_t)_Read_Byte;
+				// Open File for Write
+				LOG_File = SD.open(_LOG_SD_File_Name_, O_WRITE | O_CREAT);
 
-				// Send 40-47 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x06);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
+				// Control for File Open
+				if (LOG_File) {
 
-				// Send 32-39 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x05);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
+					// Command Delay
+					delay(5);
 
-				// Send 24-31 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x04);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
+					// Flush File
+					LOG_File.flush();
 
-				// Send 16-23 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x03);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
+					// Print Data
+					LOG_File.println(this->JSON_Pack);
 
-				// Send 08-15 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x02);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
+					// Print Line Feed
+					LOG_File.println("");
 
-				// Send 00-07 bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x01);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
+					// Command Delay
+					delay(10);
 
-				// Send Device Family bit Read Request to DS28C and read
-				_Read_Byte = I2C_DS28C.Read_Register(0x00);
-				_Serial = _Serial << 8;
-				_Serial |= (uint64_t)_Read_Byte;
+					// Close File
+					LOG_File.close();
 
-				// Set Array
-				String(uint64ToString(_Serial)).toCharArray(_Serial_ID, 17);
+					// Console Print
+					#ifdef DEBUG
+						Console::Text(14, 44, RED, F("                               "));
+						Console::Text(14, 44, RED, F("Error : Pack Writen to SD Card."));
+					#endif
 
-				// Print Command State
-				#ifdef DEBUG
-					Console::Text(5, 63, GREEN, String(this->PowerStat.Device_ID));
-				#endif
-
-			}
-
-
-
-
-
-
-
-
-
-			// Clear Interrupt Function
-			void Clear_Interrupt(uint8_t _Pack_Type) {
-
-				// Clear Interrupt
-				switch (_Pack_Type) {
-
-					// Clear Online Interrupt
-					case Pack_Types::Online: {
-
-						// Clear Interrupt
-						this->Interrupt.Online = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear Timed Interrupt
-					case Pack_Types::Timed: {
-
-						// Clear Interrupt
-						this->Interrupt.Timed = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear Update Interrupt
-					case Pack_Types::Update: {
-
-						// Clear Interrupt
-						this->Interrupt.Update = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear Interrupt Interrupt
-					case Pack_Types::Interrupt: {
-
-						// Clear Interrupt
-						this->Interrupt.Interrupt = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear Alarm Interrupt
-					case Pack_Types::Alarm: {
-
-						// Clear Interrupt
-						this->Interrupt.Alarm = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear Offline Interrupt
-					case Pack_Types::Offline: {
-
-						// Clear Interrupt
-						this->Interrupt.Offline = false;
-
-						// End Case
-						break;
-
-					}
-
-					// Clear Other Interrupt
-					default: {
-
-						// Clear All Interrupts
-						this->Interrupt.Online = false;
-						this->Interrupt.Update = false;
-						this->Interrupt.Timed = false;
-						this->Interrupt.Interrupt = false;
-						this->Interrupt.Alarm = false;
-						this->Interrupt.Offline = false;
-
-						// End Case
-						break;
-
-					}
+					// Clear Pack
+					memset(this->JSON_Pack, '\0', 1024);
 
 				}
 
-			}
-
-			// Mask Functions
-			void Read_Masks(void) {
-
-				// RTC Object Definitions	
-				I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
-				RV3028 RTC(true, 1);
-
-				// Clear Mask
-				this->PowerStat.Status.Publish_Mask = 0x00000000;
-				this->PowerStat.Status.Stop_Mask = 0x00000000;
-
-				// Set Publish Mask
-				this->PowerStat.Status.Publish_Mask = RTC.Read_EEPROM(EEPROM_PUBLISH_MASK);
-				this->PowerStat.Status.Publish_Mask = (this->PowerStat.Status.Publish_Mask << 8) | RTC.Read_EEPROM(EEPROM_PUBLISH_MASK + 1);
-				this->PowerStat.Status.Publish_Mask = (this->PowerStat.Status.Publish_Mask << 8) | RTC.Read_EEPROM(EEPROM_PUBLISH_MASK + 2);
-				this->PowerStat.Status.Publish_Mask = (this->PowerStat.Status.Publish_Mask << 8) | RTC.Read_EEPROM(EEPROM_PUBLISH_MASK + 3);
-
-				// Set Stop Mask
-				this->PowerStat.Status.Stop_Mask = RTC.Read_EEPROM(EEPROM_STOP_MASK);
-				this->PowerStat.Status.Stop_Mask = (this->PowerStat.Status.Stop_Mask << 8) | RTC.Read_EEPROM(EEPROM_STOP_MASK + 1);
-				this->PowerStat.Status.Stop_Mask = (this->PowerStat.Status.Stop_Mask << 8) | RTC.Read_EEPROM(EEPROM_STOP_MASK + 2);
-				this->PowerStat.Status.Stop_Mask = (this->PowerStat.Status.Stop_Mask << 8) | RTC.Read_EEPROM(EEPROM_STOP_MASK + 3);
+				// Turn SD MUX Enable LOW
+				SD_MUX(false);
 
 			}
 
@@ -2226,37 +1952,202 @@
 					bool		Energy_Limit_Update		= false;
 					bool		Pressure_Limit_Update	= false;
 					bool		Mask_Update				= false;
-					bool		Start					= false;
-					bool 		Stop					= false;
 				} Command;
-
-
-
-
-
-
-
-
-				// Define Presure Structure
-				struct Struct_Pressure {
-
-					uint16_t Data_Count = 0;
-					float Average = 0;
-					float Min = 0;
-					float Max = 0;
-					float Value = 0;
-					float Median = 0;
-					float Deviation = 0;
-
-				} Pressure;
 
 			} PowerStat;
 
 			// PostMan Constructor
 			PostMan(Stream &_Serial) : AT_Command_Set(_Serial), Console(Serial_Terminal) {
 
-				// Clear Interrupt
-				this->Clear_Interrupt(0);
+				// Clear All Interrupts
+				this->Interrupt.Online = false;
+				this->Interrupt.Update = false;
+				this->Interrupt.Timed = false;
+				this->Interrupt.Interrupt = false;
+				this->Interrupt.Alarm = false;
+				this->Interrupt.Offline = false;
+				this->Interrupt.Ring = false;
+
+			}
+
+			// ************************************************************
+
+			// Power ON Sequence of Modem
+			bool ON(void) {
+
+				// Enable GSM Modem Power Switch
+				#ifdef GSM_Power_Switch
+					POWER_SWITCH(true);  
+				#endif
+				
+				// Enable GSM Modem LED Feed
+				#ifdef GSM_LED_Switch
+					STAT_LED(true);
+				#endif
+
+				// Set Communication Signal LOW
+				#ifdef GSM_Comm_Switch
+					COMMUNICATION(true);
+				#endif
+				
+				// Boot Delay
+				delay(2000);
+
+				// Turn On Modem
+				if (POWER_MON) {
+
+					// Command Delay
+					delay(300);
+
+					// End Function
+					return (true);
+
+				} else {
+
+					// Set On/Off Signal HIGH
+					ONOFF_SIGNAL(true);
+
+					// Command Delay
+					for (uint8_t i = 0; i < 36; i++) {
+
+						// Calculate Delay (2000)
+						uint8_t _Delay = 5000 / 37;
+
+						// Terminal Bar
+						#ifdef DEBUG
+							Console::Text(14, 4 + i, WHITE, F("▒"));
+						#endif
+
+						// Wait
+						delay(_Delay); 
+
+					}
+
+					// Set On/Off Signal LOW [PJ6]
+					ONOFF_SIGNAL(false);
+
+					// Clear Bar
+					#ifdef DEBUG
+						for (uint8_t i = 0; i < 36; i++) Console::Text(14, 4 + i, WHITE, F(" "));
+					#endif
+
+					// Control for PWMon (PH7)
+					if (POWER_MON) {
+
+						// End Function
+						return(true);
+
+					} else {
+
+						// Set Shut Down Signal HIGH
+						SHUTDOWN_SIGNAL(true);
+
+						// Command Delay
+						delay(200);
+
+						// Set Shut Down Signal LOW
+						SHUTDOWN_SIGNAL(false);
+
+					}
+
+				}
+
+				// End Function
+				return (false);
+
+			}
+
+			// Power OFF Sequence of Modem
+			bool OFF(void) {
+
+				// Turn Off Modem
+				if (POWER_MON) {
+
+					// Set On/Off Signal HIGH
+					ONOFF_SIGNAL(true);
+
+					// Command Delay
+					for (uint8_t i = 0; i < 36; i++) {
+
+						// Calculate Delay (2000)
+						uint8_t _Delay = 3000 / 37;
+
+						// Terminal Bar
+						#ifdef DEBUG
+							Console::Text(14, 4 + i, WHITE, F("▒"));
+						#endif
+
+						// Wait
+						delay(_Delay); 
+
+					}
+
+					// Set On/Off Signal LOW [PJ6]
+					ONOFF_SIGNAL(false);
+
+					// Clear Bar
+					#ifdef DEBUG
+						for (uint8_t i = 0; i < 36; i++) Console::Text(14, 4 + i, WHITE, F(" "));
+					#endif
+
+					// Set Variable
+					bool _Power = true;
+
+					// Read Current Time
+					const uint32_t _Current_Time = millis();
+
+					// Control for Power Monitor
+					while (_Power) {
+
+						// Control for PowerMonitor
+						if (!POWER_MON) {
+
+							// Set Variable
+							_Power = false;
+
+							// Disable GSM LED Power
+							#ifdef GSM_LED_Switch
+								STAT_LED(false);
+							#endif
+
+							// Disable GSM Modem Voltage Translator
+							#ifdef GSM_Comm_Switch
+								COMMUNICATION(false);
+							#endif
+
+							// Disable GSM Modem Main Power Switch
+							#ifdef GSM_Power_Switch
+								POWER_SWITCH(false);  
+							#endif
+
+						}
+
+						// Handle for timeout
+						if (millis() - _Current_Time >= 15000) break;;
+
+					}
+					
+				} else {
+
+					// Disable GSM LED Power
+					#ifdef GSM_LED_Switch
+						STAT_LED(false);
+					#endif
+
+					// Disable GSM Modem Voltage Translator
+					#ifdef GSM_Comm_Switch
+						COMMUNICATION(false);
+					#endif
+
+					// Disable GSM Modem Main Power Switch
+					#ifdef GSM_Power_Switch
+						POWER_SWITCH(false);  
+					#endif
+
+				}
+
+				// End Function
+				return (true);
 
 			}
 
@@ -2273,6 +2164,24 @@
 
 				// Set CallBack Functions
 				this->_Battery_CallBack = _Battery_CallBack;
+
+			}
+			void Start_CallBack(void (*_Start_Pump_CallBack)(void)) {
+
+				// Set CallBack Functions
+				this->_Start_Pump_CallBack = _Start_Pump_CallBack;
+
+			}
+			void Stop_CallBack(void (*_Stop_Pump_CallBack)(void)) {
+
+				// Set CallBack Functions
+				this->_Stop_Pump_CallBack = _Stop_Pump_CallBack;
+
+			}
+			void Pressure_CallBack(void (*_Pressure_CallBack)(float&, float&, float&, float&, float&, float&, uint16_t&)) {
+
+				// Set CallBack Functions
+				this->_Pressure_CallBack = _Pressure_CallBack;
 
 			}
 
@@ -2299,17 +2208,6 @@
 
 			// Connect GSM Modem
 			void Online(void) {
-
-				// Get Serial ID
-				this->Get_Serial_ID(this->PowerStat.Device_ID);
-
-
-
-
-
-
-				// Read Masks
-				this->Read_Masks();
 
 				// GSM Connection Squence
 				if (this->OFF()) {
@@ -2373,6 +2271,9 @@
 							// Publish Interrupt Status
 							this->Interrupt.Online = true;
 
+							// Clear Ring Interrupt
+							this->Interrupt.Ring = false;
+
 						} else {
 							
 							// Print Command State
@@ -2419,8 +2320,12 @@
 				// Control for Connection
 				if (this->IoT_Status.Connection) {
 
-					// Get Time
-					uint32_t _Time = millis();
+					#ifdef DEBUG
+
+						// Get Time
+						uint32_t _Time = millis();
+
+					#endif
 
 					// Set Buffer Variable
 					this->PowerStat.Status.Buffer_Register = this->PowerStat.Status.Status_Register;
@@ -2496,13 +2401,16 @@
 										Console::Text(14, 58, YELLOW, String(_Response_Command));
 									#endif
 
-									// Calculate Send Time
-									uint32_t _Send_Duration = millis() - _Time;
-
 									// Print Command State
 									#ifdef DEBUG
+
+										// Calculate Send Time
+										uint32_t _Send_Duration = millis() - _Time;
+
+										// Print Command State
 										Console::Text(2, 116, CYAN, F("     "));
 										Console::Text(2, 116, YELLOW, String(_Send_Duration));
+
 									#endif
 
 									// Command Delay
@@ -2537,7 +2445,75 @@
 										#endif
 
 										// Clear Interrupt
-										this->Clear_Interrupt(_Pack_Type);
+										switch (_Pack_Type) {
+
+											// Clear Online Interrupt
+											case Pack_Online: {
+
+												// Clear Interrupt
+												this->Interrupt.Online = false;
+
+												// End Case
+												break;
+
+											}
+
+											// Clear Timed Interrupt
+											case Pack_Timed: {
+
+												// Clear Interrupt
+												this->Interrupt.Timed = false;
+
+												// End Case
+												break;
+
+											}
+
+											// Clear Update Interrupt
+											case Pack_Update: {
+
+												// Clear Interrupt
+												this->Interrupt.Update = false;
+
+												// End Case
+												break;
+
+											}
+
+											// Clear Interrupt Interrupt
+											case Pack_Interrupt: {
+
+												// Clear Interrupt
+												this->Interrupt.Interrupt = false;
+
+												// End Case
+												break;
+
+											}
+
+											// Clear Alarm Interrupt
+											case Pack_Alarm: {
+
+												// Clear Interrupt
+												this->Interrupt.Alarm = false;
+
+												// End Case
+												break;
+
+											}
+
+											// Clear Offline Interrupt
+											case Pack_Offline: {
+
+												// Clear Interrupt
+												this->Interrupt.Offline = false;
+
+												// End Case
+												break;
+
+											}
+
+										}
 
 										// Handle Response
 										if (_Response_Command == 200) {
@@ -2690,6 +2666,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
+							Console::Beep();
 							Console::Text(14, 44, CYAN, F("                                    "));
 							Console::Text(14, 44, GREEN, F("Recieving Response..."));
 						#endif
@@ -2747,9 +2724,6 @@
 							// Control for pump status
 							if (bitRead(PowerStat.Status.Status_Register, 0) == 1) {
 
-								// Set Command
-								this->PowerStat.Command.Start = false;
-
 								// Send Response
 								this->Response(HTTP_MethodNotAllowed, Command_NOK);
 
@@ -2758,8 +2732,8 @@
 								// Send Response
 								this->Response(HTTP_OK, Command_OK);
 
-								// Set Command
-								this->PowerStat.Command.Start = true;
+								// Start Pump CallBack
+								_Start_Pump_CallBack();
 
 							}
 
@@ -2768,9 +2742,6 @@
 							// Control for pump status
 							if (bitRead(PowerStat.Status.Status_Register, 0) == 0) {
 
-								// Set Command
-								this->PowerStat.Command.Stop = false;
-
 								// Send Response
 								this->Response(HTTP_MethodNotAllowed, Command_NOK);
 
@@ -2779,17 +2750,12 @@
 								// Send Response
 								this->Response(HTTP_OK, Command_OK);
 
-								// Set Command
-								this->PowerStat.Command.Stop = true;
+								// Stop Pump CallBack
+								_Stop_Pump_CallBack();
 
 							}
 
 						} else if (_Event == Command_Parameter) {
-
-							// Beep Sound
-							#ifdef DEBUG
-								Console::Beep();
-							#endif
 
 							// Handle JSON
 							uint8_t _Address = Incoming_JSON["Request"]["Address"];
@@ -3265,7 +3231,7 @@
 								if (_Address == EEPROM_PMAX) {
 
 									// Handle Pressure Max Limit
-									if (_Value >= 0 and _Value <= 10) {
+									if (_Value >= 0 and _Value <= 10000) {
 
 										// Handle Low & High Byte
 										uint8_t _Low_Byte = lowByte(_Value);
@@ -3314,7 +3280,7 @@
 								if (_Address == EEPROM_PMIN) {
 
 									// Handle Pressure Min Limit
-									if (_Value >= 0 and _Value <= 10) {
+									if (_Value >= 0 and _Value <= 10000) {
 
 										// Handle Low & High Byte
 										uint8_t _Low_Byte = lowByte(_Value);
@@ -3380,6 +3346,11 @@
 									// Set Variable
 									PowerStat.Status.Stop_Mask = _Value;
 
+									// Print Stop Variables
+									#ifdef DEBUG
+										Console::Status_Variables(4, PowerStat.Status.Stop_Mask);
+									#endif
+
 									// Print Command State
 									#ifdef DEBUG
 										Console::Text(14, 44, ((_EEPROM_Response_MSB_1 and _EEPROM_Response_MSB_2 and _EEPROM_Response_LSB_1 and _EEPROM_Response_LSB_2) ? GREEN : RED), F("STOP Mask Update"));
@@ -3421,6 +3392,11 @@
 									// Set Variable
 									PowerStat.Status.Publish_Mask = _Value;
 
+									// Print Publish Variables
+									#ifdef DEBUG
+										Console::Status_Variables(3, PowerStat.Status.Publish_Mask);
+									#endif
+
 									// Print Command State
 									#ifdef DEBUG
 										Console::Text(14, 44, ((_EEPROM_Response_MSB_1 and _EEPROM_Response_MSB_2 and _EEPROM_Response_LSB_1 and _EEPROM_Response_LSB_2) ? GREEN : RED), F("EEPROM PUBLISH Mask Update"));
@@ -3444,6 +3420,9 @@
 								if (_Response == Command_NOK) Console::Text(14, 44, RED, F("EEPROM Address Error"));
 							#endif
 
+							// Call Command CallBack
+							_Command_CallBack(_Event, _JSON_Data);
+
 							// Send Response
 							this->Response(_Response_HTTP_Status, _Response);
 
@@ -3462,7 +3441,7 @@
 								this->Download();
 
 								// Publish FOTA Info
-								this->Publish(FOTA_Info);
+								this->Publish(Pack_FOTA_Info);
 
 							} else {
 
@@ -4101,55 +4080,6 @@
 			}
 
 			// ************************************************************
-
-			// LOG JSON Pack Function
-			void JSON_LOG(void) {
-
-				// Declare LOG File Object
-				File LOG_File;
-
-				// Activate Mux
-				DDRC |= 0b00000001; PORTC |= 0b00000001; delay(200);
-
-				// Open File for Write
-				LOG_File = SD.open(_LOG_SD_File_Name_, O_WRITE | O_CREAT);
-
-				// Control for File Open
-				if (LOG_File) {
-
-					// Command Delay
-					delay(5);
-
-					// Flush File
-					LOG_File.flush();
-
-					// Print Data
-					LOG_File.println(this->JSON_Pack);
-
-					// Print Line Feed
-					LOG_File.println("");
-
-					// Command Delay
-					delay(10);
-
-					// Close File
-					LOG_File.close();
-
-					// Console Print
-					#ifdef DEBUG
-						Console::Text(14, 44, RED, F("                               "));
-						Console::Text(14, 44, RED, F("Error : Pack Writen to SD Card."));
-					#endif
-
-					// Clear Pack
-					memset(this->JSON_Pack, '\0', 1024);
-
-				}
-
-				// Turn SD MUX Enable LOW
-				PORTC &= 0b11111110;
-
-			}
 
 			// uint64 to String Converter Function
 			String uint64ToString(uint64_t input) {
