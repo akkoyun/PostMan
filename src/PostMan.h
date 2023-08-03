@@ -74,15 +74,17 @@
 				char 		ICCID[21];
 
 				// Operator
-				uint16_t 	Code 				= 0;
-
-				// Location
-				uint16_t	LAC					= 0;
-				uint16_t	Cell_ID				= 0;
+				uint16_t 	MCC 				= 0;
+				uint16_t	MNC					= 0;
+				uint16_t	WDS					= 0;
 
 				// Signal Level
-				uint8_t 	dBm					= 0;
+				uint16_t	RSSI				= 0;
 				uint8_t		Signal				= 0;
+
+				// Location
+				uint16_t	TAC					= 0;
+				uint32_t	Cell_ID				= 0;
 
 				// IP Address
 				char 		IP_Address[16];
@@ -424,7 +426,7 @@
 							#endif
 
 							// Send Command
-//							AT_Command_Set::GPIO(1, 0, 2);
+							AT_Command_Set::GPIO(SET, 1, 0, 2);
 
 							// Print Command State
 							#ifdef DEBUG
@@ -442,7 +444,7 @@
 							#endif
 
 							// Send Command
-//							if (!AT_Command_Set::SLED(2)) this->IoT_Status.Initialize = false;
+							if (!AT_Command_Set::SLED(2)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -460,7 +462,7 @@
 							#endif
 
 							// Send Command
-//							if (!AT_Command_Set::SLEDSAV()) this->IoT_Status.Initialize = false;
+							if (!AT_Command_Set::SLEDSAV()) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -579,7 +581,7 @@
 								uint8_t _CREG_Connection_Stat = 99;
 
 								// Get CREG Status
-								AT_Command_Set::CREG(false, _CREG_Connection_Mode, _CREG_Connection_Stat);
+								AT_Command_Set::CREG(GET, _CREG_Connection_Mode, _CREG_Connection_Stat);
 
 								// Print Command State
 								#ifdef DEBUG
@@ -693,172 +695,7 @@
 								// Print Command State
 								#ifdef DEBUG
 									Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
-								#endif
-
-								// Set WD Variable
-								_Conn_WD_Counter++;
-
-								// Control for WD
-								if (_Conn_WD_Counter > 300) _Conn_WD = true;
-
-							}
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
-							#endif
-
-						} else break;
-
-
-
-
-
-
-
-						// Set CGREG Command (Set Network Registration Mode)
-						if (!this->IoT_Status.Connection) {
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+CGREG=1"));
-							#endif
-
-							// Declare Local Variables
-							uint8_t _Mode = 1;
-							uint8_t _Stat = 0;
-
-							// Send Command
-							if (!AT_Command_Set::CGREG(true, _Mode, _Stat)) this->IoT_Status.Connection = false;
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
-							#endif
-
-						} else break;
-
-						// Get CGREG Command (Get Network Registration Mode)
-						if (!this->IoT_Status.Connection) {
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+CGREG?"));
-							#endif
-
-							// Set Connection WatchDog
-							bool _Conn_WD = false;
-							uint8_t _Conn_WD_Counter = 0;
-
-							// Wait for Connection
-							while (!_Conn_WD) {
-
-								// Declare Variable
-								uint8_t _CGREG_Connection_Mode = 0;
-								uint8_t _CGREG_Connection_Stat = 0;
-
-								// Get CREG Status
-								AT_Command_Set::CGREG(false, _CGREG_Connection_Mode, _CGREG_Connection_Stat);
-
-								// Print Command State
-								#ifdef DEBUG
-									Console::Text(14, 35, CYAN, F("    "));
-									Console::Text(14, 36, RED, String(_CGREG_Connection_Stat));
-								#endif
-
-								// Control for Connection
-								if (_CGREG_Connection_Stat == 0) {
-
-									// Set Variable
-									this->IoT_Status.Connection = false;
-
-									// End Function
-									return(false);
-
-								} else if (_CGREG_Connection_Stat == 1) {
-
-									// Set Variable
-									this->IoT_Status.Connection = true;
-
-									// Declare Response Status
-									_Conn_WD = true;
-
-								} else if (_CGREG_Connection_Stat == 2) {
-
-									// Set Variable
-									this->IoT_Status.Connection = false;
-
-									// Declare Response Status
-									_Conn_WD = false;
-
-									// Connection Wait Delay
-									for (uint8_t i = 0; i < 5; i++) {
-
-										// Print Connection Time
-										#ifdef DEBUG
-											Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
-										#endif
-
-										// Connection Wait Delay
-										delay(1000);
-
-									}
-
-								} else if (_CGREG_Connection_Stat == 3) {
-
-									// Set Variable
-									this->IoT_Status.Connection = false;
-
-									// Declare Response Status
-									_Conn_WD = false;
-
-									// Connection Wait Delay
-									for (uint8_t i = 0; i < 3; i++) {
-
-										// Print Connection Time
-										#ifdef DEBUG
-											Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
-										#endif
-
-										// Connection Wait Delay
-										delay(1000);
-
-									}
-
-								} else if (_CGREG_Connection_Stat == 4) {
-
-									// Set Variable
-									this->IoT_Status.Connection = false;
-
-									// Declare Response Status
-									_Conn_WD = false;
-
-									// Connection Wait Delay
-									for (uint8_t i = 0; i < 5; i++) {
-
-										// Print Connection Time
-										#ifdef DEBUG
-											Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
-										#endif
-
-										// Connection Wait Delay
-										delay(1000);
-
-									}
-
-								} else if (_CGREG_Connection_Stat == 5) {
-
-									// Set Variable
-									this->IoT_Status.Connection = false;
-
-									// Declare Response Status
-									_Conn_WD = true;
-
-								}
-
-								// Print Command State
-								#ifdef DEBUG
-									Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+									Console::Text(19, 75, CYAN, String(_CREG_Connection_Stat));
 								#endif
 
 								// Set WD Variable
@@ -913,6 +750,81 @@
 								
 								// Print IP Address
 								Console::Text(20, 64, CYAN, String(this->IoT_Operator.IP_Address));
+
+							#endif
+
+						} else break;
+
+						// WS46 Command (Network Type)
+						if (this->IoT_Status.Connection) {
+
+							// Print Command State
+							#ifdef DEBUG
+								Console::GSM_Command(14, 4, F("AT+WS46?"));
+							#endif
+
+							// Send Command
+							if (!AT_Command_Set::WS46(GET, this->IoT_Operator.WDS)) this->IoT_Status.Connection = false;
+
+							// Print Command State
+							#ifdef DEBUG
+
+								// Print Command State
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+								
+								// Print WDS Type
+								if (this->IoT_Operator.WDS == 12) Console::Text(21, 29, CYAN, F("        2G"));
+								else if (this->IoT_Operator.WDS == 22) Console::Text(21, 29, CYAN, F("        3G"));
+								else if (this->IoT_Operator.WDS == 25) Console::Text(21, 29, CYAN, F(" 2G/3G/LTE"));
+								else if (this->IoT_Operator.WDS == 28) Console::Text(21, 29, CYAN, F("        4G"));
+								else if (this->IoT_Operator.WDS == 29) Console::Text(21, 29, CYAN, F("     2G/3G"));
+								else if (this->IoT_Operator.WDS == 30) Console::Text(21, 29, CYAN, F("    2G/LTE"));
+								else if (this->IoT_Operator.WDS == 31) Console::Text(21, 29, CYAN, F("    3G/LTE"));
+
+							#endif
+
+						} else break;
+
+						// RFSTS Command (Network Status)
+						if (this->IoT_Status.Connection) {
+
+							// Print Command State
+							#ifdef DEBUG
+								Console::GSM_Command(14, 4, F("AT#RFSTS"));
+							#endif
+
+							// Send Command
+							AT_Command_Set::RFSTS(this->IoT_Operator.MCC, this->IoT_Operator.MNC, this->IoT_Operator.RSSI, this->IoT_Operator.Signal, this->IoT_Operator.Cell_ID, this->IoT_Operator.TAC);
+
+							// Print Command State
+							#ifdef DEBUG
+
+								// Print Command State
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+
+							#endif
+
+							// Print Command State
+							#ifdef DEBUG
+
+								// Print Signal Level Value
+								Console::Text(18, 65, WHITE, F("[-   ]"));
+								Console::Text(18, 67, CYAN, String(this->IoT_Operator.RSSI));
+
+								// Print Signal Level Bar
+								Console::Text(18, 74, GRAY, F("_____"));
+								for (uint8_t i = 1; i <= this->IoT_Operator.Signal; i++) Console::Text(18, 73 + i, CYAN, F("X"));
+
+								// Print Operator Value
+								Console::Text(19, 74, CYAN, String(this->IoT_Operator.MCC));
+								Console::Text(19, 77, CYAN, F("0"));
+								Console::Text(19, 78, CYAN, String(this->IoT_Operator.MNC));
+
+								// Print Modem LAC Value
+								Console::Text(21, 75, CYAN, uint64ToString(this->IoT_Operator.TAC));
+
+								// Print Modem Cell ID Value
+								Console::Text(22, 70, CYAN, String(this->IoT_Operator.Cell_ID));
 
 							#endif
 
@@ -1088,7 +1000,8 @@
 							#endif
 
 						} else break;
-			
+
+/*			
 						// MONI Command (Monitor Configuration)
 						if (this->IoT_Status.Connection) {
 
@@ -1126,6 +1039,7 @@
 							#endif
 
 						} else break;
+*/
 
 						// Print Command State
 						#ifdef DEBUG
@@ -1408,7 +1322,7 @@
 				while (!_Response) {
 
 					// Process Command
-					_Response = AT_Command_Set::MONIZIP(this->IoT_Operator.Code, this->IoT_Operator.LAC, this->IoT_Operator.Cell_ID, this->IoT_Operator.dBm, this->IoT_Operator.Signal);
+//					_Response = AT_Command_Set::MONIZIP(this->IoT_Operator.Code, this->IoT_Operator.LAC, this->IoT_Operator.Cell_ID, this->IoT_Operator.dBm, this->IoT_Operator.Signal);
 
 					// Set WD Variable
 					_Error_WD++;
@@ -1422,21 +1336,21 @@
 				#ifdef DEBUG
 
 					// Print Signal Level Value
-					Console::Text(18, 65, WHITE, F("[-   ]"));
-					Console::Text(18, 67, CYAN, String(this->IoT_Operator.dBm));
+//					Console::Text(18, 65, WHITE, F("[-   ]"));
+//					Console::Text(18, 67, CYAN, String(this->IoT_Operator.dBm));
 
 					// Print Signal Level Bar
-					Console::Text(18, 74, GRAY, F("_____"));
-					for (uint8_t i = 1; i <= this->IoT_Operator.Signal; i++) Console::Text(18, 73 + i, CYAN, F("X"));
+//					Console::Text(18, 74, GRAY, F("_____"));
+//					for (uint8_t i = 1; i <= this->IoT_Operator.Signal; i++) Console::Text(18, 73 + i, CYAN, F("X"));
 
 					// Print Operator Value
-					Console::Text(19, 74, CYAN, String(this->IoT_Operator.Code));
+//					Console::Text(19, 74, CYAN, String(this->IoT_Operator.Code));
 
 					// Print Modem LAC Value
-					Console::Text(21, 75, CYAN, String(uint64ToString(this->IoT_Operator.LAC)));
+//					Console::Text(21, 75, CYAN, String(uint64ToString(this->IoT_Operator.LAC)));
 
 					// Print Modem Cell ID Value
-					Console::Text(22, 75, CYAN, String(uint64ToString(this->IoT_Operator.Cell_ID)));
+//					Console::Text(22, 75, CYAN, String(uint64ToString(this->IoT_Operator.Cell_ID)));
 
 				#endif
 
@@ -1580,10 +1494,10 @@
 					// Set Device GSM Connection Detail Section
 					if (_Pack_Type == Pack_Online or _Pack_Type == Pack_Update) JSON_Operator[F("SIM_Type")] = 1;
 					if (_Pack_Type == Pack_Online or _Pack_Type == Pack_Update)JSON_Operator[F("ICCID")] = this->IoT_Operator.ICCID;
-					JSON_Operator[F("Code")] = this->IoT_Operator.Code;
-					JSON_Operator[F("dBm")] = this->IoT_Operator.dBm;
-					JSON_Operator[F("LAC")] = uint64ToString(this->IoT_Operator.LAC);
-					JSON_Operator[F("Cell_ID")] = uint64ToString(this->IoT_Operator.Cell_ID);
+//					JSON_Operator[F("Code")] = this->IoT_Operator.Code;
+//					JSON_Operator[F("dBm")] = this->IoT_Operator.dBm;
+//					JSON_Operator[F("LAC")] = uint64ToString(this->IoT_Operator.LAC);
+//					JSON_Operator[F("Cell_ID")] = uint64ToString(this->IoT_Operator.Cell_ID);
 
 				#endif
 
@@ -1907,9 +1821,6 @@
 				#ifdef GSM_LED_Switch
 					STAT_LED(true);
 				#endif
-
-				// Boot Delay
-				delay(2000);
 
 				// Set Communication Signal LOW
 				#ifdef GSM_Comm_Switch

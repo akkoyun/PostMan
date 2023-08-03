@@ -1,5 +1,15 @@
 # Release Notes
 
+## 0.14.3 (2023-08-03)
+
+* IoT_Operator variables updated.
+* Initialize procedure updated.
+* Connection procedure updated.
+* RSSI_to_Signal_Quality function added.
+* GPIO function updated.
+* WS46 function added.
+* RFSTS function added.
+
 ## 0.14.2 (2023-08-02)
 
 * NTP function handle updated.

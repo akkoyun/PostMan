@@ -24,6 +24,21 @@
 				uint8_t 			Size;
 			};
 
+			// RSSI to Signal Quality Function
+			uint8_t RSSI_to_Signal_Quality(int8_t _RSSI) {
+
+				// Calculate Signal Level
+				if (_RSSI >= -65) return(5);
+				if (_RSSI >= -75 and _RSSI < -65) return(4);
+				if (_RSSI >= -85 and _RSSI < -75) return(3);
+				if (_RSSI >= -95 and _RSSI < -85) return(2);
+				if (_RSSI < -95) return(1);
+
+				// End Function
+				return(0);
+
+			}
+
 		public:
 
             // GSM Serial Stream Definition
@@ -1538,8 +1553,10 @@
 
 				}
 
-				// AT+CCLK?\r\n
-				// \r\n+CCLK: "23/08/02,11:18:16+12"\r\n\r\nOK\r\n
+				/*
+				--> AT+CCLK?\r\n
+				<-- \r\n+CCLK: "23/08/02,11:18:16+12"\r\n\r\nOK\r\n
+				*/
 
 				// Handle Variables
 				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n+CCLK: \"%02d/%02d/%02d,%02d:%02d:%02d+%02d\"\r\n\r\nOK\r\n", &_Year, &_Month, &_Day, &_Hour, &_Minute, &_Second, &_Time_Zone);
@@ -1735,7 +1752,7 @@
 			}
 
 			// Set GPIO Function
-			bool GPIO(const uint8_t _Pin, const uint8_t _Mode, const uint8_t _Direction) {
+			bool GPIO(const bool _Function_Type, const uint8_t _Pin, const uint8_t _Mode = 0, const uint8_t _Direction = 0) {
 
 				// Clear UART Buffer
 				this->Clear_UART_Buffer();
@@ -1758,44 +1775,83 @@
 				// Command Chain Delay (Advice by Telit)
 				delay(20);
 
-				// Send UART Command
-				GSM_Serial->print(F("AT#GPIO="));
-				GSM_Serial->print(_Pin);
-				GSM_Serial->print(F(","));
-				GSM_Serial->print(_Mode);
-				GSM_Serial->print(F(","));
-				GSM_Serial->print(_Direction);
-				GSM_Serial->write(0x0D);
-				GSM_Serial->write(0x0A);
+				// SET Function
+				if (_Function_Type == SET) {
 
-				// Read Current Time
-				const uint32_t Current_Time = millis();
+					// Send UART Command
+					GSM_Serial->print(F("AT#GPIO="));
+					GSM_Serial->print(_Pin);
+					GSM_Serial->print(F(","));
+					GSM_Serial->print(_Mode);
+					GSM_Serial->print(F(","));
+					GSM_Serial->print(_Direction);
+					GSM_Serial->write(0x0D);
+					GSM_Serial->write(0x0A);
 
-				// Response Wait Delay
-				delay(10);
+					// Read Current Time
+					const uint32_t Current_Time = millis();
 
-				// Read UART Response
-				while (!Buffer.Response) {
+					// Response Wait Delay
+					delay(2);
 
-					// Read Serial Char
-					Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
+					// Read UART Response
+					while (!Buffer.Response) {
 
-					// Control for <OK> Response
-					Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
+						// Read Serial Char
+						Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
 
-					// Control for <ERROR> Response
-					if (this->Find_ERROR(Buffer_Variable, Buffer.Read_Order)) return(false);
+						// Control for <OK> Response
+						Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
 
-					// Increase Read Order
-					if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
+						// Control for <ERROR> Response
+						if (this->Find_ERROR(Buffer_Variable, Buffer.Read_Order)) return(false);
 
-					// Handle for timeout
-					if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+						// Increase Read Order
+						if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
+
+						// Handle for timeout
+						if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+
+					}
+
+					// End Function
+					return (true);
+
+				}
+
+				// GET Function
+				if (_Function_Type == GET) {
+
+					// Send UART Command
+					GSM_Serial->print(F("AT#GPIO?"));
+					GSM_Serial->write(0x0D);
+					GSM_Serial->write(0x0A);
+
+
+
+					// #GPIO: <dir>, <stat>
+					// Dir : 0 - Input, 1 - Output, 2-14 - ALT Function, 16-18 ALT Function
+					// ALT1 - SLED
+					// *****************************
+					// AT#GPIO?\r\n
+					// \r\n#GPIO: 2,1		- GPIO-1
+					// \r\n#GPIO: 0,0		- GPIO-2
+					// \r\n#GPIO: 0,0		- GPIO-3
+					// \r\n#GPIO: 0,0		- GPIO-4
+					// \r\n#GPIO: 0,0		- GPIO-5
+					// \r\n#GPIO: 0,0		- GPIO-6
+					// \r\n#GPIO: 0,0		- GPIO-7
+					// \r\n#GPIO: 0,1		- GPIO-8
+					// \r\n#GPIO: 0,1		- GPIO-9
+					// \r\n#GPIO: 0,0		- GPIO-10
+					// \r\n\r\nOK\r\n
+
+
 
 				}
 
 				// End Function
-				return (true);
+				return(false);
 
 			}
 
@@ -2085,6 +2141,177 @@
 
 				// End Function
 				return (true);
+
+			}
+
+			// WS46 Function
+			bool WS46(const bool _Function_Type, uint16_t & _Mode) {
+
+				// Clear UART Buffer
+				this->Clear_UART_Buffer();
+
+				// Declare Buffer Object
+				Serial_Buffer Buffer = {
+					false, 	// Response State
+					0, 		// Read Order
+					0, 		// Data Order
+					1000, 	// Time Out
+					20		// Buffer Size
+				};
+
+				// Declare Buffer Variable
+				char Buffer_Variable[Buffer.Size];
+				
+				// Clear Buffer Variable
+				memset(Buffer_Variable, '\0', Buffer.Size);
+
+				// Command Chain Delay (Advice by Telit)
+				delay(20);
+				
+				// GET Function
+				if (_Function_Type == GET) {
+
+					// Send UART Command
+					GSM_Serial->print(F("AT+WS46?"));
+					GSM_Serial->write(0x0D);
+					GSM_Serial->write(0x0A);
+
+					// AT+WS46?\r\n
+					// \r\n+WS46: 30\r\n\r\nOK\r\n
+
+					// Read Current Time
+					const uint32_t Current_Time = millis();
+
+					// Response Wait Delay
+					delay(2);
+
+					// Read UART Response
+					while (!Buffer.Response) {
+
+						// Read Serial Char
+						Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
+
+						// Control for <OK> Response
+						Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
+
+						// Increase Read Order
+						if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
+
+						// Handle for timeout
+						if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+
+					}
+
+					// Handle Variables
+					uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n+WS46: %02d\r\n\r\nOK\r\n", &_Mode);
+
+					// Control for Variable
+					if (_Variable_Count == 1) return(true);
+
+					// End Function
+					return(false);
+
+				}
+
+				// End Function
+				return(false);
+
+			}
+
+			// RFSTS Function
+			bool RFSTS(uint16_t & _MCC, uint16_t & _MNC, uint16_t & _RSSI, uint8_t & _Signal_Level, uint32_t & _Cell_ID, uint16_t & _TAC) {
+
+				// Declare Variable Structure
+				struct Operator_Structure {
+					int		Temp_Numeric;
+					char	Temp_String[50];
+				} Handle_Buffer;
+
+				// Clear UART Buffer
+				this->Clear_UART_Buffer();
+
+				// Declare Buffer Object
+				Serial_Buffer Buffer = {
+					false, 	// Response State
+					0, 		// Read Order
+					0, 		// Data Order
+					1000, 	// Time Out
+					140		// Buffer Size
+				};
+
+				// Declare Buffer Variable
+				char Buffer_Variable[Buffer.Size];
+				
+				// Clear Buffer Variable
+				memset(Buffer_Variable, '\0', Buffer.Size);
+
+				// Command Chain Delay (Advice by Telit)
+				delay(20);
+				
+				// Send UART Command
+				GSM_Serial->print(F("AT#RFSTS"));
+				GSM_Serial->write(0x0D);
+				GSM_Serial->write(0x0A);
+
+				// AT#RFSTS\r\n
+				// \r\n#RFSTS:"286 01",6400,-100,-66,-18,2242,FF,0,128,10,1,859315,"286016339811626","TR TURKCELL",3,20,720,3240,-5\r\n\r\nOK\r\n
+
+				// #RFSTS:<PLMN>,<EARFCN>,<RSRP>,<RSSI>,<RSRQ>,<TAC>,<RAC>,[<TXPWR>],<DR X>, <MM>,<RRC>,<CID>,<IMSI>,[<NetNameAsc>],<SD>,<ABND>,<T3402>,<T3412>,<SI NR>
+				//
+				// <PLMN> 		- Country code and operator code(MCC, MNC)						+ "286 01"
+				// <EARFCN> 	- E-UTRA Assigned Radio Channel									- 6400	
+				// <RSRP> 		- Reference Signal Received Power								- -100
+				// <RSSI> 		- Received Signal Strength Indication							+ -66
+				// <RSRQ> 		- Reference Signal Received Quality								- -18
+				// <TAC> 		- Tracking Area Code											+ 2242
+				// <RAC> 		- Routing Area Code												- FF
+				// <TXPWR> 		- Tx Power (In traffic only)									- 0
+				// <DR X> 		- Discontinuous reception cycle Length (cycle length in ms)		- 128
+				// <MM> 		- Mobility Management state (for debug purpose only)			- 10
+				// <RRC> 		- Radio Resource state (for debug purpose only)					- 1
+				// <CID> 		- Cell ID														+ 859315
+				// <IMSI> 		- International Mobile Station ID								- "286016339811626"
+				// <NetNameAsc> - Operator name													- "TR TURKCELL"
+				// <SD> 		- Service Domain												- 3
+				// <ABND> 		- Active Band													- 20
+				// <T3402> 		- Timer T3402 in seconds										- 720
+				// <T3412> 		- Timer T3412 in seconds										- 3240
+				// <SI NR> 		- Signal-to-Interface plus Noise Ratio							- -5
+
+				// Read Current Time
+				const uint32_t Current_Time = millis();
+
+				// Response Wait Delay
+				delay(2);
+
+				// Read UART Response
+				while (!Buffer.Response) {
+
+					// Read Serial Char
+					Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
+
+					// Control for <OK> Response
+					Buffer.Response = this->Find_OK(Buffer_Variable, Buffer.Read_Order);
+
+					// Increase Read Order
+					if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
+
+					// Handle for timeout
+					if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+
+				}
+
+				// Handle Variables
+				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#RFSTS:\"%03d %02d\",%05d,-%03d,-%03d,-%02d,%05d,%s,%03d,%04d,%03d,%02d,%06X,\"%s\",\"%s\",%02d,%03d,%04d,%05d,-%02d\r\n\r\nOK\r\n", &_MCC, &_MNC, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &_RSSI, &Handle_Buffer.Temp_Numeric, &_TAC, Handle_Buffer.Temp_String, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &_Cell_ID, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric);
+
+				// Calculate Signal Level
+				_Signal_Level = this->RSSI_to_Signal_Quality(_RSSI * -1);
+
+				// Control for Variable
+				if (_Variable_Count == 20) return(true);
+
+				// End Function
+				return(false);
 
 			}
 
@@ -4948,7 +5175,6 @@
 
 
 			// ******************** RTC Commands ********************
-
 
 			// ******************** Socket Commands ********************
 
