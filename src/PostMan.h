@@ -27,12 +27,12 @@
 	#endif
 
 	// Define PIN Macros
-	#define POWER_MON (((PINJ) >> (PINJ3)) & 0x01)
-	#define COMMUNICATION(_State) (_State ? PORTJ &= 0b11101111 : PORTJ |= 0b00010000)
-	#define POWER_SWITCH(_State) (_State ? PORTH |= 0b00000100 : PORTH &= 0b11111011)
-	#define STAT_LED(_State) (_State ? PORTH &= 0b11101111 : PORTH |= 0b00010000)
+//	#define POWER_MON (((PORTJ) >> (PJ3)) & 0x01)
+	#define COMMUNICATION(_State) (_State ? PORTJ &= 0b11011111 : PORTJ |= 0b00100000)
+	#define GSM_POWER_SWITCH(_State) (_State ? PORTE |= 0b00000100 : PORTE &= 0b11111011)
+//	#define STAT_LED(_State) (_State ? PORTH &= 0b11101111 : PORTH |= 0b00010000)
 	#define ONOFF_SIGNAL(_State) (_State ? PORTJ |= 0b01000000 : PORTJ &= 0b10111111)
-	#define SHUTDOWN_SIGNAL(_State) (_State ? PORTJ |= 0b00100000 : PORTJ &= 0b11011111)
+	#define SHUTDOWN_SIGNAL(_State) (_State ? PORTJ |= 0b10000000 : PORTJ &= 0b01111111)
 
 	// Cloud Functions
 	class PostMan : private AT_Command_Set, private Console {
@@ -63,7 +63,7 @@
 				uint8_t 	Model 				= 0;
 
 				// Modem Firmware Version
-				char 		Firmware[10];
+				char 		Firmware[15];
 
 			} IoT_Module;
 
@@ -123,7 +123,7 @@
 				while (!this->IoT_Status.Initialize) {
 
 					// Control for Power Monitor
-					if (POWER_MON) {
+					if (this->PowerMonitor()) {
 
 						// Print Batch Description
 						#ifdef DEBUG
@@ -192,31 +192,13 @@
 								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 
 								// Print SIMDET State
-								if (this->IoT_Status.SIM_Inserted) Console::Text(14, 44, GREEN, F("SIM Card Detected"));
+								if (this->IoT_Status.SIM_Inserted) Console::Text(14, 44, GREEN, F("SIM Card Detected    "));
 								if (!this->IoT_Status.SIM_Inserted) Console::Text(14, 44, RED, F("SIM Card Not Detected"));
 
 							#endif
 
 							// No SIM Card
 							if (!this->IoT_Status.SIM_Inserted) return(false);
-
-						} else break;
-
-						// SEARCHLIM Command (Search Network)
-						if (this->IoT_Status.Initialize) {
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#SEARCHLIM=100,100"));
-							#endif
-
-							// Send Command
-							if (!AT_Command_Set::SEARCHLIM(100, 100)) this->IoT_Status.Initialize = false;
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
-							#endif
 
 						} else break;
 
@@ -337,30 +319,6 @@
 
 						} else break;
 
-						// GSN Command (Get Serial Number)
-						if (this->IoT_Status.Initialize) {
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+GSN"));
-							#endif
-
-							// Send Command
-							if (!AT_Command_Set::GSN(this->IoT_Module.Serial_ID)) this->IoT_Status.Initialize = false;
-
-							// Print Command State
-							#ifdef DEBUG
-
-								// Print Command State
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
-								
-								// Print Serial ID
-								Console::Text(21, 29, CYAN, String(this->IoT_Module.Serial_ID));
-							
-							#endif
-
-						} else break;
-
 						// ICCID Command (Get SIM Card ID)
 						if (this->IoT_Status.Initialize) {
 
@@ -385,7 +343,7 @@
 
 						} else break;
 
-						// GMI Command (Get Manufacturer)
+						// CGMI Command (Get Manufacturer)
 						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
@@ -394,7 +352,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GMI(this->IoT_Module.Manufacturer)) this->IoT_Status.Initialize = false;
+							if (!AT_Command_Set::CGMI(this->IoT_Module.Manufacturer)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -409,7 +367,7 @@
 
 						} else break;
 
-						// GMM Command (Get Model)
+						// CGMM Command (Get Model)
 						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
@@ -418,7 +376,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GMM(this->IoT_Module.Model)) this->IoT_Status.Initialize = false;
+							if (!AT_Command_Set::CGMM(this->IoT_Module.Model)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -433,7 +391,7 @@
 
 						} else break;
 
-						// GMR Command (Get Firmware Version)
+						// CGMR Command (Get Firmware Version)
 						if (this->IoT_Status.Initialize) {
 
 							// Print Command State
@@ -442,7 +400,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::GMR(this->IoT_Module.Firmware)) this->IoT_Status.Initialize = false;
+							if (!AT_Command_Set::CGMR(this->IoT_Module.Firmware)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -451,8 +409,26 @@
 								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 
 								// Print Firmware Version
-								Console::Text(19, 30, CYAN, String(this->IoT_Module.Firmware));
+								Console::Text(19, 29, CYAN, String(this->IoT_Module.Firmware));
 
+							#endif
+
+						} else break;
+
+						// GPIO Command (Set Status LED)
+						if (this->IoT_Status.Initialize) {
+
+							// Print Command State
+							#ifdef DEBUG
+								Console::GSM_Command(14, 4, F("AT#GPIO=1,0,2"));
+							#endif
+
+							// Send Command
+//							AT_Command_Set::GPIO(1, 0, 2);
+
+							// Print Command State
+							#ifdef DEBUG
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 						} else break;
@@ -466,7 +442,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SLED(2)) this->IoT_Status.Initialize = false;
+//							if (!AT_Command_Set::SLED(2)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -484,43 +460,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SLEDSAV()) this->IoT_Status.Initialize = false;
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
-							#endif
-
-						} else break;
-
-						// E2RI Command (Set RING Indicator)
-						if (this->IoT_Status.Initialize) {
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#E2RI=50,50"));
-							#endif
-
-							// Send Command
-							if (!AT_Command_Set::E2RI(50, 50)) this->IoT_Status.Initialize = false;
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
-							#endif
-
-						} else break;
-
-						// TXMONMODE Command (Set TX Monitor Mode)
-						if (this->IoT_Status.Initialize) {
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#TXMONMODE=1"));
-							#endif
-
-							// Send Command
-							if (!AT_Command_Set::TXMONMODE(1)) this->IoT_Status.Initialize = false;
+//							if (!AT_Command_Set::SLEDSAV()) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -616,79 +556,8 @@
 						// Set Control Variable
 						this->IoT_Status.Connection = true;
 
-						// COPS Command (Set Operator Selection Mode)
-						if (this->IoT_Status.Connection) {
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+COPS=0"));
-							#endif
-
-							// Send Command
-							if (!AT_Command_Set::COPS(0)) this->IoT_Status.Initialize = false;
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
-							#endif
-
-						} else break;
-
-						// AUTOBND Command (Set Band Selection Mode)
-						if (this->IoT_Status.Connection) {
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#AUTOBND=2"));
-							#endif
-
-							// Send Command
-							if (!AT_Command_Set::AUTOBND(2)) this->IoT_Status.Initialize = false;
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
-							#endif
-
-						} else break;
-
 						// Get Time
 						uint32_t _Connection_Start_Time = millis();
-
-						// Set CREG Command (Set Network Registration Mode)
-						if (this->IoT_Status.Connection) {
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+CREG=1"));
-							#endif
-
-							// Declare Local Variables
-							uint8_t _Mode = 1;
-							uint8_t _Stat = 0;
-
-							// Send Command
-							if (!AT_Command_Set::CREG(true, _Mode, _Stat)) this->IoT_Status.Connection = false;
-
-							// Print Command State
-							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
-							#endif
-
-						} else break;
-
-						// Connection Wait Delay
-						for (uint8_t i = 0; i < 5; i++) {
-
-							// Print Connection Time
-							#ifdef DEBUG
-								Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
-							#endif
-
-							// Connection Wait Delay
-							delay(1000);
-
-						}
 
 						// Get CREG Command (Get Network Registration Mode)
 						if (this->IoT_Status.Connection) {
@@ -706,8 +575,8 @@
 							while (!_Conn_WD) {
 
 								// Declare Variable
-								uint8_t _CREG_Connection_Mode = 0;
-								uint8_t _CREG_Connection_Stat = 0;
+								uint8_t _CREG_Connection_Mode = 99;
+								uint8_t _CREG_Connection_Stat = 99;
 
 								// Get CREG Status
 								AT_Command_Set::CREG(false, _CREG_Connection_Mode, _CREG_Connection_Stat);
@@ -724,8 +593,21 @@
 									// Set Variable
 									this->IoT_Status.Connection = false;
 
-									// End Function
-									return(false);
+									// Declare Response Status
+									_Conn_WD = false;
+
+									// Connection Wait Delay
+									for (uint8_t i = 0; i < 5; i++) {
+
+										// Print Connection Time
+										#ifdef DEBUG
+											Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
+										#endif
+
+										// Connection Wait Delay
+										delay(1000);
+
+									}
 
 								} else if (_CREG_Connection_Stat == 1) {
 
@@ -828,8 +710,14 @@
 
 						} else break;
 
+
+
+
+
+
+
 						// Set CGREG Command (Set Network Registration Mode)
-						if (this->IoT_Status.Connection) {
+						if (!this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -850,21 +738,8 @@
 
 						} else break;
 
-						// Connection Wait Delay
-						for (uint8_t i = 0; i < 5; i++) {
-
-							// Print Connection Time
-							#ifdef DEBUG
-								Console::Text(17, 75, CYAN, String((millis() - _Connection_Start_Time) / 1000));
-							#endif
-
-							// Connection Wait Delay
-							delay(1000);
-
-						}
-
 						// Get CGREG Command (Get Network Registration Mode)
-						if (this->IoT_Status.Connection) {
+						if (!this->IoT_Status.Connection) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1267,7 +1142,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second)) this->IoT_Status.Connection = false;
+//							if (!AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1846,7 +1721,7 @@
 				File LOG_File;
 
 				// Activate Mux
-				SD_MUX(true); delay(200);
+				PIN_WRITE_SD_MUX(true); delay(200);
 
 				// Open File for Write
 				LOG_File = SD.open(_LOG_SD_File_Name_, O_WRITE | O_CREAT);
@@ -1884,7 +1759,7 @@
 				}
 
 				// Turn SD MUX Enable LOW
-				SD_MUX(false);
+				PIN_WRITE_SD_MUX(false);
 
 			}
 
@@ -1972,12 +1847,60 @@
 
 			// ************************************************************
 
+			// Read PowerMonitor Status
+			bool PowerMonitor(void) {
+
+				// Control for PWMon (PJ3)
+				if ((PINJ & (1 << PINJ3)) == (1 << PINJ3)) {
+
+					// Response Delay
+					delay(10);
+
+					// Power Monitor 3V3 HIGH
+					return (true);
+
+				} else {
+
+					// Response Delay
+					delay(10);
+
+					// Power Monitor 3V3 LOW
+					return (false);
+
+				}
+
+			}
+
+			// Read SWReadty Status
+			bool SWReady(void) {
+
+				// Control for PWMon (PJ3)
+				if ((PINJ & (1 << PINJ4)) == (1 << PINJ4)) {
+
+					// Response Delay
+					delay(10);
+
+					// Power Monitor 3V3 HIGH
+					return (true);
+
+				} else {
+
+					// Response Delay
+					delay(10);
+
+					// Power Monitor 3V3 LOW
+					return (false);
+
+				}
+
+			}
+
 			// Power ON Sequence of Modem
 			bool ON(void) {
 
 				// Enable GSM Modem Power Switch
 				#ifdef GSM_Power_Switch
-					POWER_SWITCH(true);  
+					GSM_POWER_SWITCH(true);
 				#endif
 				
 				// Enable GSM Modem LED Feed
@@ -1985,19 +1908,30 @@
 					STAT_LED(true);
 				#endif
 
+				// Boot Delay
+				delay(2000);
+
 				// Set Communication Signal LOW
 				#ifdef GSM_Comm_Switch
 					COMMUNICATION(true);
 				#endif
-				
-				// Boot Delay
-				delay(2000);
 
 				// Turn On Modem
-				if (POWER_MON) {
+				if (this->PowerMonitor()) {
 
 					// Command Delay
 					delay(300);
+
+					// Read Current Time
+					const uint32_t _Current_Time = millis();
+					
+					// Wait for SW Ready
+					while (!this->SWReady()) {
+
+						// Handle for timeout
+						if (millis() - _Current_Time >= 15000) break;
+
+					}
 
 					// End Function
 					return (true);
@@ -2032,7 +1966,18 @@
 					#endif
 
 					// Control for PWMon (PH7)
-					if (POWER_MON) {
+					if (this->PowerMonitor()) {
+
+						// Read Current Time
+						const uint32_t _Current_Time = millis();
+						
+						// Wait for SW Ready
+						while (!this->SWReady()) {
+
+							// Handle for timeout
+							if (millis() - _Current_Time >= 15000) break;
+
+						}
 
 						// End Function
 						return(true);
@@ -2061,7 +2006,7 @@
 			bool OFF(void) {
 
 				// Turn Off Modem
-				if (POWER_MON) {
+				if (this->PowerMonitor()) {
 
 					// Set On/Off Signal HIGH
 					ONOFF_SIGNAL(true);
@@ -2100,7 +2045,7 @@
 					while (_Power) {
 
 						// Control for PowerMonitor
-						if (!POWER_MON) {
+						if (!this->PowerMonitor()) {
 
 							// Set Variable
 							_Power = false;
@@ -2117,7 +2062,7 @@
 
 							// Disable GSM Modem Main Power Switch
 							#ifdef GSM_Power_Switch
-								POWER_SWITCH(false);  
+								GSM_POWER_SWITCH(false);  
 							#endif
 
 						}
@@ -2128,6 +2073,8 @@
 					}
 					
 				} else {
+
+					Console::Text(2, 116, WHITE, F("5"));
 
 					// Disable GSM LED Power
 					#ifdef GSM_LED_Switch
@@ -2141,7 +2088,7 @@
 
 					// Disable GSM Modem Main Power Switch
 					#ifdef GSM_Power_Switch
-						POWER_SWITCH(false);  
+						GSM_POWER_SWITCH(false);  
 					#endif
 
 				}
@@ -3459,7 +3406,7 @@
 							delay(500);
 
 							// Enable FOTA
-							FOTA_BURN(true);
+							PIN_WRITE_FOTA_POWER_EN(true);
 
 						} else {
 
@@ -3552,7 +3499,7 @@
 					#endif
 
 					// Activate SD Mux
-					SD_MUX(true);
+					PIN_WRITE_SD_MUX(true);
 					
 					// SD Wait Delay
 					delay(200);
@@ -4026,7 +3973,7 @@
 							#endif
 
 							// Turn Off SD MUX
-							SD_MUX(false);
+							PIN_WRITE_SD_MUX(false);
 
 							// Set Download Status
 							this->IoT_FOTA.Download_Status = FOTA_Download_OK;
@@ -4046,7 +3993,7 @@
 							this->IoT_FOTA.Download_Status = FOTA_FTP_File_Size_Error;
 
 							// Turn Off SD MUX
-							SD_MUX(false);
+							PIN_WRITE_SD_MUX(false);
 
 							// End Function
 							return(false);
@@ -4059,7 +4006,7 @@
 					} else {
 
 						// Turn Off SD MUX
-						SD_MUX(false);
+						PIN_WRITE_SD_MUX(false);
 
 						// Set Download Status
 						this->IoT_FOTA.Download_Status = FOTA_Download_Not_Save;

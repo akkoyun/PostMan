@@ -1,5 +1,20 @@
 # Release Notes
 
+## 0.14.2 (2023-08-02)
+
+* NTP function handle updated.
+
+## 0.14.1 (2023-08-02)
+
+* Firmware variable size updated.
+* PowerMonitor control function added.
+* LE910R1-EU model update.
+* Initialisation procedure updated.
+* Connection procedure updated.
+* Find ERROR function added.
+* AT command response delay updated.
+* AT commands updated (multi).
+
 ## 0.13.7 (2023-07-24)
 
 * No DEBUG version updated.
