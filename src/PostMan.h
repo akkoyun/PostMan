@@ -111,6 +111,7 @@
 				uint16_t 	Hour				= 0;
 				uint16_t 	Minute				= 0;
 				uint16_t 	Second				= 0;
+				uint16_t	Time_Zone			= 0;
 			} Time;
 
 			// Buffer Variables
@@ -1466,11 +1467,11 @@
 					#endif
 
 					// CCLK Command (Real Time Clock Configuration)
-					bool _Clock_State = AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second);
+					bool _Clock_State = AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second, this->Time.Time_Zone);
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+						Console::OK_Decide(_Clock_State, 14, 35);
 					#endif
 
 					// Print Connection Time

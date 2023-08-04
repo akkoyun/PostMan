@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.14.5 (2023-08-04)
+
+* TimeZone variable added.
+* Read clock procedure updated.
+
 ## 0.14.4 (2023-08-04)
 
 * Time variable structure moved to private.
