@@ -2,8 +2,8 @@
 #define __PostMan_Config__
 
 	// Hardware Definitions
-//	#define GSM_Power_Switch
-//	#define GSM_LED_Switch
+	#define GSM_Power_Switch
+	#define GSM_LED_Switch
 	#define GSM_Comm_Switch
 
 	// Define Terminal Defaults
@@ -12,9 +12,13 @@
 	#endif
 
 	// Define Packet Size
-	#define Send_JSON_Size		1024
-	#define Recieve_JSON_Size	128
-	#define Response_JSON_Size	32
+	#define Send_JSON_Size				1024
+	#define Recieve_JSON_Size			128
+	#define Response_JSON_Size			32
+
+	// Socket ID Definitions
+	#define Socket_Incomming			1
+	#define Socket_Outgoing				2
 
 	// Serial Communications Definations
 	#define Serial_Terminal 			Serial

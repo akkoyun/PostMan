@@ -26,14 +26,6 @@
 
 	#endif
 
-	// Define PIN Macros
-//	#define POWER_MON (((PORTJ) >> (PJ3)) & 0x01)
-	#define COMMUNICATION(_State) (_State ? PORTJ &= 0b11011111 : PORTJ |= 0b00100000)
-	#define GSM_POWER_SWITCH(_State) (_State ? PORTE |= 0b00000100 : PORTE &= 0b11111011)
-//	#define STAT_LED(_State) (_State ? PORTH &= 0b11101111 : PORTH |= 0b00010000)
-	#define ONOFF_SIGNAL(_State) (_State ? PORTJ |= 0b01000000 : PORTJ &= 0b10111111)
-	#define SHUTDOWN_SIGNAL(_State) (_State ? PORTJ |= 0b10000000 : PORTJ &= 0b01111111)
-
 	// Cloud Functions
 	class PostMan : private AT_Command_Set, private Console {
 
@@ -114,8 +106,16 @@
 				uint16_t	Time_Zone			= 0;
 			} Time;
 
-			// Buffer Variables
-			uint32_t 	Connection_Time_Buffer	= 0;
+			// Define Runtime Buffer Structure
+			struct Struct_Buffer {
+
+				// Connection Time
+				uint32_t 	Connection_Time_Buffer	= 0;
+
+				// Define JSON
+				char 		JSON_Pack[Send_JSON_Size];
+
+			} Buffer;
 
 			// Define CallBack Functions
 			void (*_Environment_CallBack)(float&, float&);
@@ -139,7 +139,7 @@
 				while (!this->IoT_Status.Initialize) {
 
 					// Control for Power Monitor
-					if (this->PowerMonitor()) {
+					if (bitRead(PINJ, PJ3)) {
 
 						// Print Batch Description
 						#ifdef DEBUG
@@ -150,9 +150,6 @@
 							Console::Text(14, 34, WHITE, F("[    ]"));
 
 						#endif
-
-						// Set Connection Start Time
-						this->Connection_Time_Buffer = millis();
 
 						// Set Control Variable
 						this->IoT_Status.Initialize = true;
@@ -179,7 +176,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -208,7 +205,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -247,7 +244,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -276,7 +273,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -305,7 +302,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -334,7 +331,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -363,7 +360,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -395,7 +392,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -430,7 +427,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -465,7 +462,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -500,7 +497,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -535,7 +532,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -570,7 +567,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -599,7 +596,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -628,7 +625,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -657,7 +654,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -755,7 +752,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -806,7 +803,7 @@
 										#ifdef DEBUG
 
 											// Set Connection Time
-											this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+											this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 						
 											// Print Connection Time
 											Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -841,7 +838,7 @@
 										#ifdef DEBUG
 
 											// Set Connection Time
-											this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+											this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 						
 											// Print Connection Time
 											Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -868,7 +865,7 @@
 										#ifdef DEBUG
 
 											// Set Connection Time
-											this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+											this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 						
 											// Print Connection Time
 											Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -895,7 +892,7 @@
 										#ifdef DEBUG
 
 											// Set Connection Time
-											this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+											this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 						
 											// Print Connection Time
 											Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -926,7 +923,7 @@
 								#ifdef DEBUG
 
 									// Set Connection Time
-									this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+									this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 				
 									// Print Connection Time
 									Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -952,7 +949,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -981,7 +978,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1016,7 +1013,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1040,14 +1037,70 @@
 								// Print Command State
 								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 								
+								// Print RED WDS Type
+								Console::Text(47, 3, RED, F("2G"));
+								Console::Text(47, 6, RED, F("3G"));
+								Console::Text(47, 9, RED, F("LTE"));
+
 								// Print WDS Type
-								if (this->IoT_Operator.WDS == 12) Console::Text(21, 29, CYAN, F("        2G"));
-								else if (this->IoT_Operator.WDS == 22) Console::Text(21, 29, CYAN, F("        3G"));
-								else if (this->IoT_Operator.WDS == 25) Console::Text(21, 29, CYAN, F(" 2G/3G/LTE"));
-								else if (this->IoT_Operator.WDS == 28) Console::Text(21, 29, CYAN, F("        4G"));
-								else if (this->IoT_Operator.WDS == 29) Console::Text(21, 29, CYAN, F("     2G/3G"));
-								else if (this->IoT_Operator.WDS == 30) Console::Text(21, 29, CYAN, F("    2G/LTE"));
-								else if (this->IoT_Operator.WDS == 31) Console::Text(21, 29, CYAN, F("    3G/LTE"));
+								if (this->IoT_Operator.WDS == 12) {
+
+									// Print 2G WDS Type
+									Console::Text(47, 3, GREEN, F("2G"));
+
+								} else if (this->IoT_Operator.WDS == 22) {
+
+									// Print 3G WDS Type
+									Console::Text(47, 6, GREEN, F("3G"));
+
+								} else if (this->IoT_Operator.WDS == 25) {
+
+									// Print 2G WDS Type
+									Console::Text(47, 3, GREEN, F("2G"));
+
+									// Print 3G WDS Type
+									Console::Text(47, 6, GREEN, F("3G"));
+
+									// Print LTE WDS Type
+									Console::Text(47, 9, GREEN, F("LTE"));
+
+								} else if (this->IoT_Operator.WDS == 28) {
+
+									// Print LTE WDS Type
+									Console::Text(47, 9, GREEN, F("LTE"));
+
+								} else if (this->IoT_Operator.WDS == 29) {
+
+									// Print 2G WDS Type
+									Console::Text(47, 3, GREEN, F("2G"));
+
+									// Print 3G WDS Type
+									Console::Text(47, 6, GREEN, F("3G"));
+
+								} else if (this->IoT_Operator.WDS == 30) {
+
+									// Print 2G WDS Type
+									Console::Text(47, 3, GREEN, F("2G"));
+
+									// Print LTE WDS Type
+									Console::Text(47, 9, GREEN, F("LTE"));
+
+								} else if (this->IoT_Operator.WDS == 31) {
+
+									// Print 3G WDS Type
+									Console::Text(47, 6, GREEN, F("3G"));
+
+									// Print LTE WDS Type
+									Console::Text(47, 9, GREEN, F("LTE"));
+
+								} else {
+
+									// Print RED WDS Type
+									Console::Text(47, 3, RED, F("2G"));
+									Console::Text(47, 6, RED, F("3G"));
+									Console::Text(47, 9, RED, F("LTE"));
+
+								}
 
 							#endif
 
@@ -1057,7 +1110,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1113,7 +1166,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1129,7 +1182,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SCFG(3, 1, 1500, 90, 1200, 0)) this->IoT_Status.Connection = false;
+							if (!AT_Command_Set::SCFG(Socket_Outgoing, 1, 1500, 90, 1200, 0)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1142,7 +1195,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1158,7 +1211,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SCFGEXT(3, 1, 0, 0, 0, 0)) this->IoT_Status.Connection = false;
+							if (!AT_Command_Set::SCFGEXT(Socket_Outgoing, 1, 0, 0, 0, 0)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1171,7 +1224,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1187,7 +1240,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SCFGEXT2(3, 1, 0, 0, 0, 0)) this->IoT_Status.Connection = false;
+							if (!AT_Command_Set::SCFGEXT2(Socket_Outgoing, 1, 0, 0, 0, 0)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1200,7 +1253,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1216,7 +1269,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SCFG(2, 1, 1500, 90, 300, 50)) this->IoT_Status.Connection = false;
+							if (!AT_Command_Set::SCFG(Socket_Incomming, 1, 1500, 90, 300, 50)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1229,7 +1282,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1245,7 +1298,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SCFGEXT(2, 1, 0, 1, 0, 0)) this->IoT_Status.Connection = false;
+							if (!AT_Command_Set::SCFGEXT(Socket_Incomming, 1, 0, 1, 0, 0)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -1258,7 +1311,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1269,7 +1322,7 @@
 						#ifdef DEBUG
 
 							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 		
 							// Print Connection Time
 							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1347,11 +1400,24 @@
 
 					// Print Command State
 					#ifdef DEBUG
+						Console::GSM_Command(14, 4, F("AT#FRWL=2"));
+					#endif
+
+					// FRWL Clear (Firewall Configuration)
+					bool _FireWall_Clear_State = AT_Command_Set::FRWL(SET, 2, _AT_FRWL_1_IP_);
+
+					// Print Command State
+					#ifdef DEBUG
+						Console::OK_Decide(_FireWall_Clear_State, 14, 35);
+					#endif
+
+					// Print Command State
+					#ifdef DEBUG
 						Console::GSM_Command(14, 4, F("AT#FRWL=1,***"));
 					#endif
 
 					// FRWL Command 1 (Firewall Configuration)
-					bool _FireWall_State_1 = AT_Command_Set::FRWL(1, _AT_FRWL_1_IP_);
+					bool _FireWall_State_1 = AT_Command_Set::FRWL(SET, 1, _AT_FRWL_1_IP_);
 
 					// Print Command State
 					#ifdef DEBUG
@@ -1362,7 +1428,7 @@
 					#ifdef DEBUG
 
 						// Set Connection Time
-						this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+						this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 	
 						// Print Connection Time
 						Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1370,7 +1436,7 @@
 					#endif
 
 					// FRWL Command 2 (Firewall Configuration)
-					bool _FireWall_State_2 = AT_Command_Set::FRWL(1, _AT_FRWL_2_IP_);
+					bool _FireWall_State_2 = AT_Command_Set::FRWL(SET, 1, _AT_FRWL_2_IP_);
 
 					// Print Command State
 					#ifdef DEBUG
@@ -1381,7 +1447,7 @@
 					#ifdef DEBUG
 
 						// Set Connection Time
-						this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+						this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 
 						// Print Connection Time
 						Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1389,7 +1455,7 @@
 					#endif
 
 					// FRWL Command 3 (Firewall Configuration)
-					bool _FireWall_State_3 = AT_Command_Set::FRWL(1, _AT_FRWL_3_IP_);
+					bool _FireWall_State_3 = AT_Command_Set::FRWL(SET, 1, _AT_FRWL_3_IP_);
 
 					// Print Command State
 					#ifdef DEBUG
@@ -1400,7 +1466,7 @@
 					#ifdef DEBUG
 
 						// Set Connection Time
-						this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+						this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 	
 						// Print Connection Time
 						Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1413,7 +1479,7 @@
 					#endif
 
 					// ICMP Command (Ping Configuration)
-					bool _ICMP_State = AT_Command_Set::ICMP(2);
+					bool _ICMP_State = AT_Command_Set::ICMP(1);
 
 					// Print Command State
 					#ifdef DEBUG
@@ -1424,7 +1490,7 @@
 					#ifdef DEBUG
 
 						// Set Connection Time
-						this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+						this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 	
 						// Print Connection Time
 						Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1478,7 +1544,7 @@
 					#ifdef DEBUG
 
 						// Set Connection Time
-						this->IoT_Operator.Connection_Time = ((millis() - this->Connection_Time_Buffer) / 1000);
+						this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
 	
 						// Print Connection Time
 						Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
@@ -1550,7 +1616,7 @@
 					#endif
 
 					// Send Command
-					AT_Command_Set::SS(2, this->IoT_Status.Socket_State);
+					AT_Command_Set::SS(Socket_Incomming, this->IoT_Status.Socket_State);
 
 					// Print Command State
 					#ifdef DEBUG
@@ -1562,23 +1628,15 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Console::GSM_Command(14, 4, F("AT#SL=2,1,80,255"));
+							Console::GSM_Command(14, 4, F("AT#SL=*,1,80,255"));
 						#endif
+
+						// Activate Socket for Listen
+						bool _SL_Command = AT_Command_Set::SL(Socket_Incomming, 1, 80, 255);
 
 						// Print Command State
 						#ifdef DEBUG
-
-							// Activate Socket for Listen
-							bool _SL_Command = AT_Command_Set::SL(2, 1, 80, 255);
-
-							// Print Command State
 							Console::OK_Decide(_SL_Command, 14, 35);
-
-						#else
-
-							// Activate Socket for Listen
-							AT_Command_Set::SL(2, 1, 80, 255);
-
 						#endif
 
 						// Command Delay
@@ -1586,14 +1644,14 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Console::GSM_Command(14, 4, F("AT#SS=2"));
+							Console::GSM_Command(14, 4, F("AT#SS=*"));
 						#endif
 
 						// Print Command State
 						#ifdef DEBUG
 
 							// Send Command
-							bool _SS_Command = AT_Command_Set::SS(2, this->IoT_Status.Socket_State);
+							bool _SS_Command = AT_Command_Set::SS(Socket_Incomming, this->IoT_Status.Socket_State);
 
 							// Print Command State
 							Console::OK_Decide(_SS_Command, 14, 35);
@@ -1601,7 +1659,7 @@
 						#else
 
 							// Send Command
-							AT_Command_Set::SS(2, this->IoT_Status.Socket_State);
+							AT_Command_Set::SS(Socket_Incomming, this->IoT_Status.Socket_State);
 
 						#endif
 
@@ -1633,14 +1691,14 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Console::GSM_Command(14, 4, F("AT#SL=2,0,80,255"));
+							Console::GSM_Command(14, 4, F("AT#SL=*,0,80,255"));
 						#endif
 
 						// Print Command State
 						#ifdef DEBUG
 
 							// DeActivate Socket for Listen
-							bool _SL_Command = AT_Command_Set::SL(2, 0, 80, 255);
+							bool _SL_Command = AT_Command_Set::SL(Socket_Incomming, 0, 80, 255);
 
 							// Print Command State
 							Console::OK_Decide(_SL_Command, 14, 35);
@@ -1648,7 +1706,7 @@
 						#else
 
 							// DeActivate Socket for Listen
-							AT_Command_Set::SL(2, 0, 80, 255);
+							AT_Command_Set::SL(Socket_Incomming, 0, 80, 255);
 
 						#endif
 
@@ -1657,11 +1715,11 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Console::GSM_Command(14, 4, F("AT#SS=2"));
+							Console::GSM_Command(14, 4, F("AT#SS=*"));
 						#endif
 
 						// Get Socket Status
-						AT_Command_Set::SS(2, this->IoT_Status.Socket_State);
+						AT_Command_Set::SS(Socket_Incomming, this->IoT_Status.Socket_State);
 
 						// Print Command State
 						#ifdef DEBUG
@@ -1712,50 +1770,6 @@
 
 			}
 
-			// Update GSM Parameters
-			void Update_Connection_Variables(void) {
-
-				// WS46 Command (Network Type)
-				AT_Command_Set::WS46(GET, this->IoT_Operator.WDS);
-
-				// RFSTS Command (Network Status)
-				AT_Command_Set::RFSTS(this->IoT_Operator.MCC, this->IoT_Operator.MNC, this->IoT_Operator.RSSI, this->IoT_Operator.Signal, this->IoT_Operator.Cell_ID, this->IoT_Operator.TAC);
-
-				// Print Command State
-				#ifdef DEBUG
-
-					// Print WDS Type
-					if (this->IoT_Operator.WDS == 12) Console::Text(21, 29, CYAN, F("        2G"));
-					else if (this->IoT_Operator.WDS == 22) Console::Text(21, 29, CYAN, F("        3G"));
-					else if (this->IoT_Operator.WDS == 25) Console::Text(21, 29, CYAN, F(" 2G/3G/LTE"));
-					else if (this->IoT_Operator.WDS == 28) Console::Text(21, 29, CYAN, F("        4G"));
-					else if (this->IoT_Operator.WDS == 29) Console::Text(21, 29, CYAN, F("     2G/3G"));
-					else if (this->IoT_Operator.WDS == 30) Console::Text(21, 29, CYAN, F("    2G/LTE"));
-					else if (this->IoT_Operator.WDS == 31) Console::Text(21, 29, CYAN, F("    3G/LTE"));
-
-					// Print Signal Level Value
-					Console::Text(18, 65, WHITE, F("[-   ]"));
-					Console::Text(18, 67, CYAN, String(this->IoT_Operator.RSSI));
-
-					// Print Signal Level Bar
-					Console::Text(18, 74, GRAY, F("_____"));
-					for (uint8_t i = 1; i <= this->IoT_Operator.Signal; i++) Console::Text(18, 73 + i, CYAN, F("X"));
-
-					// Print Operator Value
-					Console::Text(19, 74, CYAN, String(this->IoT_Operator.MCC));
-					Console::Text(19, 77, CYAN, F("0"));
-					Console::Text(19, 78, CYAN, String(this->IoT_Operator.MNC));
-
-					// Print Modem LAC Value
-					Console::Text(21, 75, CYAN, uint64ToString(this->IoT_Operator.TAC));
-
-					// Print Modem Cell ID Value
-					Console::Text(22, 70, CYAN, String(this->IoT_Operator.Cell_ID));
-
-				#endif
-
-			}
-
 			// Parse JSON Pack
 			uint16_t Parse_JSON(uint8_t _Pack_Type) {
 
@@ -1766,7 +1780,7 @@
 				#define JSON_Segment_Payload
 
 				// Clear Pack
-				memset(this->JSON_Pack, '\0', Send_JSON_Size);
+				memset(this->Buffer.JSON_Pack, '\0', Send_JSON_Size);
 
 				// Define JSON
 				StaticJsonDocument<Send_JSON_Size> JSON;
@@ -1867,6 +1881,105 @@
 				// Parse Battery Segment
 				#ifdef JSON_Segment_GSM
 
+					// WS46 Command (Network Type)
+					AT_Command_Set::WS46(GET, this->IoT_Operator.WDS);
+
+					// RFSTS Command (Network Status)
+					AT_Command_Set::RFSTS(this->IoT_Operator.MCC, this->IoT_Operator.MNC, this->IoT_Operator.RSSI, this->IoT_Operator.Signal, this->IoT_Operator.Cell_ID, this->IoT_Operator.TAC);
+
+					#ifdef DEBUG
+						
+						// Print RED WDS Type
+						Console::Text(47, 3, RED, F("2G"));
+						Console::Text(47, 6, RED, F("3G"));
+						Console::Text(47, 9, RED, F("LTE"));
+
+						// Print WDS Type
+						if (this->IoT_Operator.WDS == 12) {
+
+							// Print 2G WDS Type
+							Console::Text(47, 3, GREEN, F("2G"));
+
+						} else if (this->IoT_Operator.WDS == 22) {
+
+							// Print 3G WDS Type
+							Console::Text(47, 6, GREEN, F("3G"));
+
+						} else if (this->IoT_Operator.WDS == 25) {
+
+							// Print 2G WDS Type
+							Console::Text(47, 3, GREEN, F("2G"));
+
+							// Print 3G WDS Type
+							Console::Text(47, 6, GREEN, F("3G"));
+
+							// Print LTE WDS Type
+							Console::Text(47, 9, GREEN, F("LTE"));
+
+						} else if (this->IoT_Operator.WDS == 28) {
+
+							// Print LTE WDS Type
+							Console::Text(47, 9, GREEN, F("LTE"));
+
+						} else if (this->IoT_Operator.WDS == 29) {
+
+							// Print 2G WDS Type
+							Console::Text(47, 3, GREEN, F("2G"));
+
+							// Print 3G WDS Type
+							Console::Text(47, 6, GREEN, F("3G"));
+
+						} else if (this->IoT_Operator.WDS == 30) {
+
+							// Print 2G WDS Type
+							Console::Text(47, 3, GREEN, F("2G"));
+
+							// Print LTE WDS Type
+							Console::Text(47, 9, GREEN, F("LTE"));
+
+						} else if (this->IoT_Operator.WDS == 31) {
+
+							// Print 3G WDS Type
+							Console::Text(47, 6, GREEN, F("3G"));
+
+							// Print LTE WDS Type
+							Console::Text(47, 9, GREEN, F("LTE"));
+
+						} else {
+
+							// Print RED WDS Type
+							Console::Text(47, 3, RED, F("2G"));
+							Console::Text(47, 6, RED, F("3G"));
+							Console::Text(47, 9, RED, F("LTE"));
+
+						}
+
+					#endif
+
+					// Print Command State
+					#ifdef DEBUG
+
+						// Print Signal Level Value
+						Console::Text(18, 65, WHITE, F("[-   ]"));
+						Console::Text(18, 67, CYAN, String(this->IoT_Operator.RSSI));
+
+						// Print Signal Level Bar
+						Console::Text(18, 74, GRAY, F("_____"));
+						for (uint8_t i = 1; i <= this->IoT_Operator.Signal; i++) Console::Text(18, 73 + i, CYAN, F("X"));
+
+						// Print Operator Value
+						Console::Text(19, 74, CYAN, String(this->IoT_Operator.MCC));
+						Console::Text(19, 77, CYAN, F("0"));
+						Console::Text(19, 78, CYAN, String(this->IoT_Operator.MNC));
+
+						// Print Modem LAC Value
+						Console::Text(21, 75, CYAN, uint64ToString(this->IoT_Operator.TAC));
+
+						// Print Modem Cell ID Value
+						Console::Text(22, 70, CYAN, String(this->IoT_Operator.Cell_ID));
+
+					#endif
+
 					// Define GSM Section
 					JsonObject JSON_GSM = JSON_Device["IoT"].createNestedObject(F("GSM"));
 
@@ -1887,9 +2000,6 @@
 
 					// Define GSM Operator Section
 					JsonObject JSON_Operator = JSON_GSM.createNestedObject(F("Operator"));
-
-					// Update Connection Variables
-					this->Update_Connection_Variables();
 
 					// Set Device GSM Connection Detail Section
 					if (_Pack_Type == Pack_Online or _Pack_Type == Pack_Update) JSON_Operator[F("SIM_Type")] = 1;
@@ -2011,17 +2121,17 @@
 				JSON.garbageCollect();
 
 				// Serialize JSON	
-				uint16_t _JSON_Size = serializeJson(JSON, this->JSON_Pack);
+				uint16_t _JSON_Size = serializeJson(JSON, this->Buffer.JSON_Pack);
 
 				// Print Command State
 				#ifdef DEBUG
-					Console::Text(25, 4, WHITE,String(this->JSON_Pack).substring(0, 75));
-					Console::Text(26, 4, WHITE,String(this->JSON_Pack).substring(75, 150));
-					Console::Text(27, 4, WHITE,String(this->JSON_Pack).substring(150, 225));
-					Console::Text(28, 4, WHITE,String(this->JSON_Pack).substring(225, 300));
-					Console::Text(29, 4, WHITE,String(this->JSON_Pack).substring(300, 375));
-					Console::Text(30, 4, WHITE,String(this->JSON_Pack).substring(375, 450));
-					Console::Text(31, 4, WHITE,String(this->JSON_Pack).substring(450, 525));
+					Console::Text(25, 4, WHITE,String(this->Buffer.JSON_Pack).substring(0, 75));
+					Console::Text(26, 4, WHITE,String(this->Buffer.JSON_Pack).substring(75, 150));
+					Console::Text(27, 4, WHITE,String(this->Buffer.JSON_Pack).substring(150, 225));
+					Console::Text(28, 4, WHITE,String(this->Buffer.JSON_Pack).substring(225, 300));
+					Console::Text(29, 4, WHITE,String(this->Buffer.JSON_Pack).substring(300, 375));
+					Console::Text(30, 4, WHITE,String(this->Buffer.JSON_Pack).substring(375, 450));
+					Console::Text(31, 4, WHITE,String(this->Buffer.JSON_Pack).substring(450, 525));
 				#endif
 
 				// End Function
@@ -2051,7 +2161,7 @@
 					LOG_File.flush();
 
 					// Print Data
-					LOG_File.println(this->JSON_Pack);
+					LOG_File.println(this->Buffer.JSON_Pack);
 
 					// Print Line Feed
 					LOG_File.println("");
@@ -2069,7 +2179,7 @@
 					#endif
 
 					// Clear Pack
-					memset(this->JSON_Pack, '\0', 1024);
+					memset(this->Buffer.JSON_Pack, '\0', 1024);
 
 				}
 
@@ -2083,9 +2193,6 @@
 
 		// Public Functions
 		public:
-
-			// Define JSON
-			char JSON_Pack[Send_JSON_Size];
 
 			// Define Interrupt Structure
 			struct Struct_Interrupt {
@@ -2152,83 +2259,30 @@
 
 			// ************************************************************
 
-			// Read PowerMonitor Status
-			bool PowerMonitor(void) {
-
-				// Control for PWMon (PJ3)
-				if ((PINJ & (1 << PINJ3)) == (1 << PINJ3)) {
-
-					// Response Delay
-					delay(10);
-
-					// Power Monitor 3V3 HIGH
-					return (true);
-
-				} else {
-
-					// Response Delay
-					delay(10);
-
-					// Power Monitor 3V3 LOW
-					return (false);
-
-				}
-
-			}
-
-			// Read SWReadty Status
-			bool SWReady(void) {
-
-				// Control for PWMon (PJ3)
-				if ((PINJ & (1 << PINJ4)) == (1 << PINJ4)) {
-
-					// Response Delay
-					delay(10);
-
-					// Power Monitor 3V3 HIGH
-					return (true);
-
-				} else {
-
-					// Response Delay
-					delay(10);
-
-					// Power Monitor 3V3 LOW
-					return (false);
-
-				}
-
-			}
-
 			// Power ON Sequence of Modem
 			bool ON(void) {
 
 				// Enable GSM Modem Power Switch
 				#ifdef GSM_Power_Switch
-					GSM_POWER_SWITCH(true);
+					PORTE |= 0b00000100;
+//					GSM_POWER_SWITCH(true);
 				#endif
 				
-				// Enable GSM Modem LED Feed
-				#ifdef GSM_LED_Switch
-					STAT_LED(true);
-				#endif
-
 				// Set Communication Signal LOW
 				#ifdef GSM_Comm_Switch
-					COMMUNICATION(true);
+				 	PORTJ &= 0b11011111;
+					delay(50);
+//					COMMUNICATION(true);
 				#endif
 
 				// Turn On Modem
-				if (this->PowerMonitor()) {
-
-					// Command Delay
-					delay(300);
+				if (bitRead(PINJ, PJ3)) {
 
 					// Read Current Time
 					const uint32_t _Current_Time = millis();
 					
 					// Wait for SW Ready
-					while (!this->SWReady()) {
+					while (!bitRead(PINJ, PJ4)) {
 
 						// Handle for timeout
 						if (millis() - _Current_Time >= 15000) break;
@@ -2241,7 +2295,8 @@
 				} else {
 
 					// Set On/Off Signal HIGH
-					ONOFF_SIGNAL(true);
+					PORTJ |= 0b01000000;
+//					ONOFF_SIGNAL(true);
 
 					// Command Delay
 					for (uint8_t i = 0; i < 36; i++) {
@@ -2260,7 +2315,8 @@
 					}
 
 					// Set On/Off Signal LOW [PJ6]
-					ONOFF_SIGNAL(false);
+					PORTJ &= 0b10111111;
+//					ONOFF_SIGNAL(false);
 
 					// Clear Bar
 					#ifdef DEBUG
@@ -2268,13 +2324,13 @@
 					#endif
 
 					// Control for PWMon (PH7)
-					if (this->PowerMonitor()) {
+					if (bitRead(PINJ, PJ3)) {
 
 						// Read Current Time
 						const uint32_t _Current_Time = millis();
 						
 						// Wait for SW Ready
-						while (!this->SWReady()) {
+						while (!bitRead(PINJ, PJ4)) {
 
 							// Handle for timeout
 							if (millis() - _Current_Time >= 15000) break;
@@ -2287,13 +2343,15 @@
 					} else {
 
 						// Set Shut Down Signal HIGH
-						SHUTDOWN_SIGNAL(true);
+						PORTJ |= 0b10000000;
+//						SHUTDOWN_SIGNAL(true);
 
 						// Command Delay
 						delay(200);
 
 						// Set Shut Down Signal LOW
-						SHUTDOWN_SIGNAL(false);
+						PORTJ &= 0b01111111;
+//						SHUTDOWN_SIGNAL(false);
 
 					}
 
@@ -2308,10 +2366,11 @@
 			bool OFF(void) {
 
 				// Turn Off Modem
-				if (this->PowerMonitor()) {
+				if (bitRead(PINJ, PJ3)) {
 
 					// Set On/Off Signal HIGH
-					ONOFF_SIGNAL(true);
+					PORTJ |= 0b01000000;
+//					ONOFF_SIGNAL(true);
 
 					// Command Delay
 					for (uint8_t i = 0; i < 36; i++) {
@@ -2330,7 +2389,8 @@
 					}
 
 					// Set On/Off Signal LOW [PJ6]
-					ONOFF_SIGNAL(false);
+					PORTJ &= 0b10111111;
+//					ONOFF_SIGNAL(false);
 
 					// Clear Bar
 					#ifdef DEBUG
@@ -2347,24 +2407,22 @@
 					while (_Power) {
 
 						// Control for PowerMonitor
-						if (!this->PowerMonitor()) {
+						if (!bitRead(PINJ, PJ3)) {
 
 							// Set Variable
 							_Power = false;
 
-							// Disable GSM LED Power
-							#ifdef GSM_LED_Switch
-								STAT_LED(false);
-							#endif
-
 							// Disable GSM Modem Voltage Translator
 							#ifdef GSM_Comm_Switch
-								COMMUNICATION(false);
+								PORTJ |= 0b00100000;
+//								COMMUNICATION(false);
+								delay(100);
 							#endif
 
 							// Disable GSM Modem Main Power Switch
 							#ifdef GSM_Power_Switch
-								GSM_POWER_SWITCH(false);  
+								PORTE &= 0b11111011;
+//								GSM_POWER_SWITCH(false);  
 							#endif
 
 						}
@@ -2376,21 +2434,16 @@
 					
 				} else {
 
-					Console::Text(2, 116, WHITE, F("5"));
-
-					// Disable GSM LED Power
-					#ifdef GSM_LED_Switch
-						STAT_LED(false);
-					#endif
-
 					// Disable GSM Modem Voltage Translator
 					#ifdef GSM_Comm_Switch
-						COMMUNICATION(false);
+						PORTJ |= 0b00100000;
+//						COMMUNICATION(false);
 					#endif
 
 					// Disable GSM Modem Main Power Switch
 					#ifdef GSM_Power_Switch
-						GSM_POWER_SWITCH(false);  
+						PORTE &= 0b11111011;
+//						GSM_POWER_SWITCH(false);  
 					#endif
 
 				}
@@ -2458,6 +2511,9 @@
 			// Connect GSM Modem
 			void Online(void) {
 
+				// Set Connection Start Time
+				this->Buffer.Connection_Time_Buffer = millis();
+
 				// GSM Connection Squence
 				if (this->OFF()) {
 
@@ -2523,11 +2579,6 @@
 
 				}
 
-				// Print Command State
-				#ifdef DEBUG
-					Console::Text(14, 44, CYAN, F("                                    "));
-				#endif
-
 			}
 
 			// ************************************************************
@@ -2555,7 +2606,7 @@
 					#endif
 
 					// Open Connection
-					if (AT_Command_Set::ATSD(3, 0, 80, 255, 88, 1, _BackEnd_Server_)) {
+					if (AT_Command_Set::ATSD(Socket_Outgoing, 0, 80, 255, 88, 1, _BackEnd_Server_)) {
 
 						// Print Command State
 						#ifdef DEBUG
@@ -2573,7 +2624,7 @@
 						#endif
 
 						// Sending Data
-						if (AT_Command_Set::SSEND(3, 2, 0, _BackEnd_Server_, _BackEnd_EndPoint_, this->JSON_Pack)) {
+						if (AT_Command_Set::SSEND(Socket_Outgoing, 2, 0, _BackEnd_Server_, _BackEnd_EndPoint_, this->Buffer.JSON_Pack)) {
 
 							// Print Command State
 							#ifdef DEBUG
@@ -2585,10 +2636,12 @@
 							uint16_t _Length;
 
 							// Get Ring Port
-							if (AT_Command_Set::Send_SRING(_Length)) {
+							if (AT_Command_Set::SRING(_Length)) {
 
 								// Declare Response Variable
 								char _Response[Response_JSON_Size];
+
+								// Clear Response
 								memset(_Response, '\0', Response_JSON_Size);
 
 								// Command Delay
@@ -2604,7 +2657,7 @@
 								if (_Length > Response_JSON_Size) _Length = Response_JSON_Size;
 
 								// Get Request Data
-								if (AT_Command_Set::SRECV(3, _Length, _Response)) {
+								if (AT_Command_Set::SRECV(Socket_Outgoing, _Length, _Response)) {
 
 									// Define JSON Object
 									StaticJsonDocument<Response_JSON_Size> Incoming_JSON;
@@ -2644,7 +2697,7 @@
 									#endif
 
 									// Closing Socket
-									if (AT_Command_Set::SH(3)) {
+									if (AT_Command_Set::SH(Socket_Outgoing)) {
 
 										// Control for Incoming Call
 										this->Listen(true);
@@ -2760,11 +2813,8 @@
 
 									} else {
 
-										// Print Command State
-										#ifdef DEBUG
-											Console::Text(14, 44, CYAN, F("                                    "));
-											Console::Text(14, 44, RED, F("Closing Socket Error."));
-										#endif
+										// Send Data CallBack Error
+										_Send_Response_CallBack(0, 1);
 
 										// Clear JSON Print
 										#ifdef DEBUG
@@ -2784,79 +2834,43 @@
 								} else {
 
 									// Send Data CallBack Error
-									_Send_Response_CallBack(0, 1);
-
-									// Print Command State
-									#ifdef DEBUG
-										Console::Text(14, 44, CYAN, F("                                    "));
-										Console::Text(14, 44, GREEN, F("Server Don't Response"));
-									#endif
-
-									// Port Control
-									this->Listen(true);
-
-									// End Function
-									return(false);
+									_Send_Response_CallBack(0, 2);
 						
 								}
 								
 							} else {
 
 								// Send Data CallBack Error
-								_Send_Response_CallBack(0, 2);
-
-								// Port Control
-								this->Listen(true);
-
-								// End Function
-								return(false);
+								_Send_Response_CallBack(0, 3);
 
 							}
 
 						} else {
 
-							// End Function
-							return(false);
+							// Send Data CallBack Error
+							_Send_Response_CallBack(0, 4);
 
 						}
 
 					} else {
 
 						// Send Data CallBack Error
-						_Send_Response_CallBack(0, 3);
-
-						// Print Command State
-						#ifdef DEBUG
-							Console::Text(14, 44, CYAN, F("                                    "));
-							Console::Text(14, 44, RED, F("Socket Dial Error"));
-						#endif
-
-						// Port Control
-						this->Listen(true);
-
-						// End Function
-						return(false);
+						_Send_Response_CallBack(0, 5);
 
 					}
 
 				} else {
 
-					// Print Command State
-					#ifdef DEBUG
-						Console::Text(14, 44, CYAN, F("                                    "));
-						Console::Text(14, 44, RED, F("No Connection"));
-					#endif
-
 					// LOG JSON Data
 					this->JSON_LOG();
 
 					// Send Data CallBack Error
-					_Send_Response_CallBack(0, 4);
-
-					// End Function
-					return(false);
+					_Send_Response_CallBack(0, 6);
 
 				}
+
+				// Port Control
+				this->Listen(true);
 
 				// End Function
 				return(false);
@@ -2869,14 +2883,11 @@
 				// Control for Connection
 				if (this->IoT_Status.Connection) {
 
+					// Declare Request Pack Length
+					uint16_t _Length;
+
 					// Wait for Sring
-					if (AT_Command_Set::Receive_SRING()) {
-
-						// Declare Request Pack Length
-						uint16_t _Request_Length;
-
-						// Answer Socket
-						AT_Command_Set::SA(2, 1, _Request_Length);
+					if (AT_Command_Set::SRING(_Length)) {
 
 						// Declare JSON Variable
 						char _JSON_Data[Recieve_JSON_Size];
@@ -2892,10 +2903,10 @@
 						#endif
 
 						// Handle Max Length
-						if (_Request_Length > Recieve_JSON_Size) _Request_Length = Recieve_JSON_Size;
+						if (_Length > Recieve_JSON_Size) _Length = Recieve_JSON_Size;
 
 						// Get Request Data
-						AT_Command_Set::SRECV(2, _Request_Length, _JSON_Data);
+						AT_Command_Set::SRECV(Socket_Incomming, _Length, _JSON_Data);
 
 						// Declare JSON Object
 						StaticJsonDocument<Recieve_JSON_Size> Incoming_JSON;
@@ -3723,7 +3734,7 @@
 				serializeJson(Response_JSON, _Response_JSON);
 
 				// Send Socket Answer
-				if (AT_Command_Set::SSEND(2, 1, _Response_Code, "", "", _Response_JSON)) {
+				if (AT_Command_Set::SSEND(Socket_Incomming, 1, _Response_Code, "", "", _Response_JSON)) {
 
 					// Print Command State
 					#ifdef DEBUG
@@ -3735,7 +3746,7 @@
 					delay(20);
 
 					// Close Socket
-					if (AT_Command_Set::SH(2)) {
+					if (AT_Command_Set::SH(Socket_Incomming)) {
 
 						// Command Delay
 						delay(20);

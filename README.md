@@ -1,5 +1,21 @@
 # Release Notes
 
+## 0.14.6 (2023-08-04)
+
+* Socket ID constants defined in config file.
+* Macros deleted.
+* Buffer structure added.
+* WDS type print functions updated.
+* Firewall batch function updated.
+* Update_Connection_Variables function deleted.
+* Parse JSON batch updated.
+* PowerMonitor function deleted.
+* SWReady function deleted.
+* Find_Error function added to SD function.
+* Send_Header function renamed to Header.
+* FRWL function updated.
+* SRING function rewritten.
+
 ## 0.14.5 (2023-08-04)
 
 * TimeZone variable added.
