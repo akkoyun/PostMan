@@ -1,5 +1,14 @@
 # Release Notes
 
+## 0.14.4 (2023-08-04)
+
+* Time variable structure moved to private.
+* Connection time procedure updated.
+* Firewall procedure moved to function.
+* Close procedure moved to function.
+* Update_Connection_Variables function updated.
+* Online procedure updated.
+
 ## 0.14.3 (2023-08-03)
 
 * IoT_Operator variables updated.
