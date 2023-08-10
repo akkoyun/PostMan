@@ -11,10 +11,16 @@
 		#include "Config/Includes.h"
 	#endif
 
-	// Define Library Includes
-	#ifndef __Telit_AT_Command_Set__
-		#include "AT_Command_Set.h"
+	// Include Hardware Libraries
+	#ifndef __PostMan_Hardware__
+		#include "Hardware/B107AA.h"
 	#endif
+
+	// Define Library Includes
+	#include "AT_Command/LE910C1_EUX.h"
+//	#ifndef __Telit_AT_Command_Set__
+//		#include "AT_Command_Set.h"
+//	#endif
 
 	// Define Console Library
 	#ifdef DEBUG
@@ -27,7 +33,7 @@
 	#endif
 
 	// Cloud Functions
-	class PostMan : private AT_Command_Set, private Console {
+	class PostMan : private AT_Command_Set, private Console, private Hardware {
 
 		// Private Functions
 		private:
@@ -139,16 +145,13 @@
 				while (!this->IoT_Status.Initialize) {
 
 					// Control for Power Monitor
-					if (bitRead(PINJ, PJ3)) {
+					if (Hardware::PowerMonitor()) {
 
 						// Print Batch Description
 						#ifdef DEBUG
-
-							// Print Description
 							Console::Text(14, 44, CYAN, F("                                    "));
 							Console::Text(14, 44, CYAN, F("Initializing Modem"));
 							Console::Text(14, 34, WHITE, F("[    ]"));
-
 						#endif
 
 						// Set Control Variable
@@ -170,18 +173,13 @@
 								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// ATE Command (Echo Off)
 						if (this->IoT_Status.Initialize) {
@@ -199,18 +197,13 @@
 								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// SIMDET Command (SIM Card Detect)
 						if (this->IoT_Status.Initialize) {
@@ -238,18 +231,13 @@
 							// No SIM Card
 							if (!this->IoT_Status.SIM_Inserted) return(false);
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// CFUN Command (Full Functionality)
 						if (this->IoT_Status.Initialize) {
@@ -267,18 +255,13 @@
 								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// CMEE Command (Error Messages)
 						if (this->IoT_Status.Initialize) {
@@ -296,18 +279,13 @@
 								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// FCLASS Command (Connection Mode)
 						if (this->IoT_Status.Initialize) {
@@ -325,18 +303,13 @@
 								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// ATK Command (No Flow Control)
 						if (this->IoT_Status.Initialize) {
@@ -354,18 +327,13 @@
 								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// CPIN Command (SIM PIN Control)
 						if (this->IoT_Status.Initialize) {
@@ -386,18 +354,13 @@
 							// End Function
 							if (this->IoT_Status.SIM_PIN != 1) break;
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// CGSN Command (Get IMEI)
 						if (this->IoT_Status.Initialize) {
@@ -421,18 +384,13 @@
 
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// ICCID Command (Get SIM Card ID)
 						if (this->IoT_Status.Initialize) {
@@ -456,18 +414,13 @@
 
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// CGMI Command (Get Manufacturer)
 						if (this->IoT_Status.Initialize) {
@@ -491,18 +444,13 @@
 
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// CGMM Command (Get Model)
 						if (this->IoT_Status.Initialize) {
@@ -526,18 +474,13 @@
 
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// CGMR Command (Get Firmware Version)
 						if (this->IoT_Status.Initialize) {
@@ -548,7 +491,7 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::CGMR(this->IoT_Module.Firmware)) this->IoT_Status.Initialize = false;
+							if (!AT_Command_Set::SWPKGV(this->IoT_Module.Firmware)) this->IoT_Status.Initialize = false;
 
 							// Print Command State
 							#ifdef DEBUG
@@ -557,22 +500,44 @@
 								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 
 								// Print Firmware Version
-								Console::Text(19, 29, CYAN, String(this->IoT_Module.Firmware));
+								Console::Text(19, 30, CYAN, String(this->IoT_Module.Firmware));
 
+							#endif
+
+							// Print Connection Time
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
 							#endif
 
 						} else break;
 
-						// Print Command State
-						#ifdef DEBUG
+						// E2RI Command (Set RING Indicator)
+						if (this->IoT_Status.Initialize) {
 
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
+							// Print Command State
+							#ifdef DEBUG
+								Console::GSM_Command(14, 4, F("AT#E2RI=50,50"));
+							#endif
+
+							// Send Command
+							if (!AT_Command_Set::E2SLRI(50)) this->IoT_Status.Initialize = false;
+
+							// Print Command State
+							#ifdef DEBUG
+
+								// Print Command State
+								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+
+							#endif
+
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// GPIO Command (Set Status LED)
 						if (this->IoT_Status.Initialize) {
@@ -590,18 +555,13 @@
 								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// SLED Command (Set Status LED)
 						if (this->IoT_Status.Initialize) {
@@ -619,18 +579,13 @@
 								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// SLEDSAV Command (Save Status LED)
 						if (this->IoT_Status.Initialize) {
@@ -648,18 +603,13 @@
 								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
-						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
 							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// Initialize Complete
 						return(true);
@@ -668,15 +618,12 @@
 
 						// Print Modem Not ON
 						#ifdef DEBUG
-
-							// Print Description
 							Console::Text(14, 44, CYAN, F("                                    "));
 							Console::Text(14, 44, CYAN, F("Power ON Modem"));
-
 						#endif
 
 						// Power ON Modem
-						this->ON();
+						Hardware::ON();
 
 					}
 
@@ -685,11 +632,8 @@
 
 						// Print Initializing Failed
 						#ifdef DEBUG
-
-							// Print Description
 							Console::Text(14, 44, CYAN, F("                                    "));
 							Console::Text(14, 44, RED, F("Initializing Failed"));
-
 						#endif
 
 						// Clear States
@@ -704,11 +648,8 @@
 
 						// Print Initializing Failed
 						#ifdef DEBUG
-
-							// Print Description
 							Console::Text(14, 44, CYAN, F("                                    "));
 							Console::Text(14, 44, YELLOW, F("Retry Initializing"));
-
 						#endif
 
 						// Set WatchDog Variable
@@ -747,17 +688,6 @@
 
 						// Set Control Variable
 						this->IoT_Status.Connection = true;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
-							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
-
-						#endif
 
 						// Get CREG Command (Get Network Registration Mode)
 						if (this->IoT_Status.Connection) {
@@ -943,18 +873,13 @@
 								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
+							// Print Connecion Time
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
+
 						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
-							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
-
-						#endif
 
 						// CGDCONT Command (Set PDP Context)
 						if (this->IoT_Status.Connection) {
@@ -972,18 +897,13 @@
 								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
+							// Print Connecion Time
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
+
 						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
-							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
-
-						#endif
 
 						// SGACT Command (Activate PDP Context)
 						if (this->IoT_Status.Connection) {
@@ -1007,18 +927,13 @@
 
 							#endif
 
+							// Print Connecion Time
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
+
 						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
-							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
-
-						#endif
 
 						// WS46 Command (Network Type)
 						if (this->IoT_Status.Connection) {
@@ -1104,18 +1019,13 @@
 
 							#endif
 
+							// Print Connecion Time
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
+
 						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
-							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
-
-						#endif
 
 						// RFSTS Command (Network Status)
 						if (this->IoT_Status.Connection) {
@@ -1160,18 +1070,13 @@
 
 							#endif
 
+							// Print Connecion Time
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
+
 						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
-							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
-
-						#endif
 
 						// SCFG (Send Port) Command (Send Data Port Configuration)
 						if (this->IoT_Status.Connection) {
@@ -1189,18 +1094,13 @@
 								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
+							// Print Connecion Time
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
+
 						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
-							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
-
-						#endif
 
 						// SCFGEXT (Send Port) Command (Send Data Port Extended Configuration)
 						if (this->IoT_Status.Connection) {
@@ -1218,18 +1118,13 @@
 								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
+							// Print Connecion Time
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
+
 						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
-							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
-
-						#endif
 
 						// SCFGEXT2 (Send Port) Command (Send Data Port Extended 2 Configuration)
 						if (this->IoT_Status.Connection) {
@@ -1247,18 +1142,13 @@
 								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
+							// Print Connecion Time
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
+
 						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
-							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
-
-						#endif
 
 						// SCFG (In Port) Command (In Port Configuration)
 						if (this->IoT_Status.Connection) {
@@ -1276,18 +1166,13 @@
 								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
+							// Print Connecion Time
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
+
 						} else break;
-
-						// Print Command State
-						#ifdef DEBUG
-
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
-							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
-
-						#endif
 
 						// SCFGEXT (In Port) Command (In Port Extended Configuration)
 						if (this->IoT_Status.Connection) {
@@ -1298,36 +1183,44 @@
 							#endif
 
 							// Send Command
-							if (!AT_Command_Set::SCFGEXT(Socket_Incomming, 1, 0, 1, 0, 0)) this->IoT_Status.Connection = false;
+							if (!AT_Command_Set::SCFGEXT(Socket_Incomming, 2, 0, 0, 0, 0)) this->IoT_Status.Connection = false;
 
 							// Print Command State
 							#ifdef DEBUG
 								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
 							#endif
 
+							// Print Connecion Time
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
+
 						} else break;
 
-						// Print Command State
-						#ifdef DEBUG
+						// SCFGEXT2 (In Port) Command (Send Data Port Extended 2 Configuration)
+						if (this->IoT_Status.Connection) {
 
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
-							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							// Print Command State
+							#ifdef DEBUG
+								Console::GSM_Command(14, 4, F("AT#SCFGEXT2=3,1,0,0,0,0"));
+							#endif
 
-						#endif
+							// Send Command
+							if (!AT_Command_Set::SCFGEXT2(Socket_Incomming, 1, 0, 0, 0, 0)) this->IoT_Status.Connection = false;
 
-						// Print Connection Time
-						#ifdef DEBUG
+							// Print Command State
+							#ifdef DEBUG
+								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+							#endif
 
-							// Set Connection Time
-							this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
-		
-							// Print Connection Time
-							Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							// Print Connecion Time
+							#ifdef DEBUG
+								this->IoT_Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer) / 1000);
+								Console::Text(17, 75, CYAN, String(this->IoT_Operator.Connection_Time));
+							#endif
 
-						#endif
+						} else break;
 
 						// Print Command State
 						#ifdef DEBUG
@@ -2244,7 +2137,7 @@
 			} PowerStat;
 
 			// PostMan Constructor
-			PostMan(Stream &_Serial) : AT_Command_Set(_Serial), Console(Serial_Terminal) {
+			PostMan(Stream &_Serial) : AT_Command_Set(_Serial), Console(Serial_Terminal), Hardware() {
 
 				// Clear All Interrupts
 				this->Interrupt.Online = false;
@@ -2254,202 +2147,6 @@
 				this->Interrupt.Alarm = false;
 				this->Interrupt.Offline = false;
 				this->Interrupt.Ring = false;
-
-			}
-
-			// ************************************************************
-
-			// Power ON Sequence of Modem
-			bool ON(void) {
-
-				// Enable GSM Modem Power Switch
-				#ifdef GSM_Power_Switch
-					PORTE |= 0b00000100;
-//					GSM_POWER_SWITCH(true);
-				#endif
-				
-				// Set Communication Signal LOW
-				#ifdef GSM_Comm_Switch
-				 	PORTJ &= 0b11011111;
-					delay(50);
-//					COMMUNICATION(true);
-				#endif
-
-				// Turn On Modem
-				if (bitRead(PINJ, PJ3)) {
-
-					// Read Current Time
-					const uint32_t _Current_Time = millis();
-					
-					// Wait for SW Ready
-					while (!bitRead(PINJ, PJ4)) {
-
-						// Handle for timeout
-						if (millis() - _Current_Time >= 15000) break;
-
-					}
-
-					// End Function
-					return (true);
-
-				} else {
-
-					// Set On/Off Signal HIGH
-					PORTJ |= 0b01000000;
-//					ONOFF_SIGNAL(true);
-
-					// Command Delay
-					for (uint8_t i = 0; i < 36; i++) {
-
-						// Calculate Delay (2000)
-						uint8_t _Delay = 5000 / 37;
-
-						// Terminal Bar
-						#ifdef DEBUG
-							Console::Text(14, 4 + i, WHITE, F("▒"));
-						#endif
-
-						// Wait
-						delay(_Delay); 
-
-					}
-
-					// Set On/Off Signal LOW [PJ6]
-					PORTJ &= 0b10111111;
-//					ONOFF_SIGNAL(false);
-
-					// Clear Bar
-					#ifdef DEBUG
-						for (uint8_t i = 0; i < 36; i++) Console::Text(14, 4 + i, WHITE, F(" "));
-					#endif
-
-					// Control for PWMon (PH7)
-					if (bitRead(PINJ, PJ3)) {
-
-						// Read Current Time
-						const uint32_t _Current_Time = millis();
-						
-						// Wait for SW Ready
-						while (!bitRead(PINJ, PJ4)) {
-
-							// Handle for timeout
-							if (millis() - _Current_Time >= 15000) break;
-
-						}
-
-						// End Function
-						return(true);
-
-					} else {
-
-						// Set Shut Down Signal HIGH
-						PORTJ |= 0b10000000;
-//						SHUTDOWN_SIGNAL(true);
-
-						// Command Delay
-						delay(200);
-
-						// Set Shut Down Signal LOW
-						PORTJ &= 0b01111111;
-//						SHUTDOWN_SIGNAL(false);
-
-					}
-
-				}
-
-				// End Function
-				return (false);
-
-			}
-
-			// Power OFF Sequence of Modem
-			bool OFF(void) {
-
-				// Turn Off Modem
-				if (bitRead(PINJ, PJ3)) {
-
-					// Set On/Off Signal HIGH
-					PORTJ |= 0b01000000;
-//					ONOFF_SIGNAL(true);
-
-					// Command Delay
-					for (uint8_t i = 0; i < 36; i++) {
-
-						// Calculate Delay (2000)
-						uint8_t _Delay = 3000 / 37;
-
-						// Terminal Bar
-						#ifdef DEBUG
-							Console::Text(14, 4 + i, WHITE, F("▒"));
-						#endif
-
-						// Wait
-						delay(_Delay); 
-
-					}
-
-					// Set On/Off Signal LOW [PJ6]
-					PORTJ &= 0b10111111;
-//					ONOFF_SIGNAL(false);
-
-					// Clear Bar
-					#ifdef DEBUG
-						for (uint8_t i = 0; i < 36; i++) Console::Text(14, 4 + i, WHITE, F(" "));
-					#endif
-
-					// Set Variable
-					bool _Power = true;
-
-					// Read Current Time
-					const uint32_t _Current_Time = millis();
-
-					// Control for Power Monitor
-					while (_Power) {
-
-						// Control for PowerMonitor
-						if (!bitRead(PINJ, PJ3)) {
-
-							// Set Variable
-							_Power = false;
-
-							// Disable GSM Modem Voltage Translator
-							#ifdef GSM_Comm_Switch
-								PORTJ |= 0b00100000;
-//								COMMUNICATION(false);
-								delay(100);
-							#endif
-
-							// Disable GSM Modem Main Power Switch
-							#ifdef GSM_Power_Switch
-								PORTE &= 0b11111011;
-//								GSM_POWER_SWITCH(false);  
-							#endif
-
-						}
-
-						// Handle for timeout
-						if (millis() - _Current_Time >= 15000) break;;
-
-					}
-					
-				} else {
-
-					// Disable GSM Modem Voltage Translator
-					#ifdef GSM_Comm_Switch
-						PORTJ |= 0b00100000;
-//						COMMUNICATION(false);
-					#endif
-
-					// Disable GSM Modem Main Power Switch
-					#ifdef GSM_Power_Switch
-						PORTE &= 0b11111011;
-//						GSM_POWER_SWITCH(false);  
-					#endif
-
-				}
-
-				// End Function
-				return (true);
 
 			}
 
@@ -2515,7 +2212,7 @@
 				this->Buffer.Connection_Time_Buffer = millis();
 
 				// GSM Connection Squence
-				if (this->OFF()) {
+				if (Hardware::OFF()) {
 
 					// GSM Initialize Sequence
 					if (this->Initialize()) {
@@ -2552,32 +2249,13 @@
 							#endif
 
 							// Power Down GSM
-							this->OFF();
+							Hardware::OFF();
 
 						}
 
-					} else {
-
-						// Print Command State
-						#ifdef DEBUG
-							Console::Text(14, 44, CYAN, F("                                    "));
-							Console::Text(14, 44, RED, F("GSM Initialize Error"));
-						#endif
-
-						// Power Down GSM
-						this->OFF();
-
 					}
 
-				} else {
-
-					// Print Command State
-					#ifdef DEBUG
-						Console::Text(14, 44, CYAN, F("                                    "));
-						Console::Text(14, 44, RED, F("GSM Power Down Error"));
-					#endif
-
-				}
+				} 
 
 			}
 
@@ -2904,6 +2582,12 @@
 
 						// Handle Max Length
 						if (_Length > Recieve_JSON_Size) _Length = Recieve_JSON_Size;
+
+
+
+
+
+
 
 						// Get Request Data
 						AT_Command_Set::SRECV(Socket_Incomming, _Length, _JSON_Data);
