@@ -771,7 +771,7 @@ class AT_Command_Set {
 				else if (strstr(_PIN_Response, "SIM PUK")) _Code = _SIM_PUK_;
 
 				// Handle Status
-				if (_Code != 0) return(true);
+				if (_Code != _SIM_UNKNOWN_) return(true);
 
 				// End Function
 				return(false);

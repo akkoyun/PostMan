@@ -11,13 +11,15 @@ class Hardware {
 
 	public:
 
-		// GSM_RING 		- PJ2
-		// GSM_PWMon 		- PJ3
+		// GSM_PWMon 		- PJ2
+		// GSM_RING 		- PJ3
 		// GSM_SWReady		- PJ4
-		// GSM_COMM_ENABLE	- PJ5
-		// GSM_ON_OFF		- PJ6
-		// GSM_SDOWN		- PJ7
-		// 3V8_EN			- PE2
+
+		// 3V8_EN			- PA0
+		// GSM_COMM_ENABLE	- PA1
+		// GSM_ON_OFF		- PA2
+		// GSM_SDOWN		- PA3
+		// GNSS_EN		    - PA4
 
 		// Constractor
 		Hardware(void) {
@@ -29,10 +31,10 @@ class Hardware {
 		void Communication(const bool _State) {
 
 			// Enable Communication 
-			if (_State) PORTJ &= 0b11011111;
+			if (_State) PORTA &= 0b11111101;
 
 			// Disable Communication
-			if (!_State) PORTJ |= 0b00100000;
+			if (!_State) PORTA |= 0b00000010;
 
 		}
 
@@ -40,18 +42,18 @@ class Hardware {
 		void Power_Switch(const bool _State) {
 
 			// Set GSM Power Enable
-			if (_State) PORTE |= 0b00000100;
+			if (_State) PORTA |= 0b00000001;
 
 			// Set GSM Power Disable
-			if (!_State) PORTE &= 0b11111011;
+			if (!_State) PORTA &= 0b11111110;
 		
 		}
 
 		// On or Off Modem.
 		void OnOff(const uint16_t _Time) {
 
-			// Set On/Off Signal HIGH [PJ6]
-			PORTJ |= 0b01000000;
+			// Set On/Off Signal HIGH [PA2]
+			PORTA |= 0b00000100;
 
 			// Command Delay
 			for (uint8_t i = 0; i < 36; i++) {
@@ -64,30 +66,30 @@ class Hardware {
 
 			}
 
-			// Set On/Off Signal LOW [PJ6]
-			PORTJ &= 0b10111111;
+			// Set On/Off Signal LOW [PA2]
+			PORTA &= 0b11111011;
 
 		}
 
 		// ShutDown Modem
 		void ShutDown(const uint16_t _Time) {
 
-			// Set Shut Down Signal HIGH [PJ5]
-			PORTJ |= 0b10000000;
+			// Set Shut Down Signal HIGH [PA3]
+			PORTA |= 0b00001000;
 
 			// Command Delay
 			delay(_Time);
 
-			// Set Shut Down Signal LOW [PJ5]
-			PORTJ &= 0b01111111;
+			// Set Shut Down Signal LOW [PA3]
+			PORTA &= 0b11110111;
 
 		}
 
 		// Get Power Monitor
 		bool PowerMonitor(void) {
 
-			// Control for PWMon (PJ3)
-			if ((PINJ & (1 << PINJ3)) == (1 << PINJ3)) {
+			// Control for PWMon (PJ2)
+			if ((PINJ & (1 << PINJ2)) == (1 << PINJ2)) {
 
 				// End Function
 				return (true);
@@ -116,6 +118,17 @@ class Hardware {
 				return(false);
 
 			}
+
+		}
+
+		// Enable GNSS
+		void GNSS_Enable(const bool _State) {
+
+			// Enable GNSS 
+			if (_State) PORTA |= 0b00010000;
+
+			// Disable GNSS
+			if (!_State) PORTA &= 0b11101111;
 
 		}
 

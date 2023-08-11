@@ -1,5 +1,24 @@
 # Release Notes
 
+## 0.15.6 (2023-08-11)
+
+* Progma once protections added to all header files.
+
+## 0.15.5 (2023-08-11)
+
+* GNSS_EN function added.
+* Definition choise functions updated.
+* Console includes moved to product class.
+
+## 0.15.4 (2023-08-11)
+
+* LE910S1-EAG AT Command added.
+* B108AA hardware added.
+
+## 0.15.3 (2023-08-11)
+
+* WeatherStat device added.
+
 ## 0.15.2 (2023-08-11)
 
 * GE910-GNSS model added.
@@ -209,6 +228,7 @@
 * All GSM class function moved to Postman class.
 * Serial_ID function updated.
 * GSM_Debug definitions changed to DEBUG
+
 ## 0.12.8 (2023-07-16)
 
 * SIMDET function updated.
@@ -246,8 +266,7 @@
 
 ## 0.12.4 (2023-07-13)
 
-* FTP firmware download system updated. 
+* FTP firmware download system updated.
 * #FTPRECV command updated.
 * FTP firmware download CME error handling added.
 * FTP_INFO pack updated.
-

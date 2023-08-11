@@ -7,19 +7,7 @@
 	#endif
 
 	// Include Configurations
-	#ifndef __PostMan_Config__
-		#include "Config/Config.h"
-	#endif
-
-	// Include Console Library
-	#ifdef DEBUG
-
-		// Define Console Library
-		#ifndef __Console__
-			#include <Console.h>
-		#endif
-
-	#endif
+	#include "Config/Config.h"
 
 	// Select Project
 	#if defined(_PowerStat_)
