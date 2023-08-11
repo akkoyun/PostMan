@@ -1,12 +1,6 @@
 #ifndef __PostMan_Config__
 #define __PostMan_Config__
 
-	// test için 
-	#define B107AA
-	#define LE910C1_EUX
-
-
-
 	// Define Packet Size
 	#define Send_JSON_Size				1024
 	#define Recieve_JSON_Size			128

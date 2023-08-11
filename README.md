@@ -1,5 +1,16 @@
 # Release Notes
 
+## 0.15.1 (2023-08-11)
+
+* Library updated for platformio.
+
+## 0.15.0 (2023-08-11)
+
+* Library updated for platformio.
+* AT Command library separeted for module type.
+* AT Command library updated.
+* Hardware library updated.
+
 ## 0.14.6 (2023-08-04)
 
 * Socket ID constants defined in config file.

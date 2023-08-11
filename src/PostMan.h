@@ -202,7 +202,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT"));
+								Console::AT_Command(14, 4, F("AT"));
 							#endif
 
 							// Send Command
@@ -210,7 +210,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 							// Print Connection Time
@@ -226,7 +226,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("ATE0"));
+								Console::AT_Command(14, 4, F("ATE0"));
 							#endif
 
 							// Send Command
@@ -234,7 +234,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 							// Print Connection Time
@@ -250,7 +250,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+SIMDET?"));
+								Console::AT_Command(14, 4, F("AT+SIMDET?"));
 							#endif
 
 							// Send Command
@@ -260,7 +260,7 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 
 								// Print SIMDET State
 								if (this->IoT_Status.SIM_Inserted) Console::Text(14, 44, GREEN, F("SIM Card Detected    "));
@@ -284,7 +284,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+CFUN=1,0"));
+								Console::AT_Command(14, 4, F("AT+CFUN=1,0"));
 							#endif
 
 							// Send Command
@@ -292,7 +292,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 							// Print Connection Time
@@ -308,7 +308,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+CMEE=1"));
+								Console::AT_Command(14, 4, F("AT+CMEE=1"));
 							#endif
 
 							// Send Command
@@ -316,7 +316,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 							// Print Connection Time
@@ -332,7 +332,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+FCLASS=0"));
+								Console::AT_Command(14, 4, F("AT+FCLASS=0"));
 							#endif
 
 							// Send Command
@@ -340,7 +340,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 							// Print Connection Time
@@ -356,7 +356,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT&K0"));
+								Console::AT_Command(14, 4, F("AT&K0"));
 							#endif
 
 							// Send Command
@@ -364,7 +364,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 							// Print Connection Time
@@ -380,7 +380,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+CPIN?"));
+								Console::AT_Command(14, 4, F("AT+CPIN?"));
 							#endif
 
 							// Send Command
@@ -388,7 +388,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 							// End Function
@@ -407,7 +407,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+CGSN"));
+								Console::AT_Command(14, 4, F("AT+CGSN"));
 							#endif
 
 							// Send Command
@@ -417,7 +417,7 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 								
 								// Print IMEI
 								Console::Text(20, 24, CYAN, String(this->IoT_Module.IMEI));
@@ -437,7 +437,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+CCID"));
+								Console::AT_Command(14, 4, F("AT+CCID"));
 							#endif
 
 							// Send Command
@@ -447,7 +447,7 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 								
 								// Print ICCID
 								Console::Text(22, 20, CYAN, String(this->IoT_Operator.ICCID));
@@ -467,7 +467,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+GMI"));
+								Console::AT_Command(14, 4, F("AT+GMI"));
 							#endif
 
 							// Send Command
@@ -477,7 +477,7 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Console::OK_Decide(this->IoT_Status.Initialize, 14,35);
+								Console::OK(this->IoT_Status.Initialize, 14,35);
 								
 								// Print Manufacturer
 								Console::Text(17, 38, CYAN, String(this->IoT_Module.Manufacturer));
@@ -497,7 +497,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+GMM"));
+								Console::AT_Command(14, 4, F("AT+GMM"));
 							#endif
 
 							// Send Command
@@ -507,7 +507,7 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 								
 								// Print Model
 								Console::Text(18, 38, CYAN, String(this->IoT_Module.Model));
@@ -527,7 +527,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+GMR"));
+								Console::AT_Command(14, 4, F("AT+GMR"));
 							#endif
 
 							// Send Command
@@ -537,7 +537,7 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 
 								// Print Firmware Version
 								Console::Text(19, 30, CYAN, String(this->IoT_Module.Firmware));
@@ -557,7 +557,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#E2RI=50,50"));
+								Console::AT_Command(14, 4, F("AT#E2RI=50,50"));
 							#endif
 
 							// Send Command
@@ -567,7 +567,7 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 
 							#endif
 
@@ -584,7 +584,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#GPIO=1,0,2"));
+								Console::AT_Command(14, 4, F("AT#GPIO=1,0,2"));
 							#endif
 
 							// Send Command
@@ -592,7 +592,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 							// Print Connection Time
@@ -608,7 +608,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#SLED=2"));
+								Console::AT_Command(14, 4, F("AT#SLED=2"));
 							#endif
 
 							// Send Command
@@ -616,7 +616,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 							// Print Connection Time
@@ -632,7 +632,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#SLEDSAV"));
+								Console::AT_Command(14, 4, F("AT#SLEDSAV"));
 							#endif
 
 							// Send Command
@@ -640,7 +640,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Initialize, 14, 35);
+								Console::OK(this->IoT_Status.Initialize, 14, 35);
 							#endif
 
 							// Print Connection Time
@@ -734,7 +734,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+CREG?"));
+								Console::AT_Command(14, 4, F("AT+CREG?"));
 							#endif
 
 							// Set Connection WatchDog
@@ -910,7 +910,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 							// Print Connecion Time
@@ -926,7 +926,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+CGDCONT=1,IP,mgbs"));
+								Console::AT_Command(14, 4, F("AT+CGDCONT=1,IP,mgbs"));
 							#endif
 
 							// Send Command
@@ -934,7 +934,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 							// Print Connecion Time
@@ -950,7 +950,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#SGACT=1,1"));
+								Console::AT_Command(14, 4, F("AT#SGACT=1,1"));
 							#endif
 
 							// Send Command
@@ -960,7 +960,7 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK(this->IoT_Status.Connection, 14, 35);
 								
 								// Print IP Address
 								Console::Text(20, 64, CYAN, String(this->IoT_Operator.IP_Address));
@@ -980,7 +980,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT+WS46?"));
+								Console::AT_Command(14, 4, F("AT+WS46?"));
 							#endif
 
 							// Send Command
@@ -990,7 +990,7 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK(this->IoT_Status.Connection, 14, 35);
 								
 								// Print RED WDS Type
 								Console::Text(47, 3, RED, F("2G"));
@@ -1072,7 +1072,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#RFSTS"));
+								Console::AT_Command(14, 4, F("AT#RFSTS"));
 							#endif
 
 							// Send Command
@@ -1082,7 +1082,7 @@
 							#ifdef DEBUG
 
 								// Print Command State
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK(this->IoT_Status.Connection, 14, 35);
 
 							#endif
 
@@ -1123,7 +1123,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#SCFG=3,1,1500,90,1200,0"));
+								Console::AT_Command(14, 4, F("AT#SCFG=3,1,1500,90,1200,0"));
 							#endif
 
 							// Send Command
@@ -1131,7 +1131,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 							// Print Connecion Time
@@ -1147,7 +1147,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#SCFGEXT=3,1,0,0,0,0"));
+								Console::AT_Command(14, 4, F("AT#SCFGEXT=3,1,0,0,0,0"));
 							#endif
 
 							// Send Command
@@ -1155,7 +1155,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 							// Print Connecion Time
@@ -1171,7 +1171,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#SCFGEXT2=3,1,0,0,0,0"));
+								Console::AT_Command(14, 4, F("AT#SCFGEXT2=3,1,0,0,0,0"));
 							#endif
 
 							// Send Command
@@ -1179,7 +1179,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 							// Print Connecion Time
@@ -1195,7 +1195,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#SCFG=2,1,1500,90,300,50"));
+								Console::AT_Command(14, 4, F("AT#SCFG=2,1,1500,90,300,50"));
 							#endif
 
 							// Send Command
@@ -1203,7 +1203,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 							// Print Connecion Time
@@ -1219,7 +1219,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#SCFGEXT=2,1,0,1,0,0"));
+								Console::AT_Command(14, 4, F("AT#SCFGEXT=2,1,0,1,0,0"));
 							#endif
 
 							// Send Command
@@ -1227,7 +1227,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 							// Print Connecion Time
@@ -1243,7 +1243,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::GSM_Command(14, 4, F("AT#SCFGEXT2=3,1,0,0,0,0"));
+								Console::AT_Command(14, 4, F("AT#SCFGEXT2=3,1,0,0,0,0"));
 							#endif
 
 							// Send Command
@@ -1251,7 +1251,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+								Console::OK(this->IoT_Status.Connection, 14, 35);
 							#endif
 
 							// Print Connecion Time
@@ -1333,7 +1333,7 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::GSM_Command(14, 4, F("AT#FRWL=2"));
+						Console::AT_Command(14, 4, F("AT#FRWL=2"));
 					#endif
 
 					// FRWL Clear (Firewall Configuration)
@@ -1341,12 +1341,12 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::OK_Decide(_FireWall_Clear_State, 14, 35);
+						Console::OK(_FireWall_Clear_State, 14, 35);
 					#endif
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::GSM_Command(14, 4, F("AT#FRWL=1,***"));
+						Console::AT_Command(14, 4, F("AT#FRWL=1,***"));
 					#endif
 
 					// FRWL Command 1 (Firewall Configuration)
@@ -1354,7 +1354,7 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::OK_Decide(_FireWall_State_1, 14, 35);
+						Console::OK(_FireWall_State_1, 14, 35);
 					#endif
 
 					// Print Connection Time
@@ -1373,7 +1373,7 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::OK_Decide(_FireWall_State_2, 14, 35);
+						Console::OK(_FireWall_State_2, 14, 35);
 					#endif
 
 					// Print Connection Time
@@ -1392,7 +1392,7 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::OK_Decide(_FireWall_State_3, 14, 35);
+						Console::OK(_FireWall_State_3, 14, 35);
 					#endif
 
 					// Print Connection Time
@@ -1408,7 +1408,7 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::GSM_Command(14, 4, F("AT#ICMP=2"));
+						Console::AT_Command(14, 4, F("AT#ICMP=2"));
 					#endif
 
 					// ICMP Command (Ping Configuration)
@@ -1416,7 +1416,7 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::OK_Decide(_ICMP_State, 14, 35);
+						Console::OK(_ICMP_State, 14, 35);
 					#endif
 
 					// Print Connection Time
@@ -1462,7 +1462,7 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::GSM_Command(14, 4, F("AT+CCLK"));
+						Console::AT_Command(14, 4, F("AT+CCLK"));
 					#endif
 
 					// CCLK Command (Real Time Clock Configuration)
@@ -1470,7 +1470,7 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::OK_Decide(_Clock_State, 14, 35);
+						Console::OK(_Clock_State, 14, 35);
 					#endif
 
 					// Print Connection Time
@@ -1545,7 +1545,7 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::GSM_Command(14, 4, F("AT#SS=2"));
+						Console::AT_Command(14, 4, F("AT#SS=2"));
 					#endif
 
 					// Send Command
@@ -1553,7 +1553,7 @@
 
 					// Print Command State
 					#ifdef DEBUG
-						Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+						Console::OK(this->IoT_Status.Connection, 14, 35);
 					#endif
 
 					// Activate Socket
@@ -1561,7 +1561,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Console::GSM_Command(14, 4, F("AT#SL=*,1,80,255"));
+							Console::AT_Command(14, 4, F("AT#SL=*,1,80,255"));
 						#endif
 
 						// Activate Socket for Listen
@@ -1569,7 +1569,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Console::OK_Decide(_SL_Command, 14, 35);
+							Console::OK(_SL_Command, 14, 35);
 						#endif
 
 						// Command Delay
@@ -1577,7 +1577,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Console::GSM_Command(14, 4, F("AT#SS=*"));
+							Console::AT_Command(14, 4, F("AT#SS=*"));
 						#endif
 
 						// Print Command State
@@ -1587,7 +1587,7 @@
 							bool _SS_Command = AT_Command_Set::SS(Socket_Incomming, this->IoT_Status.Socket_State);
 
 							// Print Command State
-							Console::OK_Decide(_SS_Command, 14, 35);
+							Console::OK(_SS_Command, 14, 35);
 
 						#else
 
@@ -1624,7 +1624,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Console::GSM_Command(14, 4, F("AT#SL=*,0,80,255"));
+							Console::AT_Command(14, 4, F("AT#SL=*,0,80,255"));
 						#endif
 
 						// Print Command State
@@ -1634,7 +1634,7 @@
 							bool _SL_Command = AT_Command_Set::SL(Socket_Incomming, 0, 80, 255);
 
 							// Print Command State
-							Console::OK_Decide(_SL_Command, 14, 35);
+							Console::OK(_SL_Command, 14, 35);
 
 						#else
 
@@ -1648,7 +1648,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Console::GSM_Command(14, 4, F("AT#SS=*"));
+							Console::AT_Command(14, 4, F("AT#SS=*"));
 						#endif
 
 						// Get Socket Status
@@ -1656,7 +1656,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Console::OK_Decide(this->IoT_Status.Connection, 14, 35);
+							Console::OK(this->IoT_Status.Connection, 14, 35);
 						#endif
 
 						// Print Command State
@@ -3579,7 +3579,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(_Response, 14, 35);
+								Console::OK(_Response, 14, 35);
 							#endif
 
 							// Set Function Variable
@@ -3627,7 +3627,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(_Response, 14, 35);
+								Console::OK(_Response, 14, 35);
 							#endif
 
 							// Set Function Variable
@@ -3675,7 +3675,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(_Response, 14, 35);
+								Console::OK(_Response, 14, 35);
 							#endif
 
 							// Set Function Variable
@@ -3723,7 +3723,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(_Response, 14, 35);
+								Console::OK(_Response, 14, 35);
 							#endif
 
 							// Set Function Variable
@@ -3771,7 +3771,7 @@
 
 							// Print Command State
 							#ifdef DEBUG
-								Console::OK_Decide(_Response, 14, 35);
+								Console::OK(_Response, 14, 35);
 							#endif
 
 							// Set Function Variable
@@ -3928,7 +3928,7 @@
 
 						// Print Command State
 						#ifdef DEBUG
-							Console::OK_Decide(_Response, 14, 35);
+							Console::OK(_Response, 14, 35);
 						#endif
 
 						// Set Function Variable
@@ -3979,7 +3979,7 @@
 
 							// SD Message
 							#ifdef GSM_Debug
-								Console::OK_Decide(true, 18, 115);
+								Console::OK(true, 18, 115);
 								Console::Text(19, 112, GREEN, String(this->IoT_FOTA.SD_File_Size));
 							#endif
 
@@ -3996,7 +3996,7 @@
 
 							// SD Message
 							#ifdef GSM_Debug
-								Console::OK_Decide(false, 18, 115);
+								Console::OK(false, 18, 115);
 								Console::Text(19, 112, RED, String(this->IoT_FOTA.SD_File_Size));
 							#endif
 
