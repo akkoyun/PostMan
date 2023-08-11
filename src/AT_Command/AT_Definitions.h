@@ -21,6 +21,7 @@
 	#define _UNKNOWN_MODEL_			0
 	#define _GE910_QUAD_			10
 	#define _GE910_QUAD_V3_			11
+	#define _GE910_GNSS_			12
 	#define _LE910S1_EA_			20
 	#define _LE910S1_EAG_			21
 	#define _LE910R1_EU_			30

@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.15.2 (2023-08-11)
+
+* GE910-GNSS model added.
+
 ## 0.15.1 (2023-08-11)
 
 * Library updated for platformio.
