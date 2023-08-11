@@ -7,7 +7,9 @@
 	#endif
 
 	// Include Definitions
-	#include "Definitions.h"
+	#ifndef __AT_Definitions__
+		#include "AT_Definitions.h"
+	#endif
 
 	// Modem AT Command Set Class
 	class AT_Command_Set {
@@ -276,13 +278,13 @@
 					sscanf(Buffer_Variable, "\r\n%s\r\n\r\nOK\r\n", _Manufacturer_Name);
 
 					// Set No Manufacturer
-					_Manufacturer = 0;
+					_Manufacturer = _UNKNOWN_MANUFACTURER_;
 
 					// Control for Manufacturer Name
-					if (strstr(_Manufacturer_Name, "Telit") != NULL) _Manufacturer = 1;
+					if (strstr(_Manufacturer_Name, "Telit") != NULL) _Manufacturer = _TELIT_;
 
 					// End Function
-					if (_Manufacturer != 0) return(true);
+					if (_Manufacturer != _UNKNOWN_MANUFACTURER_) return(true);
 
 					// End Function
 					return(false);
@@ -342,17 +344,17 @@
 					sscanf(Buffer_Variable, "\r\n%s\r\n\r\nOK\r\n", _Model_Name);
 
 					// Set No Model
-					_Model = 0;
+					_Model = _UNKNOWN_MODEL_;
 
 					// Control for Model Name
-					if (strstr(_Model_Name, "GE910-QUAD") != NULL) _Model = 1;
-					else if (strstr(_Model_Name, "GE910-QUAD-V3") != NULL) _Model = 2;
-					else if (strstr(_Model_Name, "LE910S1-EA") != NULL) _Model = 3;
-					else if (strstr(_Model_Name, "LE910R1-EU") != NULL) _Model = 4;
-					else if (strstr(_Model_Name, "LE910C1-EUX") != NULL) _Model = 5;
+					if (strstr(_Model_Name, "GE910-QUAD") != NULL) _Model = _GE910_QUAD_;
+					else if (strstr(_Model_Name, "GE910-QUAD-V3") != NULL) _Model = _GE910_QUAD_V3_;
+					else if (strstr(_Model_Name, "LE910S1-EA") != NULL) _Model = _LE910S1_EA_;
+					else if (strstr(_Model_Name, "LE910R1-EU") != NULL) _Model = _LE910R1_EU_;
+					else if (strstr(_Model_Name, "LE910C1-EUX") != NULL) _Model = _LE910C1_EUX_;
 
 					// End Function
-					if (_Model != 0) return(true);
+					if (_Model != _UNKNOWN_MODEL_) return(true);
 
 					// End Function
 					return(false);
@@ -2944,11 +2946,83 @@
 
 			}
 
+			// Soft Reset Function
+			bool Z(const uint8_t _Z) {
 
+				// Clear UART Buffer
+				this->Clear_UART_Buffer();
 
+				// Declare Buffer Object
+				Serial_Buffer Buffer = {
+					false, 	// Response State
+					0, 		// Read Order
+					0, 		// Data Order
+					5000, 	// Time Out
+					7		// Buffer Size
+				};
 
+				// Declare Buffer
+				char Buffer_Variable[Buffer.Size];
+				memset(Buffer_Variable, '\0', Buffer.Size);
 
+				// Command Chain Delay (Advice by Telit)
+				delay(20);
+
+				// Send UART Command
+				GSM_Serial->print(F("ATZ"));
+				GSM_Serial->print(_Z);
+				GSM_Serial->write(0x0D);
+				GSM_Serial->write(0x0A);
+
+				// Declare Response
+				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+				// Handle for Response
+				if (_Response == _OK_) return(true);
+
+				// End Function
+				return(false);
+
+			}
+
+			// Detech From Network and Shut Down Modem Function
+			bool SHDN(void) {
+
+				// Clear UART Buffer
+				this->Clear_UART_Buffer();
+
+				// Declare Buffer Object
+				Serial_Buffer Buffer = {
+					false, 	// Response State
+					0, 		// Read Order
+					0, 		// Data Order
+					5000, 	// Time Out
+					7		// Buffer Size
+				};
+
+				// Declare Buffer
+				char Buffer_Variable[Buffer.Size];
+				memset(Buffer_Variable, '\0', Buffer.Size);
+
+				// Command Chain Delay (Advice by Telit)
+				delay(20);
+
+				// Send UART Command
+				GSM_Serial->print(F("AT#SHDN"));
+				GSM_Serial->write(0x0D);
+				GSM_Serial->write(0x0A);
+
+				// Declare Response
+				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+				// Handle for Response
+				if (_Response == _OK_) return(true);
+
+				// End Function
+				return(false);
+
+			}
 
 	};
 
-#endif /* defined(__Telit_AT_Command_Set__) */
+#endif /* defined(__Telit_LE910C1_EUX__) */

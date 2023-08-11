@@ -1,15 +1,11 @@
 #ifndef __PostMan_Config__
 #define __PostMan_Config__
 
-	// Hardware Definitions
-	#define GSM_Power_Switch
-	#define GSM_LED_Switch
-	#define GSM_Comm_Switch
+	// test için 
+	#define B107AA
+	#define LE910C1_EUX
 
-	// Define Terminal Defaults
-	#ifndef GSM_Debug
-		#define CONSOLE_TEMPLATE_GE910
-	#endif
+
 
 	// Define Packet Size
 	#define Send_JSON_Size				1024
@@ -21,8 +17,10 @@
 	#define Socket_Outgoing				2
 
 	// Serial Communications Definations
-	#define Serial_Terminal 			Serial
-
+	#ifndef Serial_Terminal
+		#define Serial_Terminal 		Serial
+	#endif
+	
 	// Define Operator Defaults
 	#ifndef _PDP_APN_
 		#define _PDP_APN_				"mgbs"

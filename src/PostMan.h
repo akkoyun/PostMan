@@ -1,28 +1,22 @@
 #ifndef __PostMan__
 #define __PostMan__
 
-	// Define Arduino Library
+	// Include Arduino Library
 	#ifndef __Arduino__
 		#include <Arduino.h>
 	#endif
 
-	// Define Library Includes
-	#ifndef __PostMan_Includes__
-		#include "Config/Includes.h"
+	// Include Configurations
+	#ifndef __PostMan_Config__
+		#include "Config/Config.h"
 	#endif
 
-	// Include Hardware Libraries
-	#ifndef __PostMan_Hardware__
-		#include "Hardware/B107AA.h"
+	// Include RTC Library
+	#ifndef __RV3028__
+		#include <RV3028.h>
 	#endif
 
-	// Define Library Includes
-	#include "AT_Command/LE910C1_EUX.h"
-//	#ifndef __Telit_AT_Command_Set__
-//		#include "AT_Command_Set.h"
-//	#endif
-
-	// Define Console Library
+	// Include Console Library
 	#ifdef DEBUG
 
 		// Define Console Library
@@ -31,6 +25,52 @@
 		#endif
 
 	#endif
+
+	// Include JSON Library
+	#include <ArduinoJson.h>
+
+	// Include SD Library
+	#include <SPI.h>
+	#include "SD.h"
+
+	// Include Hardware Functions
+	#if defined(B107AA)
+
+		// Include PowerStat V4 Hardware Functions
+		#include "Hardware/B107AA.h"
+
+	#elif defined(B108AA)
+
+		// Include WeatherStat V3 Hardware Functions
+		#include "Hardware/B108AA.h"
+
+	#endif
+
+	// Include AT Command Library
+	#if defined(LE910C1_EUX)
+
+		// Include LE910C1-EU AT Command Library
+		#include "AT_Command/LE910C1_EUX.h"
+
+	#elif defined(LE910S1_EAG)
+
+		// Include LE910S1-EAG AT Command Library
+		#include "AT_Command/LE910S1_EAG.h"
+
+	#endif
+	
+	// Include Product Configurations
+	#if defined(B107AA)
+
+		// Include PowerStat V4 Configurations
+		#include "Config/PowerStat_Definitions.h"
+
+	#endif
+
+
+
+
+
 
 	// Cloud Functions
 	class PostMan : private AT_Command_Set, private Console, private Hardware {

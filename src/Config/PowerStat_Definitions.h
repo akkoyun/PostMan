@@ -1,24 +1,5 @@
-#ifndef __PostMan_Includes__
-#define __PostMan_Includes__
-
-	// Define Config Includes
-	#ifndef __PostMan_Config__
-		#include "Config/Config.h"
-	#endif
-
-
-
-	// Define JSON Handler
-	#include <ArduinoJson.h>
-
-	// Define RTC Library
-	#ifndef __RV3028__
-		#include <RV3028.h>
-	#endif
-
-	// SD Library
-	#include <SPI.h>
-	#include "SD.h"
+#ifndef __PowerStat_Definitions__
+#define __PowerStat_Definitions__
 
 	// Define Pack Types
 	#ifndef PowerStat_Pack_Types
