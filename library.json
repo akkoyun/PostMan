@@ -58,6 +58,11 @@
 			"owner": "akkoyun",
 			"name": "BQ24298",
 			"version": "^2.2.3"
+		},
+		{
+			"owner": "akkoyun",
+			"name": "AVR_Functions",
+			"version": "^1.0.4"
 		}
 	],
 	"examples": [
@@ -66,6 +71,13 @@
 			"base": "examples/Initialize",
 			"files": [
 				"Initialize.ino"
+			]
+		},
+		{
+			"name": "WeatherStat Sample",
+			"base": "examples/WeatherStat",
+			"files": [
+				"WeatherStat.ino"
 			]
 		}
 	]

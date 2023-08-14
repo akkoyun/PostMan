@@ -10,7 +10,7 @@
 #include "AT_Definitions.h"
 
 // Modem AT Command Set Class
-class AT_Command_Set {
+class AT_Command_Set_LE910S1_EAG {
 
 	// Private Context
 	private:
@@ -140,7 +140,7 @@ class AT_Command_Set {
 	public:
 
 		// PostOffice Constructor
-		AT_Command_Set(Stream &_Serial) {
+		AT_Command_Set_LE910S1_EAG(Stream &_Serial) {
 
 			// Set Serial Port
 			GSM_Serial = & _Serial;
@@ -1168,6 +1168,94 @@ class AT_Command_Set {
 					
 					// Handle Variables
 					sscanf(Buffer_Variable, "\r\n+CREG: %hhu,%hhu\r\n\r\nOK\r\n", &_Mode, &_Stat);
+
+					// Handle Response
+					if (_Stat == 0) return(true);
+					else if (_Stat == 1) return(true);
+					else if (_Stat == 2) return(true);
+					else if (_Stat == 3) return(true);
+					else if (_Stat == 4) return(true);
+					else if (_Stat == 5) return(true);
+					else if (_Stat == 6) return(true);
+					else if (_Stat == 7) return(true);
+					else if (_Stat == 8) return(true);
+					else if (_Stat == 9) return(true);
+					else if (_Stat == 10) return(true);
+					else if (_Stat == 11) return(true);
+
+					// End Function
+					return (false);
+
+				}
+
+				// End Function
+				return(false);
+
+			}
+
+			// End Function
+			return(false);
+
+		}
+
+		// CGREG Function
+		bool CGREG(const bool _Function_Type, uint8_t & _Mode, uint8_t & _Stat) {
+
+			// Clear UART Buffer
+			this->Clear_UART_Buffer();
+
+			// Declare Buffer Object
+			Serial_Buffer Buffer = {
+				false, 	// Response State
+				0, 		// Read Order
+				0, 		// Data Order
+				1000, 	// Time Out
+				25		// Buffer Size
+			};
+
+			// Declare Buffer Variable
+			char Buffer_Variable[Buffer.Size];
+			
+			// Clear Buffer Variable
+			memset(Buffer_Variable, '\0', Buffer.Size);
+
+			// Command Chain Delay (Advice by Telit)
+			delay(20);
+
+			// SET Function
+			if (_Function_Type == SET) {
+
+				// Send UART Command
+				GSM_Serial->print(F("AT+CGREG="));
+				GSM_Serial->print(_Mode);
+				GSM_Serial->write(0x0D);
+				GSM_Serial->write(0x0A);
+
+				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+				// Handle for Response
+				if (_Response == _OK_) return(true);
+
+				// End Function
+				return(false);
+
+			}
+
+			// GET Function
+			if (_Function_Type == GET) {
+
+				// Send UART Command
+				GSM_Serial->print(F("AT+CGREG?"));
+				GSM_Serial->write(0x0D);
+				GSM_Serial->write(0x0A);
+
+				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+				// Handle for Response
+				if (_Response == _OK_) {
+					
+					// Handle Variables
+					sscanf(Buffer_Variable, "\r\n+CGREG: %hhu,%hhu\r\n\r\nOK\r\n", &_Mode, &_Stat);
 
 					// Handle Response
 					if (_Stat == 0) return(true);

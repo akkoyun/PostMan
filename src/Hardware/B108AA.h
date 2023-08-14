@@ -11,124 +11,172 @@ class Hardware {
 
 	public:
 
-		// GSM_PWMon 		- PJ2
-		// GSM_RING 		- PJ3
-		// GSM_SWReady		- PJ4
+		// GSM Power Switch Pin Definitions [PA0]
+		#define DDR_GSM_Power				DDRA
+		#define PORT_GSM_Power				PORTA
+		#define PIN_GSM_Power				PA0
 
-		// 3V8_EN			- PA0
-		// GSM_COMM_ENABLE	- PA1
-		// GSM_ON_OFF		- PA2
-		// GSM_SDOWN		- PA3
-		// GNSS_EN		    - PA4
+		// COMM_EN Pin Definitions [PA1]
+		#define DDR_COMM_ENABLE				DDRA
+		#define PORT_COMM_ENABLE			PORTA
+		#define PIN_COMM_ENABLE				PA1
+
+		// GSM On/Off Signal Pin Definitions [PA2]
+		#define DDR_GSM_OnOff				DDRA
+		#define PORT_GSM_OnOff				PORTA
+		#define PIN_GSM_OnOff				PA2
+
+		// GSM Shut Down Signal Pin Definitions [PA3]
+		#define DDR_GSM_ShutDown			DDRA
+		#define PORT_GSM_ShutDown			PORTA
+		#define PIN_GSM_ShutDown			PA3
+
+		// GNSS Enable Signal Pin Definitions [PA4]
+		#define DDR_GNSS_Enable				DDRA
+		#define PORT_GNSS_Enable			PORTA
+		#define PIN_GNSS_Enable				PA4
+
+		// GSM_PWMon Pin Definitions [PJ2]
+		#define DDR_GSM_PWMon				DDRJ
+		#define PORT_GSM_PWMon				PORTJ
+		#define PIN_REGISTER_GSM_PWMon		PINJ
+		#define PIN_GSM_PWMon				PJ2
+
+		// GSM_RING Pin Definitions [PJ3]
+		#define DDR_GSM_RING				DDRJ
+		#define PORT_GSM_RING				PORTJ
+		#define PIN_REGISTER_GSM_RING		PINJ
+		#define PIN_GSM_RING				PJ3
+
+		// GSM_SWReady Pin Definitions [PJ4]
+		#define DDR_GSM_SWReady				DDRJ
+		#define PORT_GSM_SWReady			PORTJ
+		#define PIN_REGISTER_GSM_SWReady	PINJ
+		#define PIN_GSM_SWReady				PJ4
+
+		// Command Time Delay Definitions
+		#define ON_Delay					5000
+		#define OFF_Delay					3000
+		#define BOOT_Delay					1500
+		#define SWREADY_Wait				15000
 
 		// Constractor
 		Hardware(void) {
 
+			// Set GSM_Power as Output with Pull-Down
+			DDR_GSM_Power |= (1 << PIN_GSM_Power);
+			PORT_GSM_Power &= ~(1 << PIN_GSM_Power);
+
+			// Set GSM_COMM_ENABLE as Output with Pull-Up
+			DDR_COMM_ENABLE |= (1 << PIN_COMM_ENABLE);
+			PORT_COMM_ENABLE |= (1 << PIN_COMM_ENABLE);
+
+			// Set GSM_OnOff as Output with Pull-Down
+			DDR_GSM_OnOff |= (1 << PIN_GSM_OnOff);
+			PORT_GSM_OnOff &= ~(1 << PIN_GSM_OnOff);
+
+			// Set GSM_ShutDown as Output with Pull-Down
+			DDR_GSM_ShutDown |= (1 << PIN_GSM_ShutDown);
+			PORT_GSM_ShutDown &= ~(1 << PIN_GSM_ShutDown);
+
+			// Set GNSS_Enable as Output with Pull-Down
+			DDR_GNSS_Enable |= (1 << PIN_GNSS_Enable);
+			PORT_GNSS_Enable &= ~(1 << PIN_GNSS_Enable);
+
+			// Set GSM_PWMon as Input with Pull-Down
+			DDR_GSM_PWMon &= ~(1 << PIN_GSM_PWMon);
+			PORT_GSM_PWMon &= ~(1 << PIN_GSM_PWMon);
+
+			// Set GSM_RING as Input with Pull-Up
+			DDR_GSM_RING &= ~(1 << PIN_GSM_RING);
+			PORT_GSM_RING |= (1 << PIN_GSM_RING);
+
+			// Set GSM_SWReady as Input with Pull-Down
+			DDR_GSM_SWReady &= ~(1 << PIN_GSM_SWReady);
+			PORT_GSM_SWReady &= ~(1 << PIN_GSM_SWReady);
 
 		}
 
-		// Enable Communication Buffer.
+		// Communication Buffer IC Control
 		void Communication(const bool _State) {
 
 			// Enable Communication 
-			if (_State) PORTA &= 0b11111101;
+			if (_State) PORT_COMM_ENABLE &= ~(1 << PIN_COMM_ENABLE);
 
 			// Disable Communication
-			if (!_State) PORTA |= 0b00000010;
+			if (!_State) PORT_COMM_ENABLE |= (1 << PIN_COMM_ENABLE);
+
+			// Command Delay
+			delay(50);
 
 		}
 
-		// Power Switch
+		// Power Switch IC Control
 		void Power_Switch(const bool _State) {
 
 			// Set GSM Power Enable
-			if (_State) PORTA |= 0b00000001;
+			if (_State) PORT_GSM_Power |= (1 << PIN_GSM_Power);
 
 			// Set GSM Power Disable
-			if (!_State) PORTA &= 0b11111110;
-		
+			if (!_State) PORT_GSM_Power &= ~(1 << PIN_GSM_Power);
+
+			// Command Delay
+			delay(50);
+
 		}
 
-		// On or Off Modem.
+		// On/Off Signal Control
 		void OnOff(const uint16_t _Time) {
 
 			// Set On/Off Signal HIGH [PA2]
-			PORTA |= 0b00000100;
+			PORT_GSM_OnOff |= (1 << PIN_GSM_OnOff);
 
 			// Command Delay
-			for (uint8_t i = 0; i < 36; i++) {
-
-				// Calculate Delay (2000)
-				uint8_t _Delay = _Time / 37;
-
-				// Wait
-				delay(_Delay); 
-
-			}
+			delay(_Time);
 
 			// Set On/Off Signal LOW [PA2]
-			PORTA &= 0b11111011;
+			PORT_GSM_OnOff &= ~(1 << PIN_GSM_OnOff);
 
 		}
 
-		// ShutDown Modem
+		// ShutDown Signal Control
 		void ShutDown(const uint16_t _Time) {
 
 			// Set Shut Down Signal HIGH [PA3]
-			PORTA |= 0b00001000;
+			PORT_GSM_ShutDown |= (1 << PIN_GSM_ShutDown);
 
 			// Command Delay
 			delay(_Time);
 
 			// Set Shut Down Signal LOW [PA3]
-			PORTA &= 0b11110111;
+			PORT_GSM_ShutDown &= ~(1 << PIN_GSM_ShutDown);
 
 		}
 
-		// Get Power Monitor
+		// Read Power Monitor Signal
 		bool PowerMonitor(void) {
 
-			// Control for PWMon (PJ2)
-			if ((PINJ & (1 << PINJ2)) == (1 << PINJ2)) {
-
-				// End Function
-				return (true);
-
-			} else {
-
-				// End Function
-				return(false);
-
-			}
-
+			// Read Power Monitor Signal
+			return ((PIN_REGISTER_GSM_PWMon & (1 << PIN_GSM_PWMon)) ? true : false);
+			
 		}
 
-		// Get Software Ready
+		// Read SWReady Signal
 		bool SWReady(void) {
 
-			// Control for SWReady (PJ4)
-			if ((PINJ & (1 << PINJ4)) == (1 << PINJ4)) {
-
-				// End Function
-				return (true);
-
-			} else {
-
-				// End Function
-				return(false);
-
-			}
+			// Read SWReady Signal
+			return ((PIN_REGISTER_GSM_SWReady & (1 << PIN_GSM_SWReady)) ? true : false);
 
 		}
 
-		// Enable GNSS
-		void GNSS_Enable(const bool _State) {
+		// GNSS Control
+		void GNSS(const bool _State) {
 
 			// Enable GNSS 
-			if (_State) PORTA |= 0b00010000;
+			if (_State) PORT_GNSS_Enable |= (1 << PIN_GNSS_Enable);
 
 			// Disable GNSS
-			if (!_State) PORTA &= 0b11101111;
+			if (!_State) PORT_GNSS_Enable &= ~(1 << PIN_GNSS_Enable);
 
 		}
 
@@ -137,15 +185,9 @@ class Hardware {
 
 			// Enable GSM Modem Power Switch
 			this->Power_Switch(true);  
-
-			// Power On Delay
-			delay(50);
 			
 			// Set Communication Signal LOW
 			this->Communication(true);
-
-			// Communication Delay
-			delay(50);
 			
 			// Turn On Modem
 			if (this->PowerMonitor()) {
@@ -156,34 +198,35 @@ class Hardware {
 			} else {
 
 				// Send On Off Signal
-				this->OnOff(1500);
-
-				// Boot Delay
-				delay(10000);
+				this->OnOff(ON_Delay);
 
 				// Control for PWMon (PJ3)
 				if (this->PowerMonitor()) {
 
-					// Boot Delay
-					delay(10000);
+					// Read Current Time
+					const uint32_t Current_Time = millis();
 
-					// Control for SWReady (PJ4)
-					if (this->SWReady()) {
+					// Wait for SWReady (PJ4)
+					while (!this->SWReady()) {
 
-						// End Function
-						return (true);
+						// Wait Delay
+						delay(5);
 
-					} else {
-
-						// Send On Off Signal
-						this->OnOff(3000);
+						// Handle for timeout
+						if (millis() - Current_Time >= SWREADY_Wait) return (false);
 
 					}
+
+					// Boot Delay
+					delay(BOOT_Delay);
+
+					// End Function
+					return (true);
 
 				} else {
 
 					// Send On Off Signal
-					this->OnOff(3000);
+					this->OnOff(OFF_Delay);
 
 				}
 
@@ -201,35 +244,30 @@ class Hardware {
 			if (this->PowerMonitor()) {
 
 				// Turn Off Modem
-				this->OnOff(2750);
-
-				// Set Variable
-				bool _Power = true;
+				this->OnOff(OFF_Delay);
 
 				// Read Current Time
-				const uint32_t _Current_Time = millis();
+				const uint32_t Current_Time = millis();
 
-				// Control for Power Monitor
-				while (_Power) {
+				// Wait for SWReady (PJ4)
+				while (this->PowerMonitor()) {
 
-					// Control for PowerMonitor
-					if (!this->PowerMonitor()) {
-
-						// Set Variable
-						_Power = false;
-
-						// Disable GSM Modem Voltage Translator
-						this->Communication(false);
-
-						// Disable GSM Modem Main Power Switch
-						this->Power_Switch(false);  
-
-					}
+					// Wait Delay
+					delay(5);
 
 					// Handle for timeout
-					if (millis() - _Current_Time >= 15000) break;;
+					if (millis() - Current_Time >= OFF_Delay) return (false);
 
 				}
+
+				// Disable GSM Modem Voltage Translator
+				this->Communication(false);
+
+				// Disable GSM Modem Main Power Switch
+				this->Power_Switch(false);  
+
+				// End Function
+				return (true);
 				
 			} else {
 
@@ -239,10 +277,13 @@ class Hardware {
 				// Disable GSM Modem Main Power Switch
 				this->Power_Switch(false);  
 
+				// End Function
+				return (true);
+
 			}
 
 			// End Function
-			return (true);
+			return (false);
 
 		}
 

@@ -1,54 +1,84 @@
 // Library include guard
 #pragma once
 
-// Include Arduino Library
-#ifndef __Arduino__
-	#include <Arduino.h>
+// Define Pack Types
+#ifndef PowerStat_Pack_Types
+	#define Pack_Online						1
+	#define Pack_Update						2
+	#define Pack_Timed						3
+	#define Pack_Interrupt					4
+	#define Pack_Alarm						5
+	#define Pack_Offline					6
+	#define Pack_FOTA_Info					90
+	#define Pack_FOTA_Download				91
+	#define Pack_FOTA_Burn					99
 #endif
 
-// Include Console Library
-#ifdef DEBUG
+// Define PowerStat Commands
+#ifndef PowerStat_Commands
 
-	// Define Console Library
-	#ifndef __Console__
-		#include <Console.h>
-	#endif
+	// Define Reset Command
+	#define Command_OK					200
+	#define Command_NOK					201
+
+	// Define Pump Commands
+	#define Command_Start				256
+	#define Command_Stop				257
+
+	// Define Device Commands
+	#define Command_Update				262
+	#define Command_Reset				999
+
+	// Define Device Configuration Commands
+	#define Command_Parameter			500
+
+	// Define FOTA Commands
+	#define Command_FOTA_Download		900
+	#define Command_FOTA_Burn			901
 
 #endif
 
-// Include RTC Library
-#ifndef __RV3028__
-	#include <RV3028.h>
+// EEPROM Address Table
+#ifndef PowerStat_EEPROM
+	#define EEPROM_Online_Interval		0x00
+	#define EEPROM_Offline_Interval		0x01
+	#define EEPROM_V_Min				0x06
+	#define EEPROM_V_Max				0x08
+	#define EEPROM_I_Max				0x0A
+	#define EEPROM_FQ_Min				0x0C
+	#define EEPROM_FQ_Max				0x0D
+	#define EEPROM_VIMB_Max				0x10
+	#define EEPROM_IIMB_Max				0x11
+	#define EEPROM_PMIN					0x1A
+	#define EEPROM_PMAX					0x1C
+	#define EEPROM_P_Regression			0x1E
+	#define EEPROM_STOP_MASK			0x20
+	#define EEPROM_PUBLISH_MASK			0x24
 #endif
 
-// Include JSON Library
-#include <ArduinoJson.h>
+// Define Console Library
+#include <Console.h>
 
 // Include SD Library
 #include <SPI.h>
 #include "SD.h"
 
 // Include PowerStat V4 Hardware Functions
-#include "Hardware/B107AA.h"
+#if defined(B107AA)
 
-// Include AT Command Library
-#if defined(LE910C1_EUX)
-
-	// Include LE910C1-EU AT Command Library
-	#include "AT_Command/LE910C1_EUX.h"
-
-#else if defined(LE910S1_EAG)
-
-	// Include LE910S1-EAG AT Command Library
-	#include "AT_Command/LE910S1_EAG.h"
+	// Include B107AA Hardware Functions
+	#include "Hardware/B107AA.h"
 
 #endif
 
-// Include Product Configurations
-#if defined(B107AA)
+// Include LE910C1-EU AT Command Library
+#if defined(LE910C1_EUX)
+	
+	// Include AT Command Set
+	#include "AT_Command/LE910C1_EUX.h"
 
-	// Include PowerStat V4 Configurations
-	#include "Config/PowerStat_Definitions.h"
+	// Define AT Command Set Name
+	typedef AT_Command_Set_LE910C1_EUX AT_Command_Set;
 
 #endif
 
@@ -3397,7 +3427,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private Console, private Har
 						delay(500);
 
 						// Enable FOTA
-						PIN_WRITE_FOTA_POWER_EN(true);
+						PORTH |= 0b00010000;
 
 					} else {
 

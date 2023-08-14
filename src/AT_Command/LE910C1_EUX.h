@@ -10,7 +10,7 @@
 #include "AT_Definitions.h"
 
 // Modem AT Command Set Class
-class AT_Command_Set {
+class AT_Command_Set_LE910C1_EUX {
 
 	// Private Context
 	private:
@@ -140,7 +140,7 @@ class AT_Command_Set {
 	public:
 
 		// PostOffice Constructor
-		AT_Command_Set(Stream &_Serial) {
+		AT_Command_Set_LE910C1_EUX(Stream &_Serial) {
 
 			// Set Serial Port
 			GSM_Serial = & _Serial;
