@@ -9,6 +9,9 @@
 // Include Definitions
 #include "AT_Definitions.h"
 
+// Define Response Max Length
+#define Max_OK_Response_Length 20
+
 // Modem AT Command Set Class
 class AT_Command_Set_LE910S1_EAG {
 
@@ -79,6 +82,9 @@ class AT_Command_Set_LE910S1_EAG {
 				// Increase Read Order
 				if (isAscii(_Buffer_Variable[_Buffer->Read_Order])) _Buffer->Read_Order++;
 
+				// Handle for Memory Overflow
+				if (_Buffer->Read_Order >= _Buffer->Size) break;
+
 				// Handle for timeout
 				if (millis() - Current_Time >= _Buffer->Time_Out) break;
 
@@ -110,9 +116,12 @@ class AT_Command_Set_LE910S1_EAG {
 			} else if (_Type == _CME_) {
 
 				// \r\n+CME ERROR: 614\r\n
+				// \r\n+CME ERROR: 4\r\n
 
-				// Control for <\r\n+CME> Response
-				if (_Buffer[_Size - 18] == '\r' and _Buffer[_Size - 17] == '\n' and _Buffer[_Size - 16] == '+' and _Buffer[_Size - 15] == 'C' and _Buffer[_Size - 14] == 'M' and _Buffer[_Size - 13] == 'E' and _Buffer[_Size - 1] == '\r' and _Buffer[_Size - 0] == '\n') return(true);
+				// Find <\r\n+CME ERROR:> Response
+				if (_Buffer[_Size - 16] == '\r' and _Buffer[_Size - 15] == '\n' and _Buffer[_Size - 14] == '+' and _Buffer[_Size - 13] == 'C' and _Buffer[_Size - 12] == 'M' and _Buffer[_Size - 11] == 'E' and _Buffer[_Size - 10] == ' ' and _Buffer[_Size - 9] == 'E' and _Buffer[_Size - 8] == 'R' and _Buffer[_Size - 7] == 'R' and _Buffer[_Size - 6] == 'O' and _Buffer[_Size - 5] == 'R' and _Buffer[_Size - 4] == ':' and _Buffer[_Size - 1] == '\r' and _Buffer[_Size - 0] == '\n') return(true);
+				else if (_Buffer[_Size - 17] == '\r' and _Buffer[_Size - 16] == '\n' and _Buffer[_Size - 15] == '+' and _Buffer[_Size - 14] == 'C' and _Buffer[_Size - 13] == 'M' and _Buffer[_Size - 12] == 'E' and _Buffer[_Size - 11] == ' ' and _Buffer[_Size - 10] == 'E' and _Buffer[_Size - 9] == 'R' and _Buffer[_Size - 8] == 'R' and _Buffer[_Size - 7] == 'O' and _Buffer[_Size - 6] == 'R' and _Buffer[_Size - 5] == ':' and _Buffer[_Size - 1] == '\r' and _Buffer[_Size - 0] == '\n') return(true);
+				else if (_Buffer[_Size - 18] == '\r' and _Buffer[_Size - 17] == '\n' and _Buffer[_Size - 16] == '+' and _Buffer[_Size - 15] == 'C' and _Buffer[_Size - 14] == 'M' and _Buffer[_Size - 13] == 'E' and _Buffer[_Size - 12] == ' ' and _Buffer[_Size - 11] == 'E' and _Buffer[_Size - 10] == 'R' and _Buffer[_Size - 9] == 'R' and _Buffer[_Size - 8] == 'O' and _Buffer[_Size - 7] == 'R' and _Buffer[_Size - 6] == ':' and _Buffer[_Size - 1] == '\r' and _Buffer[_Size - 0] == '\n') return(true);
 
 			}
 
@@ -155,11 +164,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				11		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -195,11 +204,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -503,11 +512,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -547,11 +556,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -683,11 +692,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -727,7 +736,7 @@ class AT_Command_Set_LE910S1_EAG {
 				false, 	// Response State
 				0, 		// Read Order
 				0, 		// Data Order
-				1000, 	// Time Out
+				30000, 	// Time Out
 				30		// Buffer Size
 			};
 
@@ -945,11 +954,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -998,11 +1007,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1039,11 +1048,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1079,11 +1088,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer
@@ -1294,11 +1303,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1459,8 +1468,8 @@ class AT_Command_Set_LE910S1_EAG {
 
 		}
 
-		// RFSTS Function
-		bool RFSTS(uint16_t & _MCC, uint16_t & _MNC, uint16_t & _RSSI, uint8_t & _Signal_Level, uint32_t & _Cell_ID, uint16_t & _TAC) {
+		// MONI Function
+		bool MONI(uint16_t & _MCC, uint16_t & _MNC, uint16_t & _RSSI, uint8_t & _Signal_Level) {
 
 			// Declare Variable Structure
 			struct Operator_Structure {
@@ -1477,7 +1486,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
-				140		// Buffer Size
+				120		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1490,7 +1499,7 @@ class AT_Command_Set_LE910S1_EAG {
 			delay(20);
 			
 			// Send UART Command
-			GSM_Serial->print(F("AT#RFSTS"));
+			GSM_Serial->print(F("AT#MONI"));
 			GSM_Serial->write(0x0D);
 			GSM_Serial->write(0x0A);
 
@@ -1500,40 +1509,24 @@ class AT_Command_Set_LE910S1_EAG {
 			// Handle for Response
 			if (_Response == _OK_) {
 
-				// AT#RFSTS\r\n
-				// \r\n#RFSTS:"286 01",6400,-100,-66,-18,2242,FF,0,128,10,1,859315,"286016339811626","TR TURKCELL",3,20,720,3240,-5\r\n\r\nOK\r\n
-				// \r\n#RFSTS: "286 01",6400,-97,-66,-12,2242,,128,3,1,0B5D11F,"286016339811626","Turkcell",3,20,116\r\n\r\nOK\r\n
+				// \r\n#MONI:TR TURKCELL RSRP:-110 RSRQ:15 TAC:2242 Id:B5D125 EARFCN:100 PWR:-95 DRX:128 pci:335 QRxlevMin:-124\r\n\r\nOK\r\n
 
-				// #RFSTS:<PLMN>,<EARFCN>,<RSRP>,<RSSI>,<RSRQ>,<TAC>,<RAC>,[<TXPWR>],<DR X>, <MM>,<RRC>,<CID>,<IMSI>,[<NetNameAsc>],<SD>,<ABND>,<T3402>,<T3412>,<SI NR>
-				//
-				// <PLMN> 		- Country code and operator code(MCC, MNC)						+ "286 01"
-				// <EARFCN> 	- E-UTRA Assigned Radio Channel									- 6400	
-				// <RSRP> 		- Reference Signal Received Power								- -100
-				// <RSSI> 		- Received Signal Strength Indication							+ -66
-				// <RSRQ> 		- Reference Signal Received Quality								- -18
-				// <TAC> 		- Tracking Area Code											+ 2242
-				// <RAC> 		- Routing Area Code												- FF
-				// <TXPWR> 		- Tx Power (In traffic only)									- 0
-				// <DR X> 		- Discontinuous reception cycle Length (cycle length in ms)		- 128
-				// <MM> 		- Mobility Management state (for debug purpose only)			- 10
-				// <RRC> 		- Radio Resource state (for debug purpose only)					- 1
-				// <CID> 		- Cell ID														+ 859315
-				// <IMSI> 		- International Mobile Station ID								- "286016339811626"
-				// <NetNameAsc> - Operator name													- "TR TURKCELL"
-				// <SD> 		- Service Domain												- 3
-				// <ABND> 		- Active Band													- 20
-				// <T3402> 		- Timer T3402 in seconds										- 720
-				// <T3412> 		- Timer T3412 in seconds										- 3240
-				// <SI NR> 		- Signal-to-Interface plus Noise Ratio							- -5
+				// Declare Variables
+				String _Country_Code;
+				String _Operator_Code;
 
 				// Handle Variables
-				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#RFSTS: \"%03d %02d\",%05d,-%03d,-%03d,-%02d,%05d,%s,%03d,%04d,%03d,%02d,%06X,\"%s\",\"%s\",%02d,%03d,%04d\r\n\r\nOK\r\n", &_MCC, &_MNC, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &_RSSI, &Handle_Buffer.Temp_Numeric, &_TAC, Handle_Buffer.Temp_String, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &_Cell_ID, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric);
+				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#MONI:%s %s RSRP:-%s RSRQ:%s TAC:%s Id:%s EARFCN:%s PWR:-%03d DRX:%s pci:%s QRxlevMin:-%s\r\n\r\nOK\r\n", _Country_Code, _Operator_Code, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, &_RSSI, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String);
+
+				// Handle for Variable
+				if (_Country_Code == "TR") _MCC = 286;
+				if (_Operator_Code == "TURKCELL") _MNC = 1;
 
 				// Calculate Signal Level
 				_Signal_Level = this->RSSI_to_Signal_Quality(_RSSI * -1);
 
 				// Control for Variable
-				if (_Variable_Count == 20) return(true);
+				if (_Variable_Count == 11) return(true);
 
 				// End Function
 				return(false);
@@ -1553,11 +1546,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1604,11 +1597,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1655,11 +1648,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1709,11 +1702,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 				// Declare Buffer Object
 				Serial_Buffer Buffer = {
-					false, 	// Response State
-					0, 		// Read Order
-					0, 		// Data Order
-					1000, 	// Time Out
-					7		// Buffer Size
+					false, 					// Response State
+					0, 						// Read Order
+					0, 						// Data Order
+					1000, 					// Time Out
+					Max_OK_Response_Length		// Buffer Size
 				};
 
 				// Declare Buffer Variable
@@ -1801,11 +1794,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1906,11 +1899,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1947,11 +1940,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1988,11 +1981,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2029,11 +2022,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				140000, // Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				140000, 				// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2082,11 +2075,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				5000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				5000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2123,11 +2116,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2307,11 +2300,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer_Set = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				2000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				2000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2620,11 +2613,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				500000, // Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				500000, 				// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2664,7 +2657,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 		// Read Order
 				0, 		// Data Order
 				500000,	// Time Out
-				7		// Buffer Size
+				20		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2806,7 +2799,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 		// Read Order
 				0, 		// Data Order
 				100000,	// Time Out
-				7		// Buffer Size
+				20		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2962,7 +2955,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
-				7		// Buffer Size
+				20		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2985,9 +2978,10 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Handle for Response
 			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			else if (_Response == _ERROR_) return(false);
+			else if (_Response == _CME_) return(false);
+			else if (_Response == _TIMEOUT_) return(false);
+			else return(false);
 
 		}
 
@@ -2999,11 +2993,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				500000,	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				500000,					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -3026,9 +3020,10 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Handle for Response
 			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			else if (_Response == _ERROR_) return(false);
+			else if (_Response == _CME_) return(false);
+			else if (_Response == _TIMEOUT_) return(false);
+			else return(false);
 
 		}
 
@@ -3040,15 +3035,17 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				5000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				5000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer
 			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
 			// Command Chain Delay (Advice by Telit)
@@ -3065,9 +3062,10 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Handle for Response
 			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			else if (_Response == _ERROR_) return(false);
+			else if (_Response == _CME_) return(false);
+			else if (_Response == _TIMEOUT_) return(false);
+			else return(false);
 
 		}
 
@@ -3079,11 +3077,11 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				5000, 	// Time Out
-				7		// Buffer Size
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				5000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer
@@ -3103,10 +3101,139 @@ class AT_Command_Set_LE910S1_EAG {
 
 			// Handle for Response
 			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			else if (_Response == _ERROR_) return(false);
+			else if (_Response == _CME_) return(false);
+			else if (_Response == _TIMEOUT_) return(false);
+			else return(false);
 
 		}
+
+		// GNSS Power Control Function
+		bool GPSP(const bool _Status) {
+
+			// Clear UART Buffer
+			this->Clear_UART_Buffer();
+
+			// Declare Buffer Object
+			Serial_Buffer Buffer = {
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				2000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
+			};
+
+			// Declare Buffer Variable
+			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
+			memset(Buffer_Variable, '\0', Buffer.Size);
+
+			// Command Chain Delay (Advice by Telit)
+			delay(20);
+
+			// Send UART Command
+			GSM_Serial->print(F("AT$GPSP="));
+			GSM_Serial->print(_Status);
+			GSM_Serial->write(0x0D);
+			GSM_Serial->write(0x0A);
+
+			// Declare Response
+			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+			// Handle for Response
+			if (_Response == _OK_) return(true);
+			else if (_Response == _ERROR_) return(false);
+			else if (_Response == _CME_) return(false);
+			else if (_Response == _TIMEOUT_) return(false);
+			else return(false);
+
+		}
+
+		// GNSS Update Rate Function
+		bool GPSNHZ(const uint8_t _Update_Rate) {
+
+			// Clear UART Buffer
+			this->Clear_UART_Buffer();
+
+			// Declare Buffer Object
+			Serial_Buffer Buffer = {
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
+			};
+
+			// Declare Buffer Variable
+			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
+			memset(Buffer_Variable, '\0', Buffer.Size);
+
+			// Command Chain Delay (Advice by Telit)
+			delay(20);
+
+			// Send UART Command
+			GSM_Serial->print(F("AT$GPSNHZ="));
+			GSM_Serial->print(_Update_Rate);
+			GSM_Serial->write(0x0D);
+			GSM_Serial->write(0x0A);
+
+			// Declare Response
+			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+			// Handle for Response
+			if (_Response == _OK_) return(true);
+			else if (_Response == _ERROR_) return(false);
+			else if (_Response == _CME_) return(false);
+			else if (_Response == _TIMEOUT_) return(false);
+			else return(false);
+
+		}
+
+		// GNSS Configuration Function
+		bool GPSCFG(const uint8_t _Value) {
+
+			// Clear UART Buffer
+			this->Clear_UART_Buffer();
+
+			// Declare Buffer Object
+			Serial_Buffer Buffer = {
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
+			};
+
+			// Declare Buffer Variable
+			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
+			memset(Buffer_Variable, '\0', Buffer.Size);
+
+			// Command Chain Delay (Advice by Telit)
+			delay(20);
+
+			// Send UART Command
+			GSM_Serial->print(F("AT$GPSCFG=2,"));
+			GSM_Serial->print(_Value);
+			GSM_Serial->write(0x0D);
+			GSM_Serial->write(0x0A);
+
+			// Declare Response
+			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+			// Handle for Response
+			if (_Response == _OK_) return(true);
+			else if (_Response == _ERROR_) return(false);
+			else if (_Response == _CME_) return(false);
+			else if (_Response == _TIMEOUT_) return(false);
+			else return(false);
+
+		}
+
+
 
 };

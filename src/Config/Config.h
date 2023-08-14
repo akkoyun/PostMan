@@ -1,11 +1,3 @@
-
-
-#define _WeatherStat_
-#define B108AA
-#define LE910S1_EAG
-
-
-
 // Define Packet Size
 #define Send_JSON_Size				1024
 #define Recieve_JSON_Size			128

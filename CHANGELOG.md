@@ -1,5 +1,11 @@
 # Release Notes
 
+## 0.16.0 (2023-08-14)
+
+* Project updates.
+* AT Command memory leak fixed.
+* General updates.
+
 ## 0.15.6 (2023-08-11)
 
 * Progma once protections added to all header files.

@@ -147,16 +147,16 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 					bool _Response_CGSN = AT_Command_Set::CGSN(this->IoT_Module.IMEI);
 
 					// ICCID Command (Get SIM Card ID)
-					bool _Response_CCID = AT_Command_Set::CCID(this->IoT_Operator.ICCID)
+					bool _Response_CCID = AT_Command_Set::CCID(this->IoT_Operator.ICCID);
 
 					// CGMI Command (Get Manufacturer)
-					bool _Response_CGMI = AT_Command_Set::CGMI(this->IoT_Module.Manufacturer)
+					bool _Response_CGMI = AT_Command_Set::CGMI(this->IoT_Module.Manufacturer);
 
 					// CGMM Command (Get Model)
-					bool _Response_CGMM = AT_Command_Set::CGMM(this->IoT_Module.Model)
+					bool _Response_CGMM = AT_Command_Set::CGMM(this->IoT_Module.Model);
 
 					// CGMR Command (Get Firmware Version)
-					bool _Response_SWPKGV = AT_Command_Set::SWPKGV(this->IoT_Module.Firmware)
+					bool _Response_SWPKGV = AT_Command_Set::SWPKGV(this->IoT_Module.Firmware);
 
 					// GPIO Command (Set Status LED)
 					AT_Command_Set::GPIO(SET, 1, 0, 2);
@@ -214,9 +214,9 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			// Define Commands
 			#define _CREG_
 			#define _CGDCONT_
-			//#define _SGACT_
+			#define _SGACT_
 			#define _WS46_
-			#define _RFSTS_
+			//#define _MONI_
 			#define _SCFG_
 
 			// Connect to Internet
@@ -289,9 +289,9 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 						AT_Command_Set::WS46(SET, this->IoT_Operator.WDS);
 					#endif
 
-					// RFSTS Command (Network Status)
-					#ifdef _RFSTS_
-						AT_Command_Set::RFSTS(this->IoT_Operator.MCC, this->IoT_Operator.MNC, this->IoT_Operator.RSSI, this->IoT_Operator.Signal, this->IoT_Operator.Cell_ID, this->IoT_Operator.TAC);
+					// MONI Command (Network Status)
+					#ifdef _MONI_
+						AT_Command_Set::MONI(this->IoT_Operator.MCC, this->IoT_Operator.MNC, this->IoT_Operator.RSSI, this->IoT_Operator.Signal);
 					#endif
 
 					// Socket Configuration
@@ -362,6 +362,26 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 			// Time Configuration Failed
 			return(false);
+
+		}
+
+		// Set GNSS Configuration
+		bool GNSS(void) {
+
+			// Turn On GNSS
+			Hardware::GNSS(true);
+
+			// Power On GNSS
+			AT_Command_Set::GPSP(true);
+
+			// Set GNSS Refresh Rate (1Hz)
+			AT_Command_Set::GPSNHZ(0);
+
+			// GPS Configuration
+			AT_Command_Set::GPSCFG(5);
+
+			// Time Configuration Failed
+			return(true);
 
 		}
 
@@ -439,7 +459,7 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				AT_Command_Set::WS46(GET, this->IoT_Operator.WDS);
 
 				// RFSTS Command (Network Status)
-				AT_Command_Set::RFSTS(this->IoT_Operator.MCC, this->IoT_Operator.MNC, this->IoT_Operator.RSSI, this->IoT_Operator.Signal, this->IoT_Operator.Cell_ID, this->IoT_Operator.TAC);
+				AT_Command_Set::MONI(this->IoT_Operator.MCC, this->IoT_Operator.MNC, this->IoT_Operator.RSSI, this->IoT_Operator.Signal);
 
 				// Define GSM Section
 				JsonObject JSON_GSM = JSON_Device["IoT"].createNestedObject(F("GSM"));
@@ -550,8 +570,17 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				// GSM Connect Sequence
 				if (this->Connect()) {
 
+					// Power Up GNSS
+					this->GNSS();
+
 					// Set Clock
 					this->Clock();
+
+					// Turn Off GNSS
+					Hardware::GNSS(false);
+
+					// Command Delay
+					delay(50);
 
 				} else {
 					
@@ -566,6 +595,14 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				Hardware::OFF();
 
 			}
+
+		}
+
+		// Disconnect GSM Modem
+		void Offline(void) {
+
+			// Power Down GSM
+			Hardware::OFF();
 
 		}
 
@@ -613,6 +650,19 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 								
 								// Get Response Command
 								uint16_t _Response_Command = Incoming_JSON["Event"];
+
+								// Control for Response Command
+								if (_Response_Command == 200) {
+
+									// End Function
+									return(true);
+
+								} else {
+
+									// End Function
+									return(false);
+
+								}
 
 								// Command Delay
 								delay(50);
