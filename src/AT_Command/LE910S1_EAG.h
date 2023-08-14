@@ -357,6 +357,7 @@ class AT_Command_Set_LE910S1_EAG {
 				if (strstr(_Model_Name, "GE910-QUAD") != NULL) _Model = _GE910_QUAD_;
 				else if (strstr(_Model_Name, "GE910-QUAD-V3") != NULL) _Model = _GE910_QUAD_V3_;
 				else if (strstr(_Model_Name, "LE910S1-EA") != NULL) _Model = _LE910S1_EA_;
+				else if (strstr(_Model_Name, "LE910S1-EAG") != NULL) _Model = _LE910S1_EAG_;
 				else if (strstr(_Model_Name, "LE910R1-EU") != NULL) _Model = _LE910R1_EU_;
 				else if (strstr(_Model_Name, "LE910C1-EUX") != NULL) _Model = _LE910C1_EUX_;
 
@@ -1512,15 +1513,15 @@ class AT_Command_Set_LE910S1_EAG {
 				// \r\n#MONI:TR TURKCELL RSRP:-110 RSRQ:15 TAC:2242 Id:B5D125 EARFCN:100 PWR:-95 DRX:128 pci:335 QRxlevMin:-124\r\n\r\nOK\r\n
 
 				// Declare Variables
-				String _Country_Code;
-				String _Operator_Code;
+				char _Country_Code[3];
+				char _Operator_Code[10];
 
 				// Handle Variables
 				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#MONI:%s %s RSRP:-%s RSRQ:%s TAC:%s Id:%s EARFCN:%s PWR:-%03d DRX:%s pci:%s QRxlevMin:-%s\r\n\r\nOK\r\n", _Country_Code, _Operator_Code, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, &_RSSI, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String);
 
 				// Handle for Variable
-				if (_Country_Code == "TR") _MCC = 286;
-				if (_Operator_Code == "TURKCELL") _MNC = 1;
+				if (strstr(_Country_Code, "TR") != NULL) _MCC = 286;
+				if (strstr(_Operator_Code, "TURKCELL") != NULL) _MNC = 1;
 
 				// Calculate Signal Level
 				_Signal_Level = this->RSSI_to_Signal_Quality(_RSSI * -1);

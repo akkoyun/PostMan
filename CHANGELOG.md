@@ -1,5 +1,14 @@
 # Release Notes
 
+## 0.16.1 (2023-08-14)
+
+* Callback functions removed from WeatherStat class.
+* RTC functions removed from WeatherStat class.
+* Device variables structure added.
+* JSON parse function updated.
+* LE910S1-EAG model added.
+* MONI function updated.
+
 ## 0.16.0 (2023-08-14)
 
 * Project updates.

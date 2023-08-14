@@ -102,11 +102,6 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 		} Buffer;
 
-		// Define CallBack Functions
-		void (*_Environment_CallBack)(float&, float&);
-		void (*_Battery_CallBack)(float&, float&, float&, float&, uint16_t&, uint16_t&, uint8_t&);
-		void (*_Send_Data_CallBack)(uint8_t);
-
 		// Initialize GSM Modem
 		bool Initialize(void) {
 
@@ -346,15 +341,6 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				// CCLK Command (Real Time Clock Configuration)
 				AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second, this->Time.Time_Zone);
 
-				// Detect RTC
-				I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
-
-				// RTC Object Definitions	
-				RV3028 RTC(true, 1);
-
-				// Update Time
-				RTC.Set_Time(this->Time.Second, this->Time.Minute, this->Time.Hour, this->Time.Day, this->Time.Month, this->Time.Year);
-
 				// Connection Success
 				return(true);
 
@@ -413,7 +399,7 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				JsonObject JSON_Info = JSON_Device.createNestedObject(F("Info"));
 
 				// Set Device ID Variable
-				JSON_Info[F("ID")] = "1111";
+				JSON_Info[F("ID")] = this->Measurements.Device_ID;
 				
 				// Set Device Hardware Version Variable
 				JSON_Info[F("Hardware")] = F(__Hardware__);
@@ -429,26 +415,14 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				// Define Power Section
 				JsonObject JSON_Battery = JSON_Device["Power"].createNestedObject("Battery");
 
-				// Declare Variables
-				float _IV = 0.0;
-				float _AC = 0.0;
-				float _SOC = 0.0;
-				float _Temp = 0.0;
-				uint16_t _DCAP = 0;
-				uint16_t _ICAP = 0;
-				uint8_t _State = 0;
-
-				// Get Battery Variables
-				_Battery_CallBack(_IV, _AC, _SOC, _Temp, _DCAP, _ICAP, _State);
-
 				// Set Battery Variables
-				JSON_Battery[F("IV")] = _IV;
-				JSON_Battery[F("AC")] = _AC;
-				JSON_Battery[F("SOC")] = _SOC;
-				JSON_Battery[F("T")] = _Temp;
-				JSON_Battery[F("FB")] = _DCAP;
-				JSON_Battery[F("IB")] = _ICAP;
-				JSON_Battery[F("Charge")] = _State;
+				JSON_Battery[F("IV")] = this->Measurements.Battery_Voltage;
+				JSON_Battery[F("AC")] = this->Measurements.Battery_Current;
+				JSON_Battery[F("SOC")] = this->Measurements.Battery_SOC;
+				JSON_Battery[F("T")] = this->Measurements.Battery_Temperature;
+				JSON_Battery[F("FB")] = this->Measurements.Battery_Full;
+				JSON_Battery[F("IB")] = this->Measurements.Battery_Instant;
+				JSON_Battery[F("Charge")] = this->Measurements.Battery_Charge;
 
 			#endif
 
@@ -471,38 +445,29 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				JSON_Module[F("Manufacturer")] = this->IoT_Module.Manufacturer;
 				JSON_Module[F("Model")] = this->IoT_Module.Model;
 				JSON_Module[F("Firmware")] = this->IoT_Module.Firmware;
-				JSON_Module[F("Serial")] = this->IoT_Module.Serial_ID;
 				JSON_Module[F("IMEI")] = this->IoT_Module.IMEI;
 
 				// Define GSM Operator Section
 				JsonObject JSON_Operator = JSON_GSM.createNestedObject(F("Operator"));
 
 				// Set Device GSM Connection Detail Section
-				JSON_Operator[F("SIM_Type")] = 1;
 				JSON_Operator[F("ICCID")] = this->IoT_Operator.ICCID;
 				JSON_Operator[F("Country")] = this->IoT_Operator.MCC;
 				JSON_Operator[F("Operator")] = this->IoT_Operator.MNC;
+				JSON_Operator[F("Connection")] = this->IoT_Operator.WDS;
 				JSON_Operator[F("RSSI")] = this->IoT_Operator.RSSI;
-				JSON_Operator[F("TAC")] = uint64ToString(this->IoT_Operator.TAC);
-				JSON_Operator[F("Cell_ID")] = uint64ToString(this->IoT_Operator.Cell_ID);
 
 			#endif
 
 			// Parse Payload Segment
 			#ifdef JSON_Segment_Payload
 
-				// Detect RTC
-				I2C_Functions I2C_RTC(__I2C_Addr_RV3028C7__, true, 1);
-
-				// RTC Object Definitions	
-				RV3028 RTC(true, 1);
-
 				// Declare TimeStamp Variable
 				char _TimeStamp[26];
 				memset(_TimeStamp, '\0', 26);
 
 				// Handle TimeStamp
-				sprintf(_TimeStamp, "20%02hhu-%02hhu-%02hhu %02hhu:%02hhu:%02hhu", RTC.Get_Year(), RTC.Get_Month(), RTC.Get_Date(), RTC.Get_Hour(), RTC.Get_Minute(), RTC.Get_Second());
+				sprintf(_TimeStamp, "20%02hhu-%02hhu-%02hhu %02hhu:%02hhu:%02hhu", this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second);
 
 				// Define Data Section
 				JsonObject JSON_Payload = JSON.createNestedObject(F("Payload"));
@@ -510,12 +475,24 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				// Set Device Time Variable
 				JSON_Payload[F("TimeStamp")] = _TimeStamp;
 
-				// Get Data
-				_Send_Data_CallBack(_Pack_Type);
+				// Define WeatherStat Data Section
+				JsonObject JSON_WeatherStat = JSON_Payload.createNestedObject(F("WeatherStat"));
 
-				// Set Device Environment Variable
-				JSON_Payload[F("PCBT")] = 11;
-				JSON_Payload[F("PCBH")] = 11;
+				// Define Location Data Section
+				JsonObject JSON_Location = JSON_WeatherStat.createNestedObject(F("Location"));
+
+				// Set Location Variables
+				JSON_Location[F("Latitude")] = 1;
+				JSON_Location[F("Longitude")] = 1;
+
+				// Define Environment Data Section
+				JsonObject JSON_Environment = JSON_WeatherStat.createNestedObject(F("Environment"));
+
+				// Set Air Temperature Variables
+				JSON_Environment[F("AT")] = this->Measurements.Air_Temperature;
+
+				// Set Air Humidity Variables
+				JSON_Environment[F("AH")] = this->Measurements.Air_Humidity;
 
 			#endif
 
@@ -533,28 +510,29 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 	// Public Functions
 	public:
 
+		// Define Measurement Structure
+		struct Struct_Measurements {
+
+			// Define Device ID
+			char 		Device_ID[17];
+
+			// Define Battery Variables
+			float 		Battery_Voltage;
+			float 		Battery_Current;
+			float 		Battery_SOC;
+			float 		Battery_Temperature;
+			uint16_t	Battery_Full;
+			uint16_t	Battery_Instant;
+			uint8_t		Battery_Charge;
+
+			// Define Environment Variables
+			float 		Air_Temperature;
+			float 		Air_Humidity;
+
+		} Measurements;
+
 		// PostMan Constructor
 		Postman_WeatherStatV3(Stream &_Serial) : AT_Command_Set(_Serial), Hardware() {
-
-		}
-
-		// CallBack Definitions
-		void Environment_CallBack(void (*_Environment_CallBack)(float&, float&)) {
-
-			// Set CallBack Functions
-			this->_Environment_CallBack = _Environment_CallBack;
-
-		}
-		void Battery_CallBack(void (*_Battery_CallBack)(float&, float&, float&, float&, uint16_t&, uint16_t&, uint8_t&)) {
-
-			// Set CallBack Functions
-			this->_Battery_CallBack = _Battery_CallBack;
-
-		}
-		void Event_PackData(void (*_Send_Data_CallBack)(uint8_t)) {
-
-			// Set CallBack Functions
-			this->_Send_Data_CallBack = _Send_Data_CallBack;
 
 		}
 
