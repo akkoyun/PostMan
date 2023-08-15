@@ -1,7 +1,7 @@
 // Define Packet Size
 #define Send_JSON_Size				1024
 #define Recieve_JSON_Size			128
-#define Response_JSON_Size			32
+#define Response_JSON_Size			128
 
 // Socket ID Definitions
 #define Socket_Incomming			3

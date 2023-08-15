@@ -110,6 +110,9 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 					// AT Command
 					bool _Response_AT = AT_Command_Set::AT();
 
+					// Control for AT Command
+					if (!_Response_AT) SLEEP();
+
 					// ATE Command (Echo Off)
 					bool _Response_ATE = AT_Command_Set::ATE(false);
 
@@ -502,32 +505,48 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				JsonObject JSON_Environment = JSON_WeatherStat.createNestedObject(F("Environment"));
 
 				// Set Air Temperature Variables
-				JSON_Environment[F("AT")] = this->Measurements.Air_Temperature;
+				if (this->Measurements.Air_Temperature != 0) {
+					JSON_Environment[F("AT")] = this->Measurements.Air_Temperature;
+				}
 
 				// Set Air Humidity Variables
-				JSON_Environment[F("AH")] = this->Measurements.Air_Humidity;
+				if (this->Measurements.Air_Humidity != 0) {
+					JSON_Environment[F("AH")] = this->Measurements.Air_Humidity;
+				}
 
 				// Set Air Pressure Variables
-				JSON_Environment[F("AP")] = this->Measurements.Air_Pressure;
+				if (this->Measurements.Air_Pressure != 0) {
+					JSON_Environment[F("AP")] = this->Measurements.Air_Pressure;
+				}
 
 				// Set UV Variables
-				JSON_Environment[F("UV")] = this->Measurements.UV;
-
+				if (this->Measurements.UV != 0) {
+					JSON_Environment[F("UV")] = this->Measurements.UV;
+				}
+				
 				// Set Soil Temperature Variables
-				JsonArray JSON_Soil_Temperature = JSON_Environment.createNestedArray(F("ST"));
-				JSON_Soil_Temperature.add(this->Measurements.Soil_Temperature[0]);
-				JSON_Soil_Temperature.add(this->Measurements.Soil_Temperature[1]);
-				JSON_Soil_Temperature.add(this->Measurements.Soil_Temperature[2]);
-				JSON_Soil_Temperature.add(this->Measurements.Soil_Temperature[3]);
+				if (this->Measurements.Soil_Temperature[0] != 0 or this->Measurements.Soil_Temperature[1] != 0 or this->Measurements.Soil_Temperature[2] != 0 or this->Measurements.Soil_Temperature[3] != 0) {
+					JsonArray JSON_Soil_Temperature = JSON_Environment.createNestedArray(F("ST"));
+					JSON_Soil_Temperature.add(this->Measurements.Soil_Temperature[0]);
+					JSON_Soil_Temperature.add(this->Measurements.Soil_Temperature[1]);
+					JSON_Soil_Temperature.add(this->Measurements.Soil_Temperature[2]);
+					JSON_Soil_Temperature.add(this->Measurements.Soil_Temperature[3]);
+				}
 
 				// Set Rain Variables
-				JSON_Environment[F("R")] = this->Measurements.Rain;
+				if (this->Measurements.Rain != 0) {
+					JSON_Environment[F("R")] = this->Measurements.Rain;
+				}
 
 				// Set Wind Direction Variables
-				JSON_Environment[F("WD")] = this->Measurements.Wind_Direction;
+				if (this->Measurements.Wind_Direction != 0) {
+					JSON_Environment[F("WD")] = this->Measurements.Wind_Direction;
+				}
 
 				// Set Wind Speed Variables
-				JSON_Environment[F("WS")] = this->Measurements.Wind_Speed;
+				if (this->Measurements.Wind_Speed != 0) {
+					JSON_Environment[F("WS")] = this->Measurements.Wind_Speed;
+				}
 
 			#endif
 
@@ -637,7 +656,7 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 		}
 
 		// Send Data Batch Function
-		bool Publish(const uint8_t _Pack_Type) {
+		uint16_t Publish(const uint8_t _Pack_Type) {
 
 			// Control for Connection
 			if (this->IoT_Status.Connection) {
@@ -681,24 +700,14 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 								// Get Response Command
 								uint16_t _Response_Command = Incoming_JSON["Event"];
 
-								// Control for Response Command
-								if (_Response_Command == 200) {
-
-									// End Function
-									return(true);
-
-								} else {
-
-									// End Function
-									return(false);
-
-								}
-
 								// Command Delay
 								delay(50);
 
 								// Closing Socket
-								if (AT_Command_Set::SH(Socket_Outgoing)) return(true);
+								AT_Command_Set::SH(Socket_Outgoing);
+
+								// End Function
+								return(_Response_Command);
 
 							} 
 							
@@ -711,7 +720,7 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			} 
 
 			// End Function
-			return(false);
+			return(0);
 
 		}
 
