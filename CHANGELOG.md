@@ -1,5 +1,17 @@
 # Release Notes
 
+## 0.16.3 (2023-08-15)
+
+* Time structure moved to public.
+* Pack type definitions added.
+* Parse_JSON function updated.
+* Measurement structure updated.
+
+## 0.16.2 (2023-08-15)
+
+* Hardware class updated.
+* GNSS power order changed.
+
 ## 0.16.1 (2023-08-14)
 
 * Callback functions removed from WeatherStat class.

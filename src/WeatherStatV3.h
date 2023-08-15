@@ -20,6 +20,10 @@
 
 #endif
 
+// Define Pack Types
+#define _PACK_TIMED_		1
+#define _PACK_TIMED_TINY_	2
+
 // Cloud Functions
 class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
@@ -79,17 +83,6 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			uint8_t 	Connection_Time;
 
 		} IoT_Operator;
-
-		// Define Time Structure
-		struct Struct_Time {
-			uint16_t 	Year				= 0;
-			uint16_t 	Month				= 0;
-			uint16_t 	Day					= 0;
-			uint16_t 	Hour				= 0;
-			uint16_t 	Minute				= 0;
-			uint16_t 	Second				= 0;
-			uint16_t	Time_Zone			= 0;
-		} Time;
 
 		// Define Runtime Buffer Structure
 		struct Struct_Buffer {
@@ -354,9 +347,6 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 		// Set GNSS Configuration
 		bool GNSS(void) {
 
-			// Turn On GNSS
-			Hardware::GNSS(true);
-
 			// Power On GNSS
 			AT_Command_Set::GPSP(true);
 
@@ -386,8 +376,18 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			// Define JSON
 			StaticJsonDocument<Send_JSON_Size> JSON;
 
-			// Set Command
-			JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Timed"));
+			// Parse Command Segment
+			if (_Pack_Type == _PACK_TIMED_) {
+
+				// Set Command
+				JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Timed"));
+
+			} else if (_Pack_Type == _PACK_TIMED_TINY_) {
+
+				// Set Command
+				JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Timed_Tiny"));
+
+			}
 
 			// Define Device Section
 			JsonObject JSON_Device = JSON.createNestedObject(F("Device"));
@@ -402,10 +402,10 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				JSON_Info[F("ID")] = this->Measurements.Device_ID;
 				
 				// Set Device Hardware Version Variable
-				JSON_Info[F("Hardware")] = F(__Hardware__);
+				if (_Pack_Type == _PACK_TIMED_) JSON_Info[F("Hardware")] = F(__Hardware__);
 
 				// Set Device Firmware Version Variable
-				JSON_Info[F("Firmware")] = F(__Firmware__);
+				if (_Pack_Type == _PACK_TIMED_) JSON_Info[F("Firmware")] = F(__Firmware__);
 
 			#endif
 
@@ -419,9 +419,9 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				JSON_Battery[F("IV")] = this->Measurements.Battery_Voltage;
 				JSON_Battery[F("AC")] = this->Measurements.Battery_Current;
 				JSON_Battery[F("SOC")] = this->Measurements.Battery_SOC;
-				JSON_Battery[F("T")] = this->Measurements.Battery_Temperature;
-				JSON_Battery[F("FB")] = this->Measurements.Battery_Full;
-				JSON_Battery[F("IB")] = this->Measurements.Battery_Instant;
+				if (_Pack_Type == _PACK_TIMED_) JSON_Battery[F("T")] = this->Measurements.Battery_Temperature;
+				if (_Pack_Type == _PACK_TIMED_) JSON_Battery[F("FB")] = this->Measurements.Battery_Full;
+				if (_Pack_Type == _PACK_TIMED_) JSON_Battery[F("IB")] = this->Measurements.Battery_Instant;
 				JSON_Battery[F("Charge")] = this->Measurements.Battery_Charge;
 
 			#endif
@@ -438,24 +438,30 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				// Define GSM Section
 				JsonObject JSON_GSM = JSON_Device["IoT"].createNestedObject(F("GSM"));
 
-				// Define IoT Module
-				JsonObject JSON_Module = JSON_GSM.createNestedObject(F("Module"));
+				// Module Segment
+				if (_Pack_Type == _PACK_TIMED_) {
 
-				// Set IoT Parameters
-				JSON_Module[F("Manufacturer")] = this->IoT_Module.Manufacturer;
-				JSON_Module[F("Model")] = this->IoT_Module.Model;
-				JSON_Module[F("Firmware")] = this->IoT_Module.Firmware;
-				JSON_Module[F("IMEI")] = this->IoT_Module.IMEI;
+					// Define IoT Module
+					JsonObject JSON_Module = JSON_GSM.createNestedObject(F("Module"));
+
+					// Set IoT Parameters
+					JSON_Module[F("Manufacturer")] = this->IoT_Module.Manufacturer;
+					JSON_Module[F("Model")] = this->IoT_Module.Model;
+					JSON_Module[F("Firmware")] = this->IoT_Module.Firmware;
+					JSON_Module[F("IMEI")] = this->IoT_Module.IMEI;
+
+				}
 
 				// Define GSM Operator Section
 				JsonObject JSON_Operator = JSON_GSM.createNestedObject(F("Operator"));
 
 				// Set Device GSM Connection Detail Section
-				JSON_Operator[F("ICCID")] = this->IoT_Operator.ICCID;
+				if (_Pack_Type == _PACK_TIMED_) JSON_Operator[F("ICCID")] = this->IoT_Operator.ICCID;
 				JSON_Operator[F("Country")] = this->IoT_Operator.MCC;
 				JSON_Operator[F("Operator")] = this->IoT_Operator.MNC;
-				JSON_Operator[F("Connection")] = this->IoT_Operator.WDS;
 				JSON_Operator[F("RSSI")] = this->IoT_Operator.RSSI;
+				JSON_Operator[F("ConnType")] = this->IoT_Operator.WDS;
+				JSON_Operator[F("ConnTime")] = (millis() - this->Buffer.Connection_Time_Buffer) / 1000;
 
 			#endif
 
@@ -464,6 +470,8 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 				// Declare TimeStamp Variable
 				char _TimeStamp[26];
+
+				// Clear TimeStamp Variable
 				memset(_TimeStamp, '\0', 26);
 
 				// Handle TimeStamp
@@ -478,12 +486,17 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				// Define WeatherStat Data Section
 				JsonObject JSON_WeatherStat = JSON_Payload.createNestedObject(F("WeatherStat"));
 
-				// Define Location Data Section
-				JsonObject JSON_Location = JSON_WeatherStat.createNestedObject(F("Location"));
+				// Location Segment
+				if (_Pack_Type == _PACK_TIMED_) {
 
-				// Set Location Variables
-				JSON_Location[F("Latitude")] = 1;
-				JSON_Location[F("Longitude")] = 1;
+					// Define Location Data Section
+					JsonObject JSON_Location = JSON_WeatherStat.createNestedObject(F("Location"));
+
+					// Set Location Variables
+					JSON_Location[F("Latitude")] = 1;
+					JSON_Location[F("Longitude")] = 1;
+
+				}
 
 				// Define Environment Data Section
 				JsonObject JSON_Environment = JSON_WeatherStat.createNestedObject(F("Environment"));
@@ -493,6 +506,28 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 				// Set Air Humidity Variables
 				JSON_Environment[F("AH")] = this->Measurements.Air_Humidity;
+
+				// Set Air Pressure Variables
+				JSON_Environment[F("AP")] = this->Measurements.Air_Pressure;
+
+				// Set UV Variables
+				JSON_Environment[F("UV")] = this->Measurements.UV;
+
+				// Set Soil Temperature Variables
+				JsonArray JSON_Soil_Temperature = JSON_Environment.createNestedArray(F("ST"));
+				JSON_Soil_Temperature.add(this->Measurements.Soil_Temperature[0]);
+				JSON_Soil_Temperature.add(this->Measurements.Soil_Temperature[1]);
+				JSON_Soil_Temperature.add(this->Measurements.Soil_Temperature[2]);
+				JSON_Soil_Temperature.add(this->Measurements.Soil_Temperature[3]);
+
+				// Set Rain Variables
+				JSON_Environment[F("R")] = this->Measurements.Rain;
+
+				// Set Wind Direction Variables
+				JSON_Environment[F("WD")] = this->Measurements.Wind_Direction;
+
+				// Set Wind Speed Variables
+				JSON_Environment[F("WS")] = this->Measurements.Wind_Speed;
 
 			#endif
 
@@ -509,6 +544,17 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 	// Public Functions
 	public:
+
+		// Define Time Structure
+		struct Struct_Time {
+			uint16_t 	Year				= 0;
+			uint16_t 	Month				= 0;
+			uint16_t 	Day					= 0;
+			uint16_t 	Hour				= 0;
+			uint16_t 	Minute				= 0;
+			uint16_t 	Second				= 0;
+			uint16_t	Time_Zone			= 0;
+		} Time;
 
 		// Define Measurement Structure
 		struct Struct_Measurements {
@@ -528,6 +574,12 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			// Define Environment Variables
 			float 		Air_Temperature;
 			float 		Air_Humidity;
+			float 		Air_Pressure;
+			float 		UV;
+			float 		Soil_Temperature[4];
+			uint16_t	Rain;
+			uint16_t	Wind_Direction;
+			float		Wind_Speed;
 
 		} Measurements;
 
@@ -542,6 +594,9 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			// Set Connection Start Time
 			this->Buffer.Connection_Time_Buffer = millis();
 
+			// Turn On GNSS
+			Hardware::GNSS(true);
+
 			// GSM Initialize Sequence
 			if (this->Initialize()) {
 
@@ -553,9 +608,6 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 					// Set Clock
 					this->Clock();
-
-					// Turn Off GNSS
-					Hardware::GNSS(false);
 
 					// Command Delay
 					delay(50);
