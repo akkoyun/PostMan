@@ -1,12 +1,21 @@
 # Release Notes
 
+## 0.17.0 (2023-08-17)
+
+* Environment measurement library added. [WeatherStat]
+* Measurement structure deleted. [WeatherStat]
+* Get_Serial_ID function added. [WeatherStat]
+* Environment measurement function added. [WeatherStat]
+* Pack type decide updated. [WeatherStat]
+* Battery measurements added. [WeatherStat]
+* JSON payload segment updated. [WeatherStat]
+
 ## 0.16.4 (2023-08-15)
 
 * Response_JSON_Size definition updated. [WeatherStat]
 * AT response fail control updated. [WeatherStat]
 * Measurement 0 value control updated. [WeatherStat]
 * Publish function updated. [WeatherStat]
-* 
 
 ## 0.16.3 (2023-08-15)
 
