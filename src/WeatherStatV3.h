@@ -98,6 +98,12 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 		} IoT_Operator;
 
+		// Define IoT Status Structure
+		struct Struct_Position {
+			double 	Latitude = 0;
+			double 	Longitude = 0;
+		} Position;
+
 		// Define Runtime Buffer Structure
 		struct Struct_Buffer {
 
@@ -491,6 +497,31 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			// GPS Configuration
 			AT_Command_Set::GPSCFG(5);
 
+			// Set Connection WatchDog
+			bool _Possition_WD = false;
+			uint8_t _Position_Acc = 0;
+			uint8_t _Possition_WD_Counter = 0;
+
+			// Wait for Position
+			while (_Position_Acc != 50) {
+
+				// Get Acurate Position
+				AT_Command_Set::GPSACP(_Possition_WD, this->Position.Latitude, this->Position.Longitude);
+
+				// Command Delay
+				delay(1000);
+
+				// Set Accuricy
+				if (_Possition_WD) _Position_Acc++;
+
+				// Set WD Variable
+				_Possition_WD_Counter++;
+
+				// Control for WD
+				if (_Possition_WD_Counter > 50) return(false);
+
+			}
+
 			// Time Configuration Failed
 			return(true);
 
@@ -503,17 +534,17 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			uint8_t _Pack_Type;
 
 			// Select Pack Type
-			if (this->Time.Hour == _Full_Pack_Hour_ and this->Time.Minute < 30) {
+//			if (this->Time.Hour == _Full_Pack_Hour_ and this->Time.Minute < 30) {
 
 				// Set Pack Type
 				_Pack_Type = _PACK_TIMED_;
 
-			} else {
+//			} else {
 
 				// Set Pack Type
-				_Pack_Type = _PACK_TIMED_TINY_;
+//				_Pack_Type = _PACK_TIMED_TINY_;
 
-			}
+//			}
 
 			// JSON Document Segments
 			#define JSON_Segment_Info
@@ -655,8 +686,8 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 					JsonObject JSON_Location = JSON_WeatherStat.createNestedObject(F("Location"));
 
 					// Set Location Variables
-					JSON_Location[F("Latitude")] = 1;
-					JSON_Location[F("Longitude")] = 1;
+					JSON_Location[F("Latitude")] = String(this->Position.Latitude, 6);
+					JSON_Location[F("Longitude")] = String(this->Position.Longitude, 6);
 
 				}
 
@@ -868,7 +899,7 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 					} 
 
 				} 
-
+				
 			} 
 
 			// End Function

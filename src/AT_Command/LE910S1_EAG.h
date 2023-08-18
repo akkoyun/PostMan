@@ -145,6 +145,18 @@ class AT_Command_Set_LE910S1_EAG {
 
 		}
 
+		// Convert Coordinate
+		double convert_to_decimal_degree(double _Coordinate) {
+			
+			int dd = int(_Coordinate / 100);
+			
+			double mm_mmmm = _Coordinate - (dd * 100);
+			
+			double decimal_degree = dd + (mm_mmmm / 60);
+			
+			return decimal_degree;
+		}
+
 	// Public Context
 	public:
 
@@ -1486,7 +1498,7 @@ class AT_Command_Set_LE910S1_EAG {
 				false, 	// Response State
 				0, 		// Read Order
 				0, 		// Data Order
-				1000, 	// Time Out
+				2000, 	// Time Out
 				120		// Buffer Size
 			};
 
@@ -1511,6 +1523,7 @@ class AT_Command_Set_LE910S1_EAG {
 			if (_Response == _OK_) {
 
 				// \r\n#MONI:TR TURKCELL RSRP:-110 RSRQ:15 TAC:2242 Id:B5D125 EARFCN:100 PWR:-95 DRX:128 pci:335 QRxlevMin:-124\r\n\r\nOK\r\n
+				// \r\n#MONI:TR TURKCELL RSRP:-99 RSRQ:-16 TAC:2242 Id:859315 EARFCN:6400 PWR:-66 DRX:128 pci:438 QRxlevMin:-124\r\n\r\nOK\r\n
 
 				// Declare Variables
 				char _Country_Code[3];
@@ -3109,6 +3122,9 @@ class AT_Command_Set_LE910S1_EAG {
 
 		}
 
+
+
+
 		// GNSS Power Control Function
 		bool GPSP(const bool _Status) {
 
@@ -3235,6 +3251,136 @@ class AT_Command_Set_LE910S1_EAG {
 
 		}
 
+		// GNSS Configuration Function
+		bool GPSNMUNEX(void) {
 
+			// Clear UART Buffer
+			this->Clear_UART_Buffer();
+
+			// Declare Buffer Object
+			Serial_Buffer Buffer = {
+				false, 					// Response State
+				0, 						// Read Order
+				0, 						// Data Order
+				1000, 					// Time Out
+				Max_OK_Response_Length		// Buffer Size
+			};
+
+			// Declare Buffer Variable
+			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
+			memset(Buffer_Variable, '\0', Buffer.Size);
+
+			// Command Chain Delay (Advice by Telit)
+			delay(20);
+
+			// Send UART Command
+			GSM_Serial->print(F("AT$GPSNMUNEX=0,1,1,0,0,1,0,1,0"));
+			GSM_Serial->write(0x0D);
+			GSM_Serial->write(0x0A);
+
+			// Declare Response
+			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+			// Handle for Response
+			if (_Response == _OK_) return(true);
+			else if (_Response == _ERROR_) return(false);
+			else if (_Response == _CME_) return(false);
+			else if (_Response == _TIMEOUT_) return(false);
+			else return(false);
+
+		}
+
+
+		// GNSS Get Position Function
+		bool GPSACP(bool & _Position_OK, double & _Latitude, double & _Longitude) {
+
+			// Clear UART Buffer
+			this->Clear_UART_Buffer();
+
+			// Declare Buffer Object
+			Serial_Buffer Buffer = {
+				false, 	// Response State
+				0, 		// Read Order
+				0, 		// Data Order
+				1000, 	// Time Out
+				100		// Buffer Size
+			};
+
+			// Declare Buffer Variable
+			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
+			memset(Buffer_Variable, '\0', Buffer.Size);
+
+			// Command Chain Delay (Advice by Telit)
+			delay(20);
+
+			// Send UART Command
+			GSM_Serial->print(F("AT$GPSACP"));
+			GSM_Serial->write(0x0D);
+			GSM_Serial->write(0x0A);
+
+			// Declare Response
+			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+			// Handle for Response
+			if (_Response == _OK_) {
+
+				// \r\n$GPSACP: ,,,,,1,,,,,,\r\n\r\nOK\r\n
+				// \r\n\r\n$GPSACP: 121313.00,3757.84237N,03235.96966E,2.91,1044.4,3,,0.693,0.374,180823,06\r\n\r\nOK\r\n
+				// \r\n\r\n$GPSACP: 134944.13,3757.87023N,03235.96638E,16.25,1086.6,3,,3.054,1.649,,04\r\n\r\nOK\r\n
+
+				// \r\n\r\n$GPSACP: 140320.44,3757.87827N,03235.96748E,1.25,1114.1,3,,0.713,0.385,,06\r\n\r\nOK\r\n
+				// \r\n\r\n$GPSACP: 140322.00,3757.87771N,03235.96699E,1.25,1102.6,3,,0.148,0.080,180823,06\r\n\r\nOK\r\n
+
+				// 3757.87771N,03235.96699E
+
+
+				// Control for length
+				if (Buffer.Read_Order < 40) return(true);
+
+				// Declare Trimmed Array
+				char _Trimmed_Array[25];
+
+				// Clear Array
+				memset(_Trimmed_Array, '\0', 25);
+
+				// Trim Array
+				for (uint8_t i = 0; i < 24; i++) _Trimmed_Array[i] = Buffer_Variable[i + 23];
+
+				// 3757.83059N,03235.96819E
+
+				// Declare Variables
+				int _Segment_1;
+				int _Segment_2;
+				int _Segment_3;
+				int _Segment_4;
+
+				// Handle Variables
+				uint8_t _Variable_Count = sscanf(_Trimmed_Array, "%4d.%5dN,%5d.%5dE", &_Segment_1, &_Segment_2, &_Segment_3, &_Segment_4);
+
+				// Parse Variable
+				double _Lat = ((double)_Segment_1 + ((double)_Segment_2 / 100000));
+				double _Long = ((double)_Segment_3 + ((double)_Segment_4 / 100000));
+
+				// Convert Position
+				_Latitude = this->convert_to_decimal_degree(_Lat);
+				_Longitude = this->convert_to_decimal_degree(_Long);
+
+				// Control for Coordinates
+				if (_Variable_Count == 4) _Position_OK = true;
+
+				// End Function
+				return(true);
+
+			}
+			else if (_Response == _ERROR_) return(false);
+			else if (_Response == _CME_) return(false);
+			else if (_Response == _TIMEOUT_) return(false);
+			else return(false);
+
+		}
 
 };
