@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.17.2 (2023-08-21)
+
+* Read Serial ID function deleted. [WeatherStat]
+* DS28C library added. [WeatherStat]
+
 ## 0.17.0 (2023-08-17)
 
 * Environment measurement library added. [WeatherStat]

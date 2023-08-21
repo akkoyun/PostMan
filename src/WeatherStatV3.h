@@ -123,66 +123,6 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 		} Buffer;
 
-		// Serial ID Read Function
-		void Get_Serial_ID(void) {
-			
-			// Define Variable
-			uint64_t _Serial = 0x00;
-			uint8_t _Read_Byte;
-
-			// Define I2C Device
-			I2C_Functions I2C_DS28C(__I2C_Addr_DS28C__, true, I2C_MUX_DS28C);
-
-			// Set DS28C to I2C Mode
-			I2C_DS28C.Write_Register(0x08, 0x01, false);
-
-			// Send CRC  Read Request to DS28C and read
-			_Read_Byte = I2C_DS28C.Read_Register(0x07);
-			_Serial |= (uint64_t)_Read_Byte;
-
-			// Send 40-47 bit Read Request to DS28C and read
-			_Read_Byte = I2C_DS28C.Read_Register(0x06);
-			_Serial = _Serial << 8;
-			_Serial |= (uint64_t)_Read_Byte;
-
-			// Send 32-39 bit Read Request to DS28C and read
-			_Read_Byte = I2C_DS28C.Read_Register(0x05);
-			_Serial = _Serial << 8;
-			_Serial |= (uint64_t)_Read_Byte;
-
-			// Send 24-31 bit Read Request to DS28C and read
-			_Read_Byte = I2C_DS28C.Read_Register(0x04);
-			_Serial = _Serial << 8;
-			_Serial |= (uint64_t)_Read_Byte;
-
-			// Send 16-23 bit Read Request to DS28C and read
-			_Read_Byte = I2C_DS28C.Read_Register(0x03);
-			_Serial = _Serial << 8;
-			_Serial |= (uint64_t)_Read_Byte;
-
-			// Send 08-15 bit Read Request to DS28C and read
-			_Read_Byte = I2C_DS28C.Read_Register(0x02);
-			_Serial = _Serial << 8;
-			_Serial |= (uint64_t)_Read_Byte;
-
-			// Send 00-07 bit Read Request to DS28C and read
-			_Read_Byte = I2C_DS28C.Read_Register(0x01);
-			_Serial = _Serial << 8;
-			_Serial |= (uint64_t)_Read_Byte;
-
-			// Send Device Family bit Read Request to DS28C and read
-			_Read_Byte = I2C_DS28C.Read_Register(0x00);
-			_Serial = _Serial << 8;
-			_Serial |= (uint64_t)_Read_Byte;
-
-			// Clear Device ID Buffer
-			memset(this->Device_ID, '\0', 17);
-
-			// Set Array
-			String(this->uint64ToString(_Serial)).toCharArray(this->Device_ID, 17);
-
-		}
-
 		// Read DP Sensor Function
 		void Get_DP_Sensor(void) {
 
@@ -534,17 +474,17 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			uint8_t _Pack_Type;
 
 			// Select Pack Type
-//			if (this->Time.Hour == _Full_Pack_Hour_ and this->Time.Minute < 30) {
+			if (this->Time.Hour == _Full_Pack_Hour_ and this->Time.Minute < 30) {
 
 				// Set Pack Type
 				_Pack_Type = _PACK_TIMED_;
 
-//			} else {
+			} else {
 
 				// Set Pack Type
-//				_Pack_Type = _PACK_TIMED_TINY_;
+				_Pack_Type = _PACK_TIMED_TINY_;
 
-//			}
+			}
 
 			// JSON Document Segments
 			#define JSON_Segment_Info
@@ -580,11 +520,14 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				// Define Device Section
 				JsonObject JSON_Info = JSON_Device.createNestedObject(F("Info"));
 
+				// Declare Serial ID IC Object
+				DS28C Serial_ID_IC(true, 1);
+
 				// Get Serial ID
-				this->Get_Serial_ID();
+				Serial_ID_IC.Get_Serial_ID();
 
 				// Set Device ID Variable
-				JSON_Info[F("ID")] = this->Device_ID;
+				JSON_Info[F("ID")] = Serial_ID_IC.SerialID;
 				
 				// Set Device Hardware Version Variable
 				if (_Pack_Type == _PACK_TIMED_) JSON_Info[F("Hardware")] = F(__Hardware__);
