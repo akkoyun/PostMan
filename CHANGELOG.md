@@ -1,8 +1,21 @@
 # Release Notes
 
+## 0.17.5 (2023-08-22)
+
+* GPS coordinate parse function added. [WeatherStat]
+
+## 0.17.4 (2023-08-21)
+
+* AVR_Function library removed. [WeatherStat]
+
+## 0.17.3 (2023-08-21)
+
+* DS28C bug fixed. [WeatherStat]
+* Unused variables deleted. [WeatherStat]
+
 ## 0.17.2 (2023-08-21)
 
-* Read Serial ID function deleted. [WeatherStat]
+[Title](library.json)* Read Serial ID function deleted. [WeatherStat]
 * DS28C library added. [WeatherStat]
 
 ## 0.17.0 (2023-08-17)

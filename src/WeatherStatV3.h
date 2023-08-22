@@ -21,9 +21,19 @@
 #endif
 
 // Include Environment Library
-#ifndef __Environment__1
+#ifndef __Environment__
 	#include "Environment.h"
 #endif
+
+// Include DS28C Library
+#ifndef __DS28C__
+	#include "DS28C.h"
+#endif
+
+
+
+
+
 
 // Include Light Sensor Library
 #include <SI1145_WE.h>
@@ -40,9 +50,6 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 	// Private Functions
 	private:
-
-		// Define Device ID
-		char Device_ID[17];
 
 		// Define IoT Status Structure
 		struct Struct_Status {
@@ -474,17 +481,17 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			uint8_t _Pack_Type;
 
 			// Select Pack Type
-			if (this->Time.Hour == _Full_Pack_Hour_ and this->Time.Minute < 30) {
+//			if (this->Time.Hour == _Full_Pack_Hour_ and this->Time.Minute < 30) {
 
 				// Set Pack Type
 				_Pack_Type = _PACK_TIMED_;
 
-			} else {
+//			} else {
 
 				// Set Pack Type
-				_Pack_Type = _PACK_TIMED_TINY_;
+//				_Pack_Type = _PACK_TIMED_TINY_;
 
-			}
+//			}
 
 			// JSON Document Segments
 			#define JSON_Segment_Info
@@ -629,8 +636,8 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 					JsonObject JSON_Location = JSON_WeatherStat.createNestedObject(F("Location"));
 
 					// Set Location Variables
-					JSON_Location[F("Latitude")] = String(this->Position.Latitude, 6);
-					JSON_Location[F("Longitude")] = String(this->Position.Longitude, 6);
+					JSON_Location[F("Latitude")] = String(this->Position.Latitude, 10);
+					JSON_Location[F("Longitude")] = String(this->Position.Longitude, 10);
 
 				}
 
@@ -715,18 +722,6 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			uint16_t 	Second				= 0;
 			uint16_t	Time_Zone			= 0;
 		} Time;
-
-		// Define Measurement Structure
-		struct Struct_Measurements {
-
-			// Define Environment Variables
-			float 		UV;
-			float 		Soil_Temperature[4];
-			uint16_t	Rain;
-			uint16_t	Wind_Direction;
-			float		Wind_Speed;
-
-		} Measurements;
 
 		// PostMan Constructor
 		Postman_WeatherStatV3(Stream &_Serial) : AT_Command_Set(_Serial), Hardware() {

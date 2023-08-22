@@ -146,15 +146,20 @@ class AT_Command_Set_LE910S1_EAG {
 		}
 
 		// Convert Coordinate
-		double convert_to_decimal_degree(double _Coordinate) {
-			
-			int dd = int(_Coordinate / 100);
-			
-			double mm_mmmm = _Coordinate - (dd * 100);
-			
-			double decimal_degree = dd + (mm_mmmm / 60);
-			
-			return decimal_degree;
+		double convertLatitude(double rawLatitude) {
+			int degrees = (int)rawLatitude / 100;
+			double minutes = (int)(rawLatitude - (degrees * 100));
+			double seconds = (rawLatitude - (degrees * 100) - minutes) * 60;
+			double latitude = degrees + (minutes / 60.0) + (seconds / 3600.0);
+
+			return latitude;
+		}
+		double convertLongitude(double rawLongitude) {
+			int degrees = (int)rawLongitude / 100;
+			double minutes = rawLongitude - (degrees * 100);
+			double longitude = degrees + (minutes / 60.0);
+
+			return longitude;
 		}
 
 	// Public Context
@@ -3292,7 +3297,6 @@ class AT_Command_Set_LE910S1_EAG {
 
 		}
 
-
 		// GNSS Get Position Function
 		bool GPSACP(bool & _Position_OK, double & _Latitude, double & _Longitude) {
 
@@ -3331,12 +3335,10 @@ class AT_Command_Set_LE910S1_EAG {
 				// \r\n$GPSACP: ,,,,,1,,,,,,\r\n\r\nOK\r\n
 				// \r\n\r\n$GPSACP: 121313.00,3757.84237N,03235.96966E,2.91,1044.4,3,,0.693,0.374,180823,06\r\n\r\nOK\r\n
 				// \r\n\r\n$GPSACP: 134944.13,3757.87023N,03235.96638E,16.25,1086.6,3,,3.054,1.649,,04\r\n\r\nOK\r\n
-
 				// \r\n\r\n$GPSACP: 140320.44,3757.87827N,03235.96748E,1.25,1114.1,3,,0.713,0.385,,06\r\n\r\nOK\r\n
 				// \r\n\r\n$GPSACP: 140322.00,3757.87771N,03235.96699E,1.25,1102.6,3,,0.148,0.080,180823,06\r\n\r\nOK\r\n
 
 				// 3757.87771N,03235.96699E
-
 
 				// Control for length
 				if (Buffer.Read_Order < 40) return(true);
@@ -3350,27 +3352,19 @@ class AT_Command_Set_LE910S1_EAG {
 				// Trim Array
 				for (uint8_t i = 0; i < 24; i++) _Trimmed_Array[i] = Buffer_Variable[i + 23];
 
-				// 3757.83059N,03235.96819E
+				// 3757.8469000000,3235.9658000000
 
-				// Declare Variables
-				int _Segment_1;
-				int _Segment_2;
-				int _Segment_3;
-				int _Segment_4;
+				// Clear Variables
+				_Latitude = 0;
+				_Longitude = 0;
 
-				// Handle Variables
-				uint8_t _Variable_Count = sscanf(_Trimmed_Array, "%4d.%5dN,%5d.%5dE", &_Segment_1, &_Segment_2, &_Segment_3, &_Segment_4);
+				// Handle for Latitude
+				_Latitude = ((_Trimmed_Array[0] - 48) * 1000) + ((_Trimmed_Array[1] - 48) * 100) + ((_Trimmed_Array[2] - 48) * 10) +	((_Trimmed_Array[3] - 48) * 1) + ((_Trimmed_Array[5] - 48) * 0.1) + ((_Trimmed_Array[6] - 48) * 0.01) + ((_Trimmed_Array[7] - 48) * 0.001) + ((_Trimmed_Array[8] - 48) * 0.0001) + ((_Trimmed_Array[9] - 48) * 0.00001);
+				_Longitude = ((_Trimmed_Array[12] - 48) * 10000) + ((_Trimmed_Array[13] - 48) * 1000) + ((_Trimmed_Array[14] - 48) * 100) + ((_Trimmed_Array[15] - 48) * 10) + ((_Trimmed_Array[16] - 48) * 1) + ((_Trimmed_Array[18] - 48) * 0.1) +	((_Trimmed_Array[19] - 48) * 0.01) + ((_Trimmed_Array[20] - 48) * 0.001) + ((_Trimmed_Array[21] - 48) * 0.0001) + ((_Trimmed_Array[22] - 48) * 0.00001);
 
-				// Parse Variable
-				double _Lat = ((double)_Segment_1 + ((double)_Segment_2 / 100000));
-				double _Long = ((double)_Segment_3 + ((double)_Segment_4 / 100000));
-
-				// Convert Position
-				_Latitude = this->convert_to_decimal_degree(_Lat);
-				_Longitude = this->convert_to_decimal_degree(_Long);
-
-				// Control for Coordinates
-				if (_Variable_Count == 4) _Position_OK = true;
+				// Convert Coordinates
+				_Latitude = this->convertLatitude(_Latitude);
+				_Longitude = this->convertLongitude(_Longitude);
 
 				// End Function
 				return(true);
