@@ -4,9 +4,6 @@
 // Include JSON Library
 #include <ArduinoJson.h>
 
-// Include RTC Library
-#include <RV3028.h>
-
 // Function Mode Definitions
 #define SET						    true
 #define GET						    false

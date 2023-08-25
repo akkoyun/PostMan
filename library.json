@@ -1,6 +1,6 @@
 {
 	"name": "PostMan",
-	"version": "0.17.5",
+	"version": "0.17.7",
 	"keywords": "GSM, Modem, GPRS, 2G, IoT, Telit, GE910, LE910, Backend, Cloud, PostOffice, API",
 	"description": "GSM Based IoT, Cloud Server Integration Library.",
 	"authors":
@@ -46,11 +46,6 @@
 		},
 		{
 			"owner": "akkoyun",
-			"name": "RV3028",
-			"version": "^1.2.3"
-		},
-		{
-			"owner": "akkoyun",
 			"name": "MAX17055",
 			"version": "^2.2.1"
 		},
@@ -68,16 +63,6 @@
 			"owner": "akkoyun",
 			"name": "AVR_Functions",
 			"version": "^1.0.4"
-		},
-		{
-			"owner": "wollewald",	
-			"name": "SI1145_WE",
-			"version": "^1.1.7"
-		},
-		{
-			"owner": "sensirion",
-			"name": "Sensirion I2C SDP",
-			"version": "^0.1.0"
 		}
 	],
 	"examples": [

@@ -30,16 +30,9 @@
 	#include "DS28C.h"
 #endif
 
-
-
-
-
-
-// Include Light Sensor Library
-#include <SI1145_WE.h>
-
-// Include DP Sensor Library
-#include <SensirionI2CSdp.h>
+// Define Sensor Object
+B108AA_Environment Environment;
+DS28C DS28C_Object(true, 1);
 
 // Define Pack Types
 #define _PACK_TIMED_		1
@@ -129,56 +122,6 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			float 		DP_Z_Temperature		= 0;
 
 		} Buffer;
-
-		// Read DP Sensor Function
-		void Get_DP_Sensor(void) {
-
-				// Set I2C Multiplexer
-				I2C_Functions I2C_SDP810_1(__I2C_Addr_SDP810__, true, I2C_MUX_SDP810_X);
-				I2C_SDP810_1.Set_Multiplexer();
-
-				// Define Object
-				SensirionI2CSdp _DP_Sensor_X_;
-
-				// Start Measurement
-				_DP_Sensor_X_.begin(Wire, SDP8XX_I2C_ADDRESS_0);
-				_DP_Sensor_X_.stopContinuousMeasurement();
-				_DP_Sensor_X_.startContinuousMeasurementWithDiffPressureTCompAndAveraging();
-
-				// Get Measurement
-				_DP_Sensor_X_.readMeasurement(this->Buffer.DP_X_Pressure, this->Buffer.DP_X_Temperature);
-
-				// Set I2C Multiplexer
-				I2C_Functions I2C_SDP810_2(__I2C_Addr_SDP810__, true, I2C_MUX_SDP810_Y);
-				I2C_SDP810_2.Set_Multiplexer();
-
-				// Define Object
-				SensirionI2CSdp _DP_Sensor_Y_;
-
-				// Start Measurement
-				_DP_Sensor_Y_.begin(Wire, SDP8XX_I2C_ADDRESS_0);
-				_DP_Sensor_Y_.stopContinuousMeasurement();
-				_DP_Sensor_Y_.startContinuousMeasurementWithDiffPressureTCompAndAveraging();
-
-				// Get Measurement
-				_DP_Sensor_Y_.readMeasurement(this->Buffer.DP_Y_Pressure, this->Buffer.DP_Y_Temperature);
-
-				// Set I2C Multiplexer
-				I2C_Functions I2C_SDP810_3(__I2C_Addr_SDP810__, true, I2C_MUX_SDP810_Z);
-				I2C_SDP810_3.Set_Multiplexer();
-
-				// Define Object
-				SensirionI2CSdp _DP_Sensor_Z_;
-
-				// Start Measurement
-				_DP_Sensor_Z_.begin(Wire, SDP8XX_I2C_ADDRESS_0);
-				_DP_Sensor_Z_.stopContinuousMeasurement();
-				_DP_Sensor_Z_.startContinuousMeasurementWithDiffPressureTCompAndAveraging();
-
-				// Get Measurement
-				_DP_Sensor_Z_.readMeasurement(this->Buffer.DP_Z_Pressure, this->Buffer.DP_Z_Temperature);
-
-		}
 
 		// Initialize GSM Modem
 		bool Initialize(void) {
@@ -527,14 +470,8 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				// Define Device Section
 				JsonObject JSON_Info = JSON_Device.createNestedObject(F("Info"));
 
-				// Declare Serial ID IC Object
-				DS28C Serial_ID_IC(true, 1);
-
-				// Get Serial ID
-				Serial_ID_IC.Get_Serial_ID();
-
 				// Set Device ID Variable
-				JSON_Info[F("ID")] = Serial_ID_IC.SerialID;
+				JSON_Info[F("ID")] = DS28C_Object.SerialID;
 				
 				// Set Device Hardware Version Variable
 				if (_Pack_Type == _PACK_TIMED_) JSON_Info[F("Hardware")] = F(__Hardware__);
@@ -644,32 +581,19 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				// Define Environment Data Section
 				JsonObject JSON_Environment = JSON_WeatherStat.createNestedObject(F("Environment"));
 
-				// Define Sensor Object
-				HDC2010 _Temperature_Sensor(true, I2C_MUX_HDC2010);
-
 				// Set Air Temperature Variables
-				JSON_Environment[F("AT")] = _Temperature_Sensor.Temperature(10);
+				JSON_Environment[F("AT")] = Environment.Temperature();
 
 				// Set Air Humidity Variables
-				JSON_Environment[F("AH")] = _Temperature_Sensor.Humidity(10);
-
-				// Define Sensor Object
-				MPL3115A2 _Pressure_Sensor(true, I2C_MUX_MPL3115);
+				JSON_Environment[F("AH")] = Environment.Humidity();
 
 				// Set Air Pressure Variables
-				JSON_Environment[F("AP")] = _Pressure_Sensor.Pressure(1);
-
-				// Define Sensor Object
-				I2C_Functions I2C_SI1145(__I2C_Addr_SI1145__, true, I2C_MUX_SI1145);
-				I2C_SI1145.Set_Multiplexer();
-				SI1145_WE _UV_Sensor = SI1145_WE();
-				_UV_Sensor.init();
-				_UV_Sensor.enableMeasurements(PSALSUV_TYPE, AUTO);
+				JSON_Environment[F("AP")] = Environment.Pressure();
 
 				// Set UV Variables
-				JSON_Environment[F("UV")] = _UV_Sensor.getUvIndex();
-				JSON_Environment[F("VL")] = _UV_Sensor.getAlsVisData();
-				JSON_Environment[F("IRL")] = _UV_Sensor.getAlsIrData();
+				JSON_Environment[F("UV")] = Environment.UV();
+				JSON_Environment[F("VL")] = Environment.Visible();
+				JSON_Environment[F("IRL")] = Environment.IR();
 				
 				
 				// Set Soil Temperature Variables
@@ -682,16 +606,14 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 				// Set Rain Variables
 //				JSON_Environment[F("R")] = this->Measurements.Rain;
 
-				// Measure DP Sensor
-				this->Get_DP_Sensor();
 
 				// Set Wind Direction Variables
-				JSON_Environment[F("PDX")] = this->Buffer.DP_X_Pressure;
-				JSON_Environment[F("PDY")] = this->Buffer.DP_Y_Pressure;
-				JSON_Environment[F("PDZ")] = this->Buffer.DP_Z_Pressure;
-				JSON_Environment[F("TX")] = this->Buffer.DP_X_Temperature;
-				JSON_Environment[F("TY")] = this->Buffer.DP_Y_Temperature;
-				JSON_Environment[F("TZ")] = this->Buffer.DP_Z_Temperature;
+//				JSON_Environment[F("PDX")] = this->Buffer.DP_X_Pressure;
+//				JSON_Environment[F("PDY")] = this->Buffer.DP_Y_Pressure;
+//				JSON_Environment[F("PDZ")] = this->Buffer.DP_Z_Pressure;
+//				JSON_Environment[F("TX")] = this->Buffer.DP_X_Temperature;
+//				JSON_Environment[F("TY")] = this->Buffer.DP_Y_Temperature;
+//				JSON_Environment[F("TZ")] = this->Buffer.DP_Z_Temperature;
 
 				// Set Wind Speed Variables
 //				JSON_Environment[F("WS")] = this->Measurements.Wind_Speed;
@@ -730,6 +652,9 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 		// Connect GSM Modem
 		void Online(void) {
+
+			// Start I2C Objects
+			Environment.Start();
 
 			// Set Connection Start Time
 			this->Buffer.Connection_Time_Buffer = millis();

@@ -1,5 +1,13 @@
 # Release Notes
 
+## 0.17.7 (2023-08-25)
+
+* Library updated for platformio.
+
+## 0.17.6 (2023-08-25)
+
+* Environment measurement library updated. [WeatherStat]
+
 ## 0.17.5 (2023-08-22)
 
 * GPS coordinate parse function added. [WeatherStat]
