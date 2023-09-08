@@ -3340,6 +3340,29 @@ class AT_Command_Set_LE910S1_EAG {
 
 				// 3757.87771N,03235.96699E
 
+
+
+
+				// $GPSACP: <UTC>,<latitude>,<longitude>,<hdop>,<altitude>,<fix>,<cog>,<spkm>,<spkn>,<date>,<nsat_tot>
+				// $GPSACP:      ,          ,           ,      ,          ,1    ,     ,      ,      ,      ,,\r\n\r\nOK\r\n
+
+
+				// \r\n\r\n$GPSACP: 140322.00,3757.87771N,03235.96699E,1.25 ,1102.6,3,,0.148,0.080,180823,06\r\n\r\nOK\r\n
+				// \r\n\r\n$GPSACP: 134944.13,3757.87023N,03235.96638E,16.25,1086.6,3,,3.054,1.649,      ,04\r\n\r\nOK\r\n
+				// \r\n\r\n$GPSACP: 140320.44,3757.87827N,03235.96748E,1.25 ,1114.1,3,,0.713,0.385,      ,06\r\n\r\nOK\r\n
+				// \r\n\r\n$GPSACP: 140322.00,3757.87771N,03235.96699E,1.25 ,1102.6,3,,0.148,0.080,180823,06\r\n\r\nOK\r\n
+				// \r\n    $GPSACP:          ,           ,            ,     ,      ,1,,     ,     ,      ,,\r\n\r\nOK\r\n
+
+
+				//                  1         2           3            4      5          6     7     8      9     10     11
+				//                  |         |           |            |      |          |     |     |      |      |      | 
+				// \r\n\r\n$GPSACP: <UTC>    ,<latitude> ,<longitude> ,<hdop>,<altitude>,<fix>,<cog>,<spkm>,<spkn>,<date>,<nsat_tot>\r\n\r\nOK\r\n
+				// \r\n\r\n$GPSACP: hhmmss.ss,ddmm.mmmmma,dddmm.mmmmmb,x     ,x         ,x    ,     ,x     ,x     ,ddmmyy,x         \r\n\r\nOK\r\n
+
+
+
+
+
 				// Control for length
 				if (Buffer.Read_Order < 40) return(true);
 
