@@ -38,7 +38,7 @@
 	#define _BackEnd_Server_ 		"165.227.154.147"
 #endif
 #ifndef _BackEnd_EndPoint_
-	#define _BackEnd_EndPoint_ 	"/"
+	#define _BackEnd_EndPoint_ 		"/"
 #endif
 
 // Firewall Parameters

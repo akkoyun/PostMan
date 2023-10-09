@@ -123,6 +123,17 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 		} Buffer;
 
+		// Define Time Structure
+		struct Struct_Time {
+			uint16_t 	Year				= 0;
+			uint16_t 	Month				= 0;
+			uint16_t 	Day					= 0;
+			uint16_t 	Hour				= 0;
+			uint16_t 	Minute				= 0;
+			uint16_t 	Second				= 0;
+			uint16_t	Time_Zone			= 0;
+		} Time;
+
 		// Initialize GSM Modem
 		bool Initialize(void) {
 
@@ -330,12 +341,6 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 					// Connection Success
 					return(true);
 
-					// Clear States
-//					this->IoT_Status.SIM_Inserted = _SIM_NOT_INSERTED_;
-//					this->IoT_Status.SIM_PIN = _SIM_UNKNOWN_;
-//					this->IoT_Status.Initialize = _MODEM_NOT_INITIALIZED_;
-//					this->IoT_Status.Connection = _MODEM_NOT_CONNECTED_;
-
 				} else {
 
 					// Initialize Modem
@@ -437,6 +442,8 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 //			}
 
 			// JSON Document Segments
+			#define JSON_Segment_Schema
+			#define JSON_Segment_Command
 			#define JSON_Segment_Info
 			#define JSON_Segment_Battery
 			#define JSON_Segment_GSM
@@ -448,18 +455,31 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 			// Define JSON
 			StaticJsonDocument<Send_JSON_Size> JSON;
 
+			// Parse Schema
+			#ifdef JSON_Segment_Schema
+
+				// Define JSON Schema
+				JSON[F("$schema")] = F("https://raw.githubusercontent.com/akkoyun/Standartlar/main/PostBox/Schema/WeatherStat.json");
+
+			#endif
+
 			// Parse Command Segment
-			if (_Pack_Type == _PACK_TIMED_) {
+			#ifdef JSON_Segment_Command
 
-				// Set Command
-				JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Timed"));
+				// Parse Command Segment
+				if (_Pack_Type == _PACK_TIMED_) {
 
-			} else if (_Pack_Type == _PACK_TIMED_TINY_) {
+					// Set Command
+					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Timed"));
 
-				// Set Command
-				JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Timed_Tiny"));
+				} else if (_Pack_Type == _PACK_TIMED_TINY_) {
 
-			}
+					// Set Command
+					JSON[F("Command")] = (String(__Company__) + F(":") + String(__Device__) + F(".") + F("Timed_Tiny"));
+
+				}
+
+			#endif
 
 			// Define Device Section
 			JsonObject JSON_Device = JSON.createNestedObject(F("Device"));
@@ -545,20 +565,20 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 			#endif
 
+			// Define Data Section
+			JsonObject JSON_Payload = JSON.createNestedObject(F("Payload"));
+
 			// Parse Payload Segment
 			#ifdef JSON_Segment_Payload
 
 				// Declare TimeStamp Variable
-				char _TimeStamp[26];
+				char _TimeStamp[22];
 
 				// Clear TimeStamp Variable
-				memset(_TimeStamp, '\0', 26);
+				memset(_TimeStamp, '\0', 22);
 
-				// Handle TimeStamp
-				sprintf(_TimeStamp, "20%02hhu-%02hhu-%02hhu %02hhu:%02hhu:%02hhu", this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second);
-
-				// Define Data Section
-				JsonObject JSON_Payload = JSON.createNestedObject(F("Payload"));
+				// Handle TimeStamp - "TimeStamp": "2022-03-23T14:18:28Z",
+				sprintf(_TimeStamp, "20%02hhu-%02hhu-%02hhuT%02hhu:%02hhu:%02hhuZ", this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second);
 
 				// Set Device Time Variable
 				JSON_Payload[F("TimeStamp")] = _TimeStamp;
@@ -631,19 +651,32 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 		}
 
+		// uint64 to String Converter Function
+		String uint64ToString(uint64_t input) {
+			
+			String result = "";
+			uint8_t base = 16;
+
+			do {
+				
+				char c = input % base;
+				input /= base;
+
+				if (c < 10)
+					c +='0';
+				else
+					c += 'A' - 10;
+			
+				result = c + result;
+
+			} while (input);
+
+			return result;
+
+		}
+
 	// Public Functions
 	public:
-
-		// Define Time Structure
-		struct Struct_Time {
-			uint16_t 	Year				= 0;
-			uint16_t 	Month				= 0;
-			uint16_t 	Day					= 0;
-			uint16_t 	Hour				= 0;
-			uint16_t 	Minute				= 0;
-			uint16_t 	Second				= 0;
-			uint16_t	Time_Zone			= 0;
-		} Time;
 
 		// PostMan Constructor
 		Postman_WeatherStatV3(Stream &_Serial) : AT_Command_Set(_Serial), Hardware() {
@@ -767,30 +800,6 @@ class Postman_WeatherStatV3 : private AT_Command_Set, private Hardware {
 
 			// End Function
 			return(0);
-
-		}
-
-		// uint64 to String Converter Function
-		String uint64ToString(uint64_t input) {
-			
-			String result = "";
-			uint8_t base = 16;
-
-			do {
-				
-				char c = input % base;
-				input /= base;
-
-				if (c < 10)
-					c +='0';
-				else
-					c += 'A' - 10;
-			
-				result = c + result;
-
-			} while (input);
-
-			return result;
 
 		}
 
