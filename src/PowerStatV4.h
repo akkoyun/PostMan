@@ -189,7 +189,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -239,7 +239,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -292,7 +292,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -342,7 +342,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -392,7 +392,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -442,7 +442,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -492,7 +492,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -562,7 +562,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -598,8 +598,18 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								// Print Command State
 								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
+							}
+
+						#endif
+
+						// Print IMEI
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
+
 								// Print IMEI
-								GSM_Terminal->Text(16, 24, _Console_CYAN_, String(this->Module.IMEI));
+								GSM_Terminal->Text(16, 24, _Console_GRAY_, String(this->Module.IMEI));
 
 							}
 
@@ -615,7 +625,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -678,7 +688,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -741,7 +751,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -804,7 +814,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -867,7 +877,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -917,7 +927,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -967,7 +977,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1017,7 +1027,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1067,7 +1077,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1248,7 +1258,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 											// Print Connection Time
-											GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+											GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 										}
 
@@ -1288,7 +1298,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 											// Print Connection Time
-											GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+											GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 										}
 
@@ -1320,7 +1330,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 											// Print Connection Time
-											GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+											GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 										}
 
@@ -1352,7 +1362,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 											// Print Connection Time
-											GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+											GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 										}
 
@@ -1388,7 +1398,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 									// Print Connection Time
-									GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+									GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 								}
 
@@ -1425,7 +1435,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1475,7 +1485,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1511,8 +1521,18 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								// Print Command State
 								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
+							}
+
+						#endif
+
+						// Print IP Address
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
+
 								// Print IP Address
-								GSM_Terminal->Text(16, 64, _Console_CYAN_, String(this->Operator.IP_Address));
+								GSM_Terminal->Text(16, 64, _Console_GRAY_, String(this->Operator.IP_Address));
 
 							}
 
@@ -1528,7 +1548,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1563,6 +1583,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 								// Print Command State
 								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+
+							}
+
+						#endif
+
+						// Print Connection Type
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
 
 								// Print RED WDS Type
 								GSM_Terminal->Text(46, 3, _Console_RED_, F("2G"));
@@ -1643,7 +1673,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1689,27 +1719,24 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							// Control for Terminal State
 							if (this->Status.Terminal) {
 
-								// Print Command State
-								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
-
 								// Print Signal Level Value
 								GSM_Terminal->Text(14, 65, _Console_WHITE_, F("[-   ]"));
-								GSM_Terminal->Text(14, 67, _Console_CYAN_, String(this->Operator.RSSI));
+								GSM_Terminal->Text(14, 67, _Console_GRAY_, String(this->Operator.RSSI));
 
 								// Print Signal Level Bar
 								GSM_Terminal->Text(14, 74, _Console_GRAY_, F("_____"));
-								for (uint8_t i = 1; i <= this->Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_CYAN_, F("X"));
+								for (uint8_t i = 1; i <= this->Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_GRAY_, F("X"));
 
 								// Print Operator Value
-								GSM_Terminal->Text(15, 74, _Console_CYAN_, String(this->Operator.MCC));
-								GSM_Terminal->Text(15, 77, _Console_CYAN_, F("0"));
-								GSM_Terminal->Text(15, 78, _Console_CYAN_, String(this->Operator.MNC));
+								char _Operator[6];
+								sprintf(_Operator, "%d%d", this->Operator.MCC, this->Operator.MNC);
+								GSM_Terminal->Text(15, 74, _Console_GRAY_, String(_Operator));
 
 								// Print Modem LAC Value
-								GSM_Terminal->Text(17, 72, _Console_CYAN_, uint64ToString(this->Operator.TAC));
+								GSM_Terminal->Text(17, 72, _Console_GRAY_, uint64ToString(this->Operator.TAC));
 
 								// Print Modem Cell ID Value
-								GSM_Terminal->Text(18, 72, _Console_CYAN_, String(this->Operator.Cell_ID));
+								GSM_Terminal->Text(18, 72, _Console_GRAY_, String(this->Operator.Cell_ID));
 
 							}
 
@@ -1725,7 +1752,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1775,7 +1802,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1825,7 +1852,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1875,7 +1902,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1925,7 +1952,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1975,7 +2002,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -2025,7 +2052,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -2159,7 +2186,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+						GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 					}
 
@@ -2204,7 +2231,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+						GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 					}
 
@@ -2249,7 +2276,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+						GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 					}
 
@@ -2294,7 +2321,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+						GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 					}
 
@@ -2339,7 +2366,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+						GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 					}
 
@@ -2435,7 +2462,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+						GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 					}
 
@@ -2858,22 +2885,22 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 						// Print Signal Level Value
 						GSM_Terminal->Text(14, 65, _Console_WHITE_, F("[-   ]"));
-						GSM_Terminal->Text(14, 67, _Console_CYAN_, String(this->Operator.RSSI));
+						GSM_Terminal->Text(14, 67, _Console_GRAY_, String(this->Operator.RSSI));
 
 						// Print Signal Level Bar
 						GSM_Terminal->Text(14, 74, _Console_GRAY_, F("_____"));
-						for (uint8_t i = 1; i <= this->Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_CYAN_, F("X"));
+						for (uint8_t i = 1; i <= this->Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_GRAY_, F("X"));
 
 						// Print Operator Value
-						GSM_Terminal->Text(15, 74, _Console_CYAN_, String(this->Operator.MCC));
-						GSM_Terminal->Text(15, 77, _Console_CYAN_, F("0"));
-						GSM_Terminal->Text(15, 78, _Console_CYAN_, String(this->Operator.MNC));
+						GSM_Terminal->Text(15, 74, _Console_GRAY_, String(this->Operator.MCC));
+						GSM_Terminal->Text(15, 77, _Console_GRAY_, F("0"));
+						GSM_Terminal->Text(15, 78, _Console_GRAY_, String(this->Operator.MNC));
 
 						// Print Modem LAC Value
-						GSM_Terminal->Text(17, 72, _Console_CYAN_, uint64ToString(this->Operator.TAC));
+						GSM_Terminal->Text(17, 72, _Console_GRAY_, uint64ToString(this->Operator.TAC));
 
 						// Print Modem Cell ID Value
-						GSM_Terminal->Text(18, 72, _Console_CYAN_, String(this->Operator.Cell_ID, HEX));
+						GSM_Terminal->Text(18, 72, _Console_GRAY_, String(this->Operator.Cell_ID, HEX));
 
 						// Print RED WDS Type
 						GSM_Terminal->Text(46, 3, _Console_RED_, F("2G"));
@@ -3150,36 +3177,36 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				if (this->Status.Terminal) {
 
 					// Print GSM Detail Variables
-					GSM_Terminal->Text(13, 37, _Console_CYAN_, String(this->Module.Manufacturer));
-					GSM_Terminal->Text(14, 37, _Console_CYAN_, String(this->Module.Model));
-					GSM_Terminal->Text(15, 30, _Console_CYAN_, String(this->Module.Firmware));
-					GSM_Terminal->Text(16, 24, _Console_CYAN_, String(this->Module.IMEI));
-					GSM_Terminal->Text(18, 20, _Console_CYAN_, String(this->Operator.ICCID));
+					GSM_Terminal->Text(13, 37, _Console_GRAY_, String(this->Module.Manufacturer));
+					GSM_Terminal->Text(14, 37, _Console_GRAY_, String(this->Module.Model));
+					GSM_Terminal->Text(15, 30, _Console_GRAY_, String(this->Module.Firmware));
+					GSM_Terminal->Text(16, 24, _Console_GRAY_, String(this->Module.IMEI));
+					GSM_Terminal->Text(18, 20, _Console_GRAY_, String(this->Operator.ICCID));
 
 					// Print GSM Connection Variables
-					GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
+					GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 					// Print Signal Level Value
 					GSM_Terminal->Text(14, 65, _Console_WHITE_, F("[-   ]"));
-					GSM_Terminal->Text(14, 67, _Console_CYAN_, String(this->Operator.RSSI));
+					GSM_Terminal->Text(14, 67, _Console_GRAY_, String(this->Operator.RSSI));
 
 					// Print Signal Level Bar
 					GSM_Terminal->Text(14, 74, _Console_GRAY_, F("_____"));
-					for (uint8_t i = 1; i <= this->Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_CYAN_, F("X"));
+					for (uint8_t i = 1; i <= this->Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_GRAY_, F("X"));
 
 					// Print Operator Value
-					GSM_Terminal->Text(15, 74, _Console_CYAN_, String(this->Operator.MCC));
-					GSM_Terminal->Text(15, 77, _Console_CYAN_, F("0"));
-					GSM_Terminal->Text(15, 78, _Console_CYAN_, String(this->Operator.MNC));
+					GSM_Terminal->Text(15, 74, _Console_GRAY_, String(this->Operator.MCC));
+					GSM_Terminal->Text(15, 77, _Console_GRAY_, F("0"));
+					GSM_Terminal->Text(15, 78, _Console_GRAY_, String(this->Operator.MNC));
 
 					// Print IP
-					GSM_Terminal->Text(16, 64, _Console_CYAN_, String(this->Operator.IP_Address));
+					GSM_Terminal->Text(16, 64, _Console_GRAY_, String(this->Operator.IP_Address));
 
 					// Print Modem LAC Value
-					GSM_Terminal->Text(17, 75, _Console_CYAN_, this->uint64ToString(this->Operator.TAC));
+					GSM_Terminal->Text(17, 75, _Console_GRAY_, this->uint64ToString(this->Operator.TAC));
 
 					// Print Modem Cell ID Value
-					GSM_Terminal->Text(18, 75, _Console_CYAN_, String(this->Operator.Cell_ID, HEX));
+					GSM_Terminal->Text(18, 75, _Console_GRAY_, String(this->Operator.Cell_ID, HEX));
 
 				}
 
