@@ -50,22 +50,12 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 	// Private Context
 	private:
 
-		// Define Console Object
+		// Define Objects
 		PowerStat_Console* GSM_Terminal;
-
-		// Define RV3028 Object
 		RV3028 GSM_RTC;
-
-		// Define Environment Object
 		HDC2010 GSM_TH_Sensor;
-
-		// Define MAX17055 Object
 		MAX17055 GSM_Battery_Gauge;
-
-		// Define BQ24298 Object
 		BQ24298 GSM_Charger;
-
-		// Define DS28C Object
 		DS28C GSM_Serial_ID;
 
 		// Define IoT Structures
@@ -77,13 +67,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			bool		Connection			= false;
 			bool 		Clock_Update		= false;
 			uint8_t		Socket_State		= 0;
-		};
+		} Status;
 		struct Struct_Module {
 			char 		IMEI[17];
 			uint8_t 	Manufacturer 		= 0;
 			uint8_t 	Model 				= 0;
 			char 		Firmware[15];
-		};
+		} Module;
 		struct Struct_Operator {
 			char 		ICCID[21];
 			uint16_t 	MCC 				= 0;
@@ -96,7 +86,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			uint32_t	PCell_ID			= 0;
 			char 		IP_Address[16];
 			uint16_t 	Connection_Time		= 0;
-		};
+		} Operator;
 		struct Struct_Time {
 			uint16_t 	Year				= 0;
 			uint16_t 	Month				= 0;
@@ -105,33 +95,27 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			uint16_t 	Minute				= 0;
 			uint16_t 	Second				= 0;
 			uint16_t	Time_Zone			= 0;
-		};
+		} Time;
 		struct Struct_Buffer {
 			uint32_t 	Connection_Time_Buffer	= 0;
 			uint8_t		Variable_Count			= 0;
-		};
-		struct Struct_JSON_Variable {
-			char Name[10];
-			float Value;
-		};
+		} Buffer;
 		struct Struct_FOTA {
 			uint32_t		Download_Time		= 0;
 			uint32_t		File_Size			= 0;
 			uint32_t		Download_Size		= 0;
 			uint32_t		SD_File_Size 		= 0;
 			uint8_t 		Download_Status		= 0;
+		} FOTA;
+		struct Struct_JSON_Variable {
+			char Name[10];
+			float Value;
 		};
 
 		// Declare JSON Variable
 		char JSON_Pack[_PostMan_Send_JSON_Size_];
 
-		// Define Interrupt Status
-		Struct_Status GSM_Status;
-		Struct_Module GSM_Module;
-		Struct_Operator GSM_Operator;
-		Struct_Time GSM_Time;
-		Struct_Buffer GSM_Buffer;
-		Struct_FOTA GSM_FOTA;
+		// Define Variable Array
 		Struct_JSON_Variable JSON_Variable[MAX_VARIABLE_COUNT];
 
 		// Initialize GSM Modem
@@ -141,7 +125,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			uint8_t _WD = 0;
 
 			// Initialize Modem Parameters
-			while (!this->GSM_Status.Initialize) {
+			while (!this->Status.Initialize) {
 
 				// Control for Power Monitor
 				if (GSM_Hardware::PowerMonitor()) {
@@ -150,7 +134,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -161,16 +145,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#endif
 
 					// Set Control Variable
-					this->GSM_Status.Initialize = true;
+					this->Status.Initialize = true;
 
 					// AT Command
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT"));
@@ -180,16 +164,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::AT()) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::AT()) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -199,13 +183,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -214,13 +198,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// ATE Command (Echo Off)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT0"));
@@ -230,16 +214,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::ATE(false)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::ATE(false)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -249,13 +233,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -264,13 +248,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// SIMDET Command (SIM Card Detect)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+SIMDET?"));
@@ -280,35 +264,35 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SIMDET(GET, 0, this->GSM_Status.SIM_Inserted)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::SIMDET(GET, 0, this->Status.SIM_Inserted)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
 						#endif
 
 						// No SIM Card
-						if (!this->GSM_Status.SIM_Inserted) return(false);
+						if (!this->Status.SIM_Inserted) return(false);
 
 						// Print Connection Time
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -317,13 +301,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// CFUN Command (Full Functionality)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+CFUN=1,0"));
@@ -333,16 +317,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CFUN(1)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::CFUN(1)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -352,13 +336,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -367,13 +351,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// CMEE Command (Error Messages)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+CMEE=1"));
@@ -383,16 +367,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CMEE(1)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::CMEE(1)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -402,13 +386,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -417,13 +401,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// FCLASS Command (Connection Mode)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+FCLASS=0"));
@@ -433,16 +417,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::FCLASS(0)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::FCLASS(0)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -452,13 +436,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -467,13 +451,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// ATK Command (No Flow Control)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT&K0"));
@@ -483,16 +467,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::K(0)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::K(0)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -502,13 +486,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -517,13 +501,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// CPIN Command (SIM PIN Control)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+CPIN?"));
@@ -533,20 +517,30 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CPIN(this->GSM_Status.SIM_PIN)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::CPIN(this->Status.SIM_PIN)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+
+							}
+
+						#endif
+
+						// Print SIM State
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
 
 								// Print SIM Status
-								if (this->GSM_Status.SIM_Inserted and this->GSM_Status.SIM_PIN) {
-									GSM_Terminal->Text(17, 29, _Console_CYAN_, F("  SIM OK  "));
+								if (this->Status.SIM_Inserted and this->Status.SIM_PIN) {
+									GSM_Terminal->Text(17, 29, _Console_GRAY_, F("  SIM OK  "));
 								} else {
 									GSM_Terminal->Text(17, 29, _Console_RED_, F("SIM ERROR "));
 								}
@@ -556,19 +550,19 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// End Function
-						if (this->GSM_Status.SIM_PIN != _SIM_READY_) break;
+						if (this->Status.SIM_PIN != _SIM_READY_) break;
 
 						// Print Connection Time
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -577,13 +571,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// CGSN Command (Get IMEI)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+CGSN"));
@@ -593,19 +587,19 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CGSN(this->GSM_Module.IMEI)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::CGSN(this->Module.IMEI)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 								// Print IMEI
-								GSM_Terminal->Text(16, 24, _Console_CYAN_, String(this->GSM_Module.IMEI));
+								GSM_Terminal->Text(16, 24, _Console_CYAN_, String(this->Module.IMEI));
 
 							}
 
@@ -615,13 +609,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -630,13 +624,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// ICCID Command (Get SIM Card ID)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+CCID"));
@@ -646,19 +640,29 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CCID(this->GSM_Operator.ICCID)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::CCID(this->Operator.ICCID)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+
+							}
+
+						#endif
+
+						// Print ICCID
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
 
 								// Print ICCID
-								GSM_Terminal->Text(18, 20, _Console_CYAN_, String(this->GSM_Operator.ICCID));
+								GSM_Terminal->Text(18, 20, _Console_GRAY_, String(this->Operator.ICCID));
 
 							}
 
@@ -668,13 +672,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -683,13 +687,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// CGMI Command (Get Manufacturer)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+GMI"));
@@ -699,19 +703,29 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CGMI(this->GSM_Module.Manufacturer)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::CGMI(this->Module.Manufacturer)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+
+							}
+
+						#endif
+
+						// Print Manufacturer
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
 
 								// Print Manufacturer
-								GSM_Terminal->Text(13, 37, _Console_CYAN_, String(this->GSM_Module.Manufacturer));
+								GSM_Terminal->Text(13, 37, _Console_GRAY_, String(this->Module.Manufacturer));
 
 							}
 
@@ -721,13 +735,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -736,13 +750,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// CGMM Command (Get Model)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+GMM"));
@@ -752,19 +766,29 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CGMM(this->GSM_Module.Model)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::CGMM(this->Module.Model)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+
+							}
+
+						#endif
+
+						// Print Model
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
 
 								// Print Model
-								GSM_Terminal->Text(14, 37, _Console_CYAN_, String(this->GSM_Module.Model));
+								GSM_Terminal->Text(14, 37, _Console_GRAY_, String(this->Module.Model));
 
 							}
 
@@ -774,13 +798,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -789,13 +813,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// CGMR Command (Get Firmware Version)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+GMR"));
@@ -805,19 +829,29 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SWPKGV(this->GSM_Module.Firmware)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::SWPKGV(this->Module.Firmware)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+
+							}
+
+						#endif
+
+						// Print Firmware
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
 
 								// Print Firmware Version
-								GSM_Terminal->Text(15, 30, _Console_CYAN_, String(this->GSM_Module.Firmware));							
+								GSM_Terminal->Text(15, 30, _Console_GRAY_, String(this->Module.Firmware));							
 
 							}
 
@@ -827,13 +861,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -842,13 +876,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// E2RI Command (Set RING Indicator)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#E2RI=50,50"));
@@ -858,16 +892,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::E2SLRI(50)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::E2SLRI(50)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -877,13 +911,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -892,13 +926,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// GPIO Command (Set Status LED)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#GPIO=1,0,2"));
@@ -914,10 +948,10 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -927,13 +961,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -942,13 +976,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// SLED Command (Set Status LED)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SLED=2"));
@@ -958,16 +992,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SLED(2)) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::SLED(2)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -977,13 +1011,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -992,13 +1026,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// SLEDSAV Command (Save Status LED)
-					if (this->GSM_Status.Initialize) {
+					if (this->Status.Initialize) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SLEDSAV"));
@@ -1008,16 +1042,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SLEDSAV()) this->GSM_Status.Initialize = false;
+						if (!AT_Command_Set::SLEDSAV()) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -1027,13 +1061,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1050,7 +1084,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                    "));
@@ -1073,7 +1107,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                    "));
@@ -1084,9 +1118,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#endif
 
 					// Clear States
-					this->GSM_Status.Initialize = false;
-					this->GSM_Status.SIM_Inserted = false;
-					this->GSM_Status.SIM_PIN = _SIM_UNKNOWN_;
+					this->Status.Initialize = false;
+					this->Status.SIM_Inserted = false;
+					this->Status.SIM_PIN = _SIM_UNKNOWN_;
 
 					// Not Initialized
 					return(false);
@@ -1097,7 +1131,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                    "));
@@ -1126,16 +1160,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			uint8_t _WD = 0;
 
 			// Connect to Internet
-			while (!this->GSM_Status.Connection) {
+			while (!this->Status.Connection) {
 
 				// Control for Initialize
-				if (this->GSM_Status.Initialize) {
+				if (this->Status.Initialize) {
 
 					// Print Batch Description
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -1146,16 +1180,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#endif
 
 					// Set Control Variable
-					this->GSM_Status.Connection = true;
+					this->Status.Connection = true;
 
 					// Get CREG Command (Get Network Registration Mode)
-					if (this->GSM_Status.Connection) {
+					if (this->Status.Connection) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+CREG?"));
@@ -1182,7 +1216,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							#ifdef _DEBUG_
 
 								// Control for Terminal State
-								if (this->GSM_Status.Terminal) {
+								if (this->Status.Terminal) {
 
 									// Print Connection Status
 									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_ + 31, _Console_CYAN_, F("    "));
@@ -1196,7 +1230,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							if (_CREG_Connection_Stat == 0) {
 
 								// Set Variable
-								this->GSM_Status.Connection = false;
+								this->Status.Connection = false;
 
 								// Declare Response Status
 								_Conn_WD = false;
@@ -1208,13 +1242,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									#ifdef _DEBUG_
 
 										// Control for Terminal State
-										if (this->GSM_Status.Terminal) {
+										if (this->Status.Terminal) {
 
 											// Calculate Connection Time
-											this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+											this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 											// Print Connection Time
-											GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+											GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 										}
 
@@ -1228,7 +1262,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							} else if (_CREG_Connection_Stat == 1) {
 
 								// Set Variable
-								this->GSM_Status.Connection = true;
+								this->Status.Connection = true;
 
 								// Declare Response Status
 								_Conn_WD = true;
@@ -1236,7 +1270,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							} else if (_CREG_Connection_Stat == 2) {
 
 								// Set Variable
-								this->GSM_Status.Connection = false;
+								this->Status.Connection = false;
 
 								// Declare Response Status
 								_Conn_WD = false;
@@ -1248,13 +1282,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									#ifdef _DEBUG_
 
 										// Control for Terminal State
-										if (this->GSM_Status.Terminal) {
+										if (this->Status.Terminal) {
 
 											// Calculate Connection Time
-											this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+											this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 											// Print Connection Time
-											GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+											GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 										}
 
@@ -1268,7 +1302,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							} else if (_CREG_Connection_Stat == 3) {
 
 								// Set Variable
-								this->GSM_Status.Connection = false;
+								this->Status.Connection = false;
 
 								// Declare Response Status
 								_Conn_WD = false;
@@ -1280,13 +1314,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									#ifdef _DEBUG_
 
 										// Control for Terminal State
-										if (this->GSM_Status.Terminal) {
+										if (this->Status.Terminal) {
 
 											// Calculate Connection Time
-											this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+											this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 											// Print Connection Time
-											GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+											GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 										}
 
@@ -1300,7 +1334,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							} else if (_CREG_Connection_Stat == 4) {
 
 								// Set Variable
-								this->GSM_Status.Connection = false;
+								this->Status.Connection = false;
 
 								// Declare Response Status
 								_Conn_WD = false;
@@ -1312,13 +1346,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									#ifdef _DEBUG_
 
 										// Control for Terminal State
-										if (this->GSM_Status.Terminal) {
+										if (this->Status.Terminal) {
 
 											// Calculate Connection Time
-											this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+											this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 											// Print Connection Time
-											GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+											GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 										}
 
@@ -1332,7 +1366,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							} else if (_CREG_Connection_Stat == 5) {
 
 								// Set Variable
-								this->GSM_Status.Connection = false;
+								this->Status.Connection = false;
 
 								// Declare Response Status
 								_Conn_WD = true;
@@ -1348,13 +1382,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							#ifdef _DEBUG_
 
 								// Control for Terminal State
-								if (this->GSM_Status.Terminal) {
+								if (this->Status.Terminal) {
 
 									// Calculate Connection Time
-									this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+									this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 									// Print Connection Time
-									GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+									GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 								}
 
@@ -1372,10 +1406,10 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -1385,13 +1419,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1400,13 +1434,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// CGDCONT Command (Set PDP Context)
-					if (this->GSM_Status.Connection) {
+					if (this->Status.Connection) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+CGDCONT=1,IP,mgbs"));
@@ -1416,16 +1450,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CGDCONT(1, "IP", _PostMan_APN_)) this->GSM_Status.Connection = false;
+						if (!AT_Command_Set::CGDCONT(1, "IP", _PostMan_APN_)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -1435,13 +1469,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1450,13 +1484,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// SGACT Command (Activate PDP Context)
-					if (this->GSM_Status.Connection) {
+					if (this->Status.Connection) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SGACT=1,1"));
@@ -1466,19 +1500,19 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SGACT(1, 1, this->GSM_Operator.IP_Address)) this->GSM_Status.Connection = false;
+						if (!AT_Command_Set::SGACT(1, 1, this->Operator.IP_Address)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 								// Print IP Address
-								GSM_Terminal->Text(16, 64, _Console_CYAN_, String(this->GSM_Operator.IP_Address));
+								GSM_Terminal->Text(16, 64, _Console_CYAN_, String(this->Operator.IP_Address));
 
 							}
 
@@ -1488,13 +1522,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1503,13 +1537,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// WS46 Command (Network Type)
-					if (this->GSM_Status.Connection) {
+					if (this->Status.Connection) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+WS46?"));
@@ -1519,16 +1553,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::WS46(GET, this->GSM_Operator.WDS)) this->GSM_Status.Connection = false;
+						if (!AT_Command_Set::WS46(GET, this->Operator.WDS)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 								// Print RED WDS Type
 								GSM_Terminal->Text(46, 3, _Console_RED_, F("2G"));
@@ -1536,17 +1570,17 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								GSM_Terminal->Text(46, 9, _Console_RED_, F("LTE"));
 
 								// Print WDS Type
-								if (this->GSM_Operator.WDS == 12) {
+								if (this->Operator.WDS == 12) {
 
 									// Print 2G WDS Type
 									GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
 
-								} else if (this->GSM_Operator.WDS == 22) {
+								} else if (this->Operator.WDS == 22) {
 
 									// Print 3G WDS Type
 									GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
 
-								} else if (this->GSM_Operator.WDS == 25) {
+								} else if (this->Operator.WDS == 25) {
 
 									// Print 2G WDS Type
 									GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
@@ -1557,12 +1591,12 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									// Print LTE WDS Type
 									GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
 
-								} else if (this->GSM_Operator.WDS == 28) {
+								} else if (this->Operator.WDS == 28) {
 
 									// Print LTE WDS Type
 									GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
 
-								} else if (this->GSM_Operator.WDS == 29) {
+								} else if (this->Operator.WDS == 29) {
 
 									// Print 2G WDS Type
 									GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
@@ -1570,7 +1604,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									// Print 3G WDS Type
 									GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
 
-								} else if (this->GSM_Operator.WDS == 30) {
+								} else if (this->Operator.WDS == 30) {
 
 									// Print 2G WDS Type
 									GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
@@ -1578,7 +1612,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									// Print LTE WDS Type
 									GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
 
-								} else if (this->GSM_Operator.WDS == 31) {
+								} else if (this->Operator.WDS == 31) {
 
 									// Print 3G WDS Type
 									GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
@@ -1603,13 +1637,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1618,13 +1652,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// RFSTS Command (Network Status)
-					if (this->GSM_Status.Connection) {
+					if (this->Status.Connection) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#RFSTS"));
@@ -1634,16 +1668,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						AT_Command_Set::RFSTS(this->GSM_Operator.MCC, this->GSM_Operator.MNC, this->GSM_Operator.RSSI, this->GSM_Operator.Signal, this->GSM_Operator.Cell_ID, this->GSM_Operator.TAC);
+						AT_Command_Set::RFSTS(this->Operator.MCC, this->Operator.MNC, this->Operator.RSSI, this->Operator.Signal, this->Operator.Cell_ID, this->Operator.TAC);
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -1653,29 +1687,29 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 								// Print Signal Level Value
 								GSM_Terminal->Text(14, 65, _Console_WHITE_, F("[-   ]"));
-								GSM_Terminal->Text(14, 67, _Console_CYAN_, String(this->GSM_Operator.RSSI));
+								GSM_Terminal->Text(14, 67, _Console_CYAN_, String(this->Operator.RSSI));
 
 								// Print Signal Level Bar
 								GSM_Terminal->Text(14, 74, _Console_GRAY_, F("_____"));
-								for (uint8_t i = 1; i <= this->GSM_Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_CYAN_, F("X"));
+								for (uint8_t i = 1; i <= this->Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_CYAN_, F("X"));
 
 								// Print Operator Value
-								GSM_Terminal->Text(15, 74, _Console_CYAN_, String(this->GSM_Operator.MCC));
+								GSM_Terminal->Text(15, 74, _Console_CYAN_, String(this->Operator.MCC));
 								GSM_Terminal->Text(15, 77, _Console_CYAN_, F("0"));
-								GSM_Terminal->Text(15, 78, _Console_CYAN_, String(this->GSM_Operator.MNC));
+								GSM_Terminal->Text(15, 78, _Console_CYAN_, String(this->Operator.MNC));
 
 								// Print Modem LAC Value
-								GSM_Terminal->Text(17, 72, _Console_CYAN_, uint64ToString(this->GSM_Operator.TAC));
+								GSM_Terminal->Text(17, 72, _Console_CYAN_, uint64ToString(this->Operator.TAC));
 
 								// Print Modem Cell ID Value
-								GSM_Terminal->Text(18, 72, _Console_CYAN_, String(this->GSM_Operator.Cell_ID));
+								GSM_Terminal->Text(18, 72, _Console_CYAN_, String(this->Operator.Cell_ID));
 
 							}
 
@@ -1685,13 +1719,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1700,13 +1734,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// SCFG (Send Port) Command (Send Data Port Configuration)
-					if (this->GSM_Status.Connection) {
+					if (this->Status.Connection) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SCFG=3,1,1500,90,1200,0"));
@@ -1716,16 +1750,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFG(_PostMan_Outgoing_Socket_, 1, 1500, 90, 1200, 0)) this->GSM_Status.Connection = false;
+						if (!AT_Command_Set::SCFG(_PostMan_Outgoing_Socket_, 1, 1500, 90, 1200, 0)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -1735,13 +1769,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1750,13 +1784,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// SCFGEXT (Send Port) Command (Send Data Port Extended Configuration)
-					if (this->GSM_Status.Connection) {
+					if (this->Status.Connection) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SCFGEXT=3,1,0,0,0,0"));
@@ -1766,16 +1800,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0)) this->GSM_Status.Connection = false;
+						if (!AT_Command_Set::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -1785,13 +1819,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1800,13 +1834,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// SCFGEXT2 (Send Port) Command (Send Data Port Extended 2 Configuration)
-					if (this->GSM_Status.Connection) {
+					if (this->Status.Connection) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SCFGEXT2=3,1,0,0,0,0"));
@@ -1816,16 +1850,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFGEXT2(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0)) this->GSM_Status.Connection = false;
+						if (!AT_Command_Set::SCFGEXT2(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -1835,13 +1869,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1850,13 +1884,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// SCFG (In Port) Command (In Port Configuration)
-					if (this->GSM_Status.Connection) {
+					if (this->Status.Connection) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SCFG=2,1,1500,90,300,50"));
@@ -1866,16 +1900,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFG(_PostMan_Incomming_Socket_, 1, 1500, 90, 300, 50)) this->GSM_Status.Connection = false;
+						if (!AT_Command_Set::SCFG(_PostMan_Incomming_Socket_, 1, 1500, 90, 300, 50)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -1885,13 +1919,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1900,13 +1934,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// SCFGEXT (In Port) Command (In Port Extended Configuration)
-					if (this->GSM_Status.Connection) {
+					if (this->Status.Connection) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SCFGEXT=2,1,0,1,0,0"));
@@ -1916,16 +1950,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFGEXT(_PostMan_Incomming_Socket_, 2, 0, 0, 0, 0)) this->GSM_Status.Connection = false;
+						if (!AT_Command_Set::SCFGEXT(_PostMan_Incomming_Socket_, 2, 0, 0, 0, 0)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -1935,13 +1969,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -1950,13 +1984,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else break;
 
 					// SCFGEXT2 (In Port) Command (Send Data Port Extended 2 Configuration)
-					if (this->GSM_Status.Connection) {
+					if (this->Status.Connection) {
 
 						// Print Command Description
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command Description
 								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SCFGEXT2=3,1,0,0,0,0"));
@@ -1966,16 +2000,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFGEXT2(_PostMan_Incomming_Socket_, 1, 0, 0, 0, 0)) this->GSM_Status.Connection = false;
+						if (!AT_Command_Set::SCFGEXT2(_PostMan_Incomming_Socket_, 1, 0, 0, 0, 0)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Command State
-								GSM_Terminal->OK(this->GSM_Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
 
 							}
 
@@ -1985,13 +2019,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Calculate Connection Time
-								this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+								GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 							}
 
@@ -2003,7 +2037,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2040,10 +2074,10 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#endif
 
 					// Clear States
-					this->GSM_Status.SIM_Inserted = false;
-					this->GSM_Status.SIM_PIN = 0;
-					this->GSM_Status.Initialize = false;
-					this->GSM_Status.Connection = false;
+					this->Status.SIM_Inserted = false;
+					this->Status.SIM_PIN = 0;
+					this->Status.Initialize = false;
+					this->Status.Connection = false;
 
 					// TODO: modem kapatılacak
 					// Turn Off Modem
@@ -2070,13 +2104,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		bool Firewall(void) {
 
 			// Control for Connection
-			if (this->GSM_Status.Connection) {
+			if (this->Status.Connection) {
 
 				// Print Batch Description
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2090,7 +2124,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command Description
 						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#FRWL=2"));
@@ -2106,7 +2140,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command State
 						GSM_Terminal->OK(_FireWall_Clear_State, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2119,13 +2153,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Calculate Connection Time
-						this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 					}
 
@@ -2135,7 +2169,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command Description
 						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#FRWL=1,***"));
@@ -2151,7 +2185,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command State
 						GSM_Terminal->OK(_FireWall_State_1, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2164,13 +2198,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Calculate Connection Time
-						this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 					}
 
@@ -2180,7 +2214,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command Description
 						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#FRWL=1,***"));
@@ -2196,7 +2230,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command State
 						GSM_Terminal->OK(_FireWall_State_2, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2209,13 +2243,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Calculate Connection Time
-						this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 					}
 
@@ -2225,7 +2259,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command Description
 						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#FRWL=1,***"));
@@ -2241,7 +2275,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command State
 						GSM_Terminal->OK(_FireWall_State_3, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2254,13 +2288,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Calculate Connection Time
-						this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 					}
 
@@ -2270,7 +2304,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command Description
 						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#ICMP=1"));
@@ -2286,7 +2320,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command State
 						GSM_Terminal->OK(_ICMP_State, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2299,13 +2333,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Calculate Connection Time
-						this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 					}
 
@@ -2315,7 +2349,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2343,13 +2377,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		bool Clock(void) {
 
 			// Control for Connection
-			if (this->GSM_Status.Connection) {
+			if (this->Status.Connection) {
 
 				// Print Batch Description
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2363,7 +2397,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command Description
 						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+CCLK"));
@@ -2373,16 +2407,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#endif
 
 				// CCLK Command (Real Time Clock Configuration)
-				bool _Clock_State = AT_Command_Set::CCLK(this->GSM_Time.Year, this->GSM_Time.Month, this->GSM_Time.Day, this->GSM_Time.Hour, this->GSM_Time.Minute, this->GSM_Time.Second, this->GSM_Time.Time_Zone);
+				bool _Clock_State = AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second, this->Time.Time_Zone);
 
 				// Update Status
-				this->GSM_Status.Clock_Update = _Clock_State;
+				this->Status.Clock_Update = _Clock_State;
 
 				// Print Command State
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command State
 						GSM_Terminal->OK(_Clock_State, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2395,13 +2429,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Calculate Connection Time
-						this->GSM_Operator.Connection_Time = ((millis() - this->GSM_Buffer.Connection_Time_Buffer));
+						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
 
 						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+						GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 					}
 
@@ -2411,7 +2445,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2438,16 +2472,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		bool Listen(const bool _State) {
 
 			// Check Connection Status
-			if (this->GSM_Status.Connection) {
+			if (this->Status.Connection) {
 
 				// Clear Socket Status
-				this->GSM_Status.Socket_State = 0;
+				this->Status.Socket_State = 0;
 
 				// Print Batch Description
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2461,7 +2495,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command Description
 						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SS=2"));
@@ -2471,13 +2505,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#endif
 
 				// Send Command
-				bool _Socket_State = AT_Command_Set::SS(_PostMan_Incomming_Socket_, this->GSM_Status.Socket_State);
+				bool _Socket_State = AT_Command_Set::SS(_PostMan_Incomming_Socket_, this->Status.Socket_State);
 
 				// Print Command State
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command State
 						GSM_Terminal->OK(_Socket_State, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2487,13 +2521,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#endif
 
 				// Activate Socket
-				if (_State and this->GSM_Status.Socket_State != 4) {
+				if (_State and this->Status.Socket_State != 4) {
 
 					// Print Command Description
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Command Description
 							GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SL=*,1,80,255"));
@@ -2509,7 +2543,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Command State
 							GSM_Terminal->OK(_SL_Command, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2525,7 +2559,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Command Description
 							GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SS=*"));
@@ -2535,13 +2569,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#endif
 
 					// Get Socket Status
-					bool _SS_Command = AT_Command_Set::SS(_PostMan_Incomming_Socket_, this->GSM_Status.Socket_State);
+					bool _SS_Command = AT_Command_Set::SS(_PostMan_Incomming_Socket_, this->Status.Socket_State);
 
 					// Print Command State
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Command State
 							GSM_Terminal->OK(_SS_Command, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2554,17 +2588,17 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Socket State
 							GSM_Terminal->Text(46, 33, _Console_WHITE_, F("Socket [2] :                        "));
 
 							// Print Socket State
-							if (this->GSM_Status.Socket_State == 0) GSM_Terminal->Text(46, 46, _Console_RED_, F("Closed"));
-							else if (this->GSM_Status.Socket_State == 1) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Active Transfer"));
-							else if (this->GSM_Status.Socket_State == 2) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Suspended"));
-							else if (this->GSM_Status.Socket_State == 3) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Pending Data"));
-							else if (this->GSM_Status.Socket_State == 4) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Listening"));
+							if (this->Status.Socket_State == 0) GSM_Terminal->Text(46, 46, _Console_RED_, F("Closed"));
+							else if (this->Status.Socket_State == 1) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Active Transfer"));
+							else if (this->Status.Socket_State == 2) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Suspended"));
+							else if (this->Status.Socket_State == 3) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Pending Data"));
+							else if (this->Status.Socket_State == 4) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Listening"));
 
 						}
 
@@ -2574,7 +2608,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2584,7 +2618,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#endif
 
 					// Control Socket
-					if (this->GSM_Status.Socket_State != 4) return(false);
+					if (this->Status.Socket_State != 4) return(false);
 
 					// End Function
 					return(true);
@@ -2592,13 +2626,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				}
 
 				// DeActivate Socket
-				if (!_State and this->GSM_Status.Socket_State != 0) {
+				if (!_State and this->Status.Socket_State != 0) {
 
 					// Print Command Description
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Command Description
 							GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SL=*,0,80,255"));
@@ -2614,7 +2648,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Command State
 							GSM_Terminal->OK(_SL_Command, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2630,7 +2664,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Command Description
 							GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SS=*"));
@@ -2640,13 +2674,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#endif
 
 					// Get Socket Status
-					bool _SS_Command = AT_Command_Set::SS(_PostMan_Incomming_Socket_, this->GSM_Status.Socket_State);
+					bool _SS_Command = AT_Command_Set::SS(_PostMan_Incomming_Socket_, this->Status.Socket_State);
 
 					// Print Command State
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Command State
 							GSM_Terminal->OK(_SS_Command, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2659,17 +2693,17 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Socket State
 							GSM_Terminal->Text(46, 33, _Console_WHITE_, F("Socket [2] :                        "));
 
 							// Print Socket State
-							if (this->GSM_Status.Socket_State == 0) GSM_Terminal->Text(46, 46, _Console_RED_, F("Closed"));
-							else if (this->GSM_Status.Socket_State == 1) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Active Transfer"));
-							else if (this->GSM_Status.Socket_State == 2) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Suspended"));
-							else if (this->GSM_Status.Socket_State == 3) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Pending Data"));
-							else if (this->GSM_Status.Socket_State == 4) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Listening"));
+							if (this->Status.Socket_State == 0) GSM_Terminal->Text(46, 46, _Console_RED_, F("Closed"));
+							else if (this->Status.Socket_State == 1) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Active Transfer"));
+							else if (this->Status.Socket_State == 2) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Suspended"));
+							else if (this->Status.Socket_State == 3) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Pending Data"));
+							else if (this->Status.Socket_State == 4) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Listening"));
 
 						}
 
@@ -2679,7 +2713,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2689,7 +2723,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#endif
 
 					// Control Socket
-					if (this->GSM_Status.Socket_State != 0) return(false);
+					if (this->Status.Socket_State != 0) return(false);
 
 					// End Function
 					return(true);
@@ -2700,7 +2734,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2730,13 +2764,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		void Signal_Update(void) {
 
 			// MONI Command (Network Status)
-			if (this->GSM_Status.Connection) {
+			if (this->Status.Connection) {
 
 				// Clear Message Field
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2749,7 +2783,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command Description
 						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#MONI"));
@@ -2759,13 +2793,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#endif
 
 				// Send Command
-				bool _MONI_Command = AT_Command_Set::MONI(this->GSM_Operator.TAC, this->GSM_Operator.Cell_ID, this->GSM_Operator.RSSI, this->GSM_Operator.Signal, this->GSM_Operator.PCell_ID);
+				bool _MONI_Command = AT_Command_Set::MONI(this->Operator.TAC, this->Operator.Cell_ID, this->Operator.RSSI, this->Operator.Signal, this->Operator.PCell_ID);
 
 				// Print Command State
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command State
 						GSM_Terminal->OK(_MONI_Command, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2778,7 +2812,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2791,7 +2825,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command Description
 						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+WS46?"));
@@ -2801,13 +2835,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#endif
 
 				// Send Command
-				bool _WS46_Command = AT_Command_Set::WS46(GET, this->GSM_Operator.WDS);
+				bool _WS46_Command = AT_Command_Set::WS46(GET, this->Operator.WDS);
 
 				// Print Command State
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Command State
 						GSM_Terminal->OK(_WS46_Command, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
@@ -2820,26 +2854,26 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Signal Level Value
 						GSM_Terminal->Text(14, 65, _Console_WHITE_, F("[-   ]"));
-						GSM_Terminal->Text(14, 67, _Console_CYAN_, String(this->GSM_Operator.RSSI));
+						GSM_Terminal->Text(14, 67, _Console_CYAN_, String(this->Operator.RSSI));
 
 						// Print Signal Level Bar
 						GSM_Terminal->Text(14, 74, _Console_GRAY_, F("_____"));
-						for (uint8_t i = 1; i <= this->GSM_Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_CYAN_, F("X"));
+						for (uint8_t i = 1; i <= this->Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_CYAN_, F("X"));
 
 						// Print Operator Value
-						GSM_Terminal->Text(15, 74, _Console_CYAN_, String(this->GSM_Operator.MCC));
+						GSM_Terminal->Text(15, 74, _Console_CYAN_, String(this->Operator.MCC));
 						GSM_Terminal->Text(15, 77, _Console_CYAN_, F("0"));
-						GSM_Terminal->Text(15, 78, _Console_CYAN_, String(this->GSM_Operator.MNC));
+						GSM_Terminal->Text(15, 78, _Console_CYAN_, String(this->Operator.MNC));
 
 						// Print Modem LAC Value
-						GSM_Terminal->Text(17, 72, _Console_CYAN_, uint64ToString(this->GSM_Operator.TAC));
+						GSM_Terminal->Text(17, 72, _Console_CYAN_, uint64ToString(this->Operator.TAC));
 
 						// Print Modem Cell ID Value
-						GSM_Terminal->Text(18, 72, _Console_CYAN_, String(this->GSM_Operator.Cell_ID, HEX));
+						GSM_Terminal->Text(18, 72, _Console_CYAN_, String(this->Operator.Cell_ID, HEX));
 
 						// Print RED WDS Type
 						GSM_Terminal->Text(46, 3, _Console_RED_, F("2G"));
@@ -2847,17 +2881,17 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						GSM_Terminal->Text(46, 9, _Console_RED_, F("LTE"));
 
 						// Print WDS Type
-						if (this->GSM_Operator.WDS == 12) {
+						if (this->Operator.WDS == 12) {
 
 							// Print 2G WDS Type
 							GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
 
-						} else if (this->GSM_Operator.WDS == 22) {
+						} else if (this->Operator.WDS == 22) {
 
 							// Print 3G WDS Type
 							GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
 
-						} else if (this->GSM_Operator.WDS == 25) {
+						} else if (this->Operator.WDS == 25) {
 
 							// Print 2G WDS Type
 							GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
@@ -2868,12 +2902,12 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							// Print LTE WDS Type
 							GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
 
-						} else if (this->GSM_Operator.WDS == 28) {
+						} else if (this->Operator.WDS == 28) {
 
 							// Print LTE WDS Type
 							GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
 
-						} else if (this->GSM_Operator.WDS == 29) {
+						} else if (this->Operator.WDS == 29) {
 
 							// Print 2G WDS Type
 							GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
@@ -2881,7 +2915,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							// Print 3G WDS Type
 							GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
 
-						} else if (this->GSM_Operator.WDS == 30) {
+						} else if (this->Operator.WDS == 30) {
 
 							// Print 2G WDS Type
 							GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
@@ -2889,7 +2923,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							// Print LTE WDS Type
 							GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
 
-						} else if (this->GSM_Operator.WDS == 31) {
+						} else if (this->Operator.WDS == 31) {
 
 							// Print 3G WDS Type
 							GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
@@ -2914,7 +2948,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2983,15 +3017,15 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			JsonObject JSON_IoT = JSON_Device.createNestedObject(F("IoT"));
 
 			// Set IoT Variables
-			JSON_IoT[F("Firmware")] = this->GSM_Module.Firmware;
-			JSON_IoT[F("IMEI")] = this->GSM_Module.IMEI;
-			JSON_IoT[F("ICCID")] = this->GSM_Operator.ICCID;
-			JSON_IoT[F("RSSI")] = this->GSM_Operator.RSSI;
-			JSON_IoT[F("WDS")] = this->GSM_Operator.WDS;
-			JSON_IoT[F("ConnTime")] = (float)this->GSM_Operator.Connection_Time / 1000;
-			JSON_IoT[F("TAC")] = this->GSM_Operator.TAC;
+			JSON_IoT[F("Firmware")] = this->Module.Firmware;
+			JSON_IoT[F("IMEI")] = this->Module.IMEI;
+			JSON_IoT[F("ICCID")] = this->Operator.ICCID;
+			JSON_IoT[F("RSSI")] = this->Operator.RSSI;
+			JSON_IoT[F("WDS")] = this->Operator.WDS;
+			JSON_IoT[F("ConnTime")] = (float)this->Operator.Connection_Time / 1000;
+			JSON_IoT[F("TAC")] = this->Operator.TAC;
 			JSON_IoT[F("LAC")] = 0;
-			JSON_IoT[F("Cell_ID")] = this->GSM_Operator.Cell_ID;
+			JSON_IoT[F("Cell_ID")] = this->Operator.Cell_ID;
 
 			// Define Payload Section
 			JsonObject JSON_Payload = JSON.createNestedObject(F("Payload"));
@@ -3001,7 +3035,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			JSON_Payload[F("PCB_H")] = GSM_TH_Sensor.Humidity();
 
 			// Set Payload Variables
-			for (int i = 0; i < this->GSM_Buffer.Variable_Count; i++) {
+			for (int i = 0; i < this->Buffer.Variable_Count; i++) {
 
 				// Set Payload Variables
 				JSON_Payload[this->JSON_Variable[i].Name] = this->JSON_Variable[i].Value;
@@ -3018,7 +3052,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			#ifdef _DEBUG_
 
 				// Control for Terminal State
-				if (this->GSM_Status.Terminal) {
+				if (this->Status.Terminal) {
 
 					// Print JSON
 					GSM_Terminal->Text(24, 4, _Console_WHITE_, String(this->JSON_Pack).substring(0, 75));
@@ -3070,13 +3104,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		Postman_PowerStatV4(Stream &_Serial, PowerStat_Console& _Terminal) : AT_Command_Set(_Serial), GSM_Hardware(), GSM_Terminal(&_Terminal) {
 
 			// Control Terminal
-			if (GSM_Terminal != nullptr) {this->GSM_Status.Terminal = true;} else {this->GSM_Status.Terminal = false;}
+			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
 
 		}
 		Postman_PowerStatV4(Stream &_Serial) : AT_Command_Set(_Serial), GSM_Hardware(), GSM_Terminal(nullptr) {
 
 			// Control Terminal
-			if (GSM_Terminal != nullptr) {this->GSM_Status.Terminal = true;} else {this->GSM_Status.Terminal = false;}
+			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
 
 		}
 
@@ -3113,39 +3147,39 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			#ifdef _DEBUG_
 
 				// Control for Terminal State
-				if (this->GSM_Status.Terminal) {
+				if (this->Status.Terminal) {
 
 					// Print GSM Detail Variables
-					GSM_Terminal->Text(13, 37, _Console_CYAN_, String(this->GSM_Module.Manufacturer));
-					GSM_Terminal->Text(14, 37, _Console_CYAN_, String(this->GSM_Module.Model));
-					GSM_Terminal->Text(15, 30, _Console_CYAN_, String(this->GSM_Module.Firmware));
-					GSM_Terminal->Text(16, 24, _Console_CYAN_, String(this->GSM_Module.IMEI));
-					GSM_Terminal->Text(18, 20, _Console_CYAN_, String(this->GSM_Operator.ICCID));
+					GSM_Terminal->Text(13, 37, _Console_CYAN_, String(this->Module.Manufacturer));
+					GSM_Terminal->Text(14, 37, _Console_CYAN_, String(this->Module.Model));
+					GSM_Terminal->Text(15, 30, _Console_CYAN_, String(this->Module.Firmware));
+					GSM_Terminal->Text(16, 24, _Console_CYAN_, String(this->Module.IMEI));
+					GSM_Terminal->Text(18, 20, _Console_CYAN_, String(this->Operator.ICCID));
 
 					// Print GSM Connection Variables
-					GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->GSM_Operator.Connection_Time));
+					GSM_Terminal->Text(13, 74, _Console_CYAN_, String(this->Operator.Connection_Time));
 
 					// Print Signal Level Value
 					GSM_Terminal->Text(14, 65, _Console_WHITE_, F("[-   ]"));
-					GSM_Terminal->Text(14, 67, _Console_CYAN_, String(this->GSM_Operator.RSSI));
+					GSM_Terminal->Text(14, 67, _Console_CYAN_, String(this->Operator.RSSI));
 
 					// Print Signal Level Bar
 					GSM_Terminal->Text(14, 74, _Console_GRAY_, F("_____"));
-					for (uint8_t i = 1; i <= this->GSM_Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_CYAN_, F("X"));
+					for (uint8_t i = 1; i <= this->Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_CYAN_, F("X"));
 
 					// Print Operator Value
-					GSM_Terminal->Text(15, 74, _Console_CYAN_, String(this->GSM_Operator.MCC));
+					GSM_Terminal->Text(15, 74, _Console_CYAN_, String(this->Operator.MCC));
 					GSM_Terminal->Text(15, 77, _Console_CYAN_, F("0"));
-					GSM_Terminal->Text(15, 78, _Console_CYAN_, String(this->GSM_Operator.MNC));
+					GSM_Terminal->Text(15, 78, _Console_CYAN_, String(this->Operator.MNC));
 
 					// Print IP
-					GSM_Terminal->Text(16, 64, _Console_CYAN_, String(this->GSM_Operator.IP_Address));
+					GSM_Terminal->Text(16, 64, _Console_CYAN_, String(this->Operator.IP_Address));
 
 					// Print Modem LAC Value
-					GSM_Terminal->Text(17, 75, _Console_CYAN_, this->uint64ToString(this->GSM_Operator.TAC));
+					GSM_Terminal->Text(17, 75, _Console_CYAN_, this->uint64ToString(this->Operator.TAC));
 
 					// Print Modem Cell ID Value
-					GSM_Terminal->Text(18, 75, _Console_CYAN_, String(this->GSM_Operator.Cell_ID, HEX));
+					GSM_Terminal->Text(18, 75, _Console_CYAN_, String(this->Operator.Cell_ID, HEX));
 
 				}
 
@@ -3163,7 +3197,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			GSM_Hardware::ON();
 
 			// Set Connection Time
-			this->GSM_Buffer.Connection_Time_Buffer = millis();
+			this->Buffer.Connection_Time_Buffer = millis();
 
 			// Initialize Modem
 			this->Initialize();
@@ -3186,7 +3220,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		bool Add_Payload(const char* _Name, float _Value) {
 
 			// Control for Existing Variable
-			for (int i = 0; i < this->GSM_Buffer.Variable_Count; i++) {
+			for (int i = 0; i < this->Buffer.Variable_Count; i++) {
 
 				// Check for Existing Variable
 				if (strcmp(JSON_Variable[i].Name, _Name) == 0) {
@@ -3202,16 +3236,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			}
 
 			// Control for Max Variable Count
-			if (this->GSM_Buffer.Variable_Count < MAX_VARIABLE_COUNT) {
+			if (this->Buffer.Variable_Count < MAX_VARIABLE_COUNT) {
 
 				// Set Variable Name
-				strcpy(JSON_Variable[this->GSM_Buffer.Variable_Count].Name, _Name);
+				strcpy(JSON_Variable[this->Buffer.Variable_Count].Name, _Name);
 
 				// Set Variable Value
-				JSON_Variable[this->GSM_Buffer.Variable_Count].Value = _Value;
+				JSON_Variable[this->Buffer.Variable_Count].Value = _Value;
 
 				// Increase Variable Count
-				this->GSM_Buffer.Variable_Count++;
+				this->Buffer.Variable_Count++;
 
 				// End Function
 				return(true);
@@ -3227,13 +3261,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		bool Publish(const uint8_t _Pack_Type) {
 
 			// Control for Connection
-			if (this->GSM_Status.Connection) {
+			if (this->Status.Connection) {
 
 				// Clear Message Field
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3249,7 +3283,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3266,7 +3300,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3283,7 +3317,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3300,7 +3334,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Batch Description
 								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3329,7 +3363,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							#ifdef _DEBUG_
 
 								// Control for Terminal State
-								if (this->GSM_Status.Terminal) {
+								if (this->Status.Terminal) {
 
 									// Print Batch Description
 									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3364,7 +3398,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								#ifdef _DEBUG_
 
 									// Control for Terminal State
-									if (this->GSM_Status.Terminal) {
+									if (this->Status.Terminal) {
 
 										// Print Batch Description
 										GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3382,7 +3416,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								#ifdef _DEBUG_
 
 									// Control for Terminal State
-									if (this->GSM_Status.Terminal) {
+									if (this->Status.Terminal) {
 
 										// Print Batch Description
 										GSM_Terminal->Text(2, 116, _Console_CYAN_, F("     "));
@@ -3399,7 +3433,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								#ifdef _DEBUG_
 
 									// Control for Terminal State
-									if (this->GSM_Status.Terminal) {
+									if (this->Status.Terminal) {
 
 										// Print Batch Description
 										GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3419,7 +3453,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									#ifdef _DEBUG_
 
 										// Control for Terminal State
-										if (this->GSM_Status.Terminal) {
+										if (this->Status.Terminal) {
 
 											// Print Batch Description
 											GSM_Terminal->Beep();
@@ -3432,7 +3466,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									if (_Response_Command == 200) {
 										
 										// Clear Variables
-										this->GSM_Buffer.Variable_Count = 0;
+										this->Buffer.Variable_Count = 0;
 
 										// End Function
 										return(true);
@@ -3466,13 +3500,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		bool Download(const uint16_t _Firmware_ID) {
 
 			// Control for Connection
-			if (this->GSM_Status.Connection) {
+			if (this->Status.Connection) {
 
 				// Clear Message Field
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3485,7 +3519,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				#ifdef _DEBUG_
 
 					// Control for Terminal State
-					if (this->GSM_Status.Terminal) {
+					if (this->Status.Terminal) {
 
 						// Print Batch Description
 						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3511,7 +3545,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3530,7 +3564,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3564,7 +3598,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#ifdef _DEBUG_
 
 							// Control for Terminal State
-							if (this->GSM_Status.Terminal) {
+							if (this->Status.Terminal) {
 
 								// Print Batch Description
 								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -3667,19 +3701,19 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									char * _Content_Length = strtok(NULL, "\r\n");
 
 									// Handle Content Length
-									sscanf(_Content_Length, "Content-Length: %" SCNd32, &GSM_FOTA.File_Size);
+									sscanf(_Content_Length, "Content-Length: %" SCNd32, &FOTA.File_Size);
 
 									// Print Message
 									#ifdef _DEBUG_
 
 										// Control for Terminal State
-										if (this->GSM_Status.Terminal) {
+										if (this->Status.Terminal) {
 
 											// Declare File Size Char Buffer
 											char _File_Size_Buffer[8];
 
 											// Set Buffer
-											sprintf(_File_Size_Buffer, "%07lu", this->GSM_FOTA.File_Size);
+											sprintf(_File_Size_Buffer, "%07lu", this->FOTA.File_Size);
 
 											// Print File Size
 											GSM_Terminal->Text(15, 112, _Console_CYAN_, String(_File_Size_Buffer));
@@ -3695,9 +3729,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										Data_Variable[i - _Start_Position] = Buffer_Variable[i];
 
 										// Calculate Total Size
-										if (Data_Variable[i - _Start_Position] > 31 and Data_Variable[i - _Start_Position] < 127) GSM_FOTA.Download_Size += 1;
-										if (Data_Variable[i - _Start_Position] == '\r') GSM_FOTA.Download_Size += 1;
-										if (Data_Variable[i - _Start_Position] == '\n') GSM_FOTA.Download_Size += 1;
+										if (Data_Variable[i - _Start_Position] > 31 and Data_Variable[i - _Start_Position] < 127) FOTA.Download_Size += 1;
+										if (Data_Variable[i - _Start_Position] == '\r') FOTA.Download_Size += 1;
+										if (Data_Variable[i - _Start_Position] == '\n') FOTA.Download_Size += 1;
 
 									}
 
@@ -3711,13 +3745,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									#ifdef _DEBUG_
 
 										// Control for Terminal State
-										if (this->GSM_Status.Terminal) {
+										if (this->Status.Terminal) {
 
 											// Declare Download Size Char Buffer
 											char _Download_Size_Buffer[8];
 
 											// Set Buffer
-											sprintf(_Download_Size_Buffer, "%07lu", this->GSM_FOTA.Download_Size);
+											sprintf(_Download_Size_Buffer, "%07lu", this->FOTA.Download_Size);
 
 											// Print Download Time
 											GSM_Terminal->Text(18, 111, _Console_CYAN_, String((millis() - _Download_Start_Time) / 1000));
@@ -3732,7 +3766,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								uint8_t _WD = 0;
 
 								// Get Data
-								while (GSM_FOTA.Download_Size < GSM_FOTA.File_Size) {
+								while (FOTA.Download_Size < FOTA.File_Size) {
 
 									// Reset Variables
 									memset(Buffer_Variable, '\0', _Response_Buffer_Size);
@@ -3809,9 +3843,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											Data_Variable[i - _Start_Position] = Buffer_Variable[i];
 
 											// Calculate Total Size
-											if (Data_Variable[i - _Start_Position] > 31 and Data_Variable[i - _Start_Position] < 127) GSM_FOTA.Download_Size += 1;
-											if (Data_Variable[i - _Start_Position] == '\r') GSM_FOTA.Download_Size += 1;
-											if (Data_Variable[i - _Start_Position] == '\n') GSM_FOTA.Download_Size += 1;
+											if (Data_Variable[i - _Start_Position] > 31 and Data_Variable[i - _Start_Position] < 127) FOTA.Download_Size += 1;
+											if (Data_Variable[i - _Start_Position] == '\r') FOTA.Download_Size += 1;
+											if (Data_Variable[i - _Start_Position] == '\n') FOTA.Download_Size += 1;
 
 										}
 
@@ -3829,13 +3863,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									#ifdef _DEBUG_
 
 										// Control for Terminal State
-										if (this->GSM_Status.Terminal) {
+										if (this->Status.Terminal) {
 
 											// Declare Download Size Char Buffer
 											char _Download_Size_Buffer[8];
 
 											// Set Buffer
-											sprintf(_Download_Size_Buffer, "%07lu", this->GSM_FOTA.Download_Size);
+											sprintf(_Download_Size_Buffer, "%07lu", this->FOTA.Download_Size);
 
 											// Print SD File Size
 											GSM_Terminal->Text(16, 112, _Console_CYAN_, String(_Download_Size_Buffer));
@@ -3847,7 +3881,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											#define frac(x)     (int(1000*(x - int(x))))
 
 											// Calculate Percent
-											double _Percent = (double)this->GSM_FOTA.Download_Size / (double)this->GSM_FOTA.File_Size * 100;
+											double _Percent = (double)this->FOTA.Download_Size / (double)this->FOTA.File_Size * 100;
 
 											// Set Buffer
 											sprintf(_Download_Percent_Buffer, "%03d.%02d", int(_Percent), frac(_Percent));
@@ -3910,19 +3944,19 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						SD_File = SD.open(_PostMan_Firmware_Name_, FILE_READ);
 
 						// Get File Size
-						this->GSM_FOTA.SD_File_Size = SD_File.size();
+						this->FOTA.SD_File_Size = SD_File.size();
 
 						// Control for File Size
-						if (this->GSM_FOTA.File_Size == this->GSM_FOTA.SD_File_Size) {
+						if (this->FOTA.File_Size == this->FOTA.SD_File_Size) {
 
 							// Set Download Status
-							this->GSM_FOTA.Download_Status = FOTA_Download_OK;
+							this->FOTA.Download_Status = FOTA_Download_OK;
 
 							// Print Message
 							#ifdef _DEBUG_
 
 								// Control for Terminal State
-								if (this->GSM_Status.Terminal) {
+								if (this->Status.Terminal) {
 
 									// Print File Name
 									GSM_Terminal->Text(14, 116, _Console_GREEN_, F("OK"));
@@ -3934,13 +3968,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						} else {
 
 							// Set Download Status
-							this->GSM_FOTA.Download_Status = FOTA_Download_Size_Error;
+							this->FOTA.Download_Status = FOTA_Download_Size_Error;
 
 							// Print Message
 							#ifdef _DEBUG_
 
 								// Control for Terminal State
-								if (this->GSM_Status.Terminal) {
+								if (this->Status.Terminal) {
 
 									// Print File Name
 									GSM_Terminal->Text(14, 115, _Console_RED_, F("FAIL"));
@@ -3957,15 +3991,15 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					} else {
 
 						// Set Download Status
-						this->GSM_FOTA.Download_Status = FOTA_Download_Not_Save;
+						this->FOTA.Download_Status = FOTA_Download_Not_Save;
 
 					}
 
 					// Set Download Duration
-					GSM_FOTA.Download_Time = (millis() - _Download_Start_Time) / 1000;
+					FOTA.Download_Time = (millis() - _Download_Start_Time) / 1000;
 
 					// End Function
-					if (this->GSM_FOTA.Download_Status == FOTA_Download_OK)	return(true);
+					if (this->FOTA.Download_Status == FOTA_Download_OK)	return(true);
 
 				} else {
 
@@ -3973,7 +4007,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
-						if (this->GSM_Status.Terminal) {
+						if (this->Status.Terminal) {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
