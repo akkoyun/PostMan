@@ -2973,7 +2973,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			JSON_Power[F("B_IC")] = (float)GSM_Battery_Gauge.Instant_Capacity();
 			JSON_Power[F("B_FC")] = (float)GSM_Battery_Gauge.Design_Capacity();
 			JSON_Power[F("B_SOC")] = (float)GSM_Battery_Gauge.State_Of_Charge();
-			JSON_Power[F("B_T")] = (float)GSM_Battery_Gauge.Bat_Temperature();
+			JSON_Power[F("B_T")] = (float)GSM_Battery_Gauge.IC_Temperature();
 			JSON_Power[F("B_CS")] = GSM_Charger.Charge_Status();
 
 			// IoT Signal Quality Update
