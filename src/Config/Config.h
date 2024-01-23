@@ -1,85 +1,89 @@
-// Define Packet Size
-#define Send_JSON_Size				1024
-#define Recieve_JSON_Size			128
-#define Response_JSON_Size			128
+// Terminal Variables
+#ifndef _Terminal_Message_X_
+	#define _Terminal_Message_X_					21			
+#endif
+#ifndef _Terminal_Message_Y_
+	#define _Terminal_Message_Y_					4
+#endif
 
 // Socket ID Definitions
-#define Socket_Incomming			3
-#define Socket_Outgoing				2
+#ifndef _PostMan_Incomming_Socket_
+	#define _PostMan_Incomming_Socket_				3
+#endif
+#ifndef _PostMan_Outgoing_Socket_
+	#define _PostMan_Outgoing_Socket_				2
+#endif
 
-// Serial Communications Definations
-#ifndef Serial_Terminal
-	#define Serial_Terminal 		Serial
+// Define Packet Size
+#ifndef _PostMan_Send_JSON_Size_
+	#define _PostMan_Send_JSON_Size_				1023
+#endif
+#ifndef _PostMan_Recieve_JSON_Size_
+	#define _PostMan_Recieve_JSON_Size_				255
+#endif
+#ifndef _PostMan_Response_JSON_Size_
+	#define _PostMan_Response_JSON_Size_			255
+#endif
+
+// Define Max JSON Variable Count
+#ifndef MAX_VARIABLE_COUNT
+	#define MAX_VARIABLE_COUNT						10
 #endif
 
 // Define Operator Defaults
-#ifndef _PDP_APN_
-	#define _PDP_APN_				"mgbs"
+#ifndef _PostMan_APN_
+	#define _PostMan_APN_							"mgbs"
 #endif
 
 // Define Version Defaults
-#ifndef __Hardware__
-	#define __Hardware__ 			"00.00.00"
+#ifndef _FIRMWARE_
+	#define _FIRMWARE_								"00.00.00"
 #endif
-#ifndef __Firmware__
-	#define __Firmware__ 			"00.00.00"
+#ifndef _HARDWARE_
+	#define _HARDWARE_								"00.00.00"
 #endif
 
 // Define Device Defaults
-#ifndef __Company__
-	#define __Company__ 			"Demo"
+#ifndef _COMPANY_
+	#define _COMPANY_								"Demo"
 #endif
-#ifndef __Device__
-	#define __Device__ 				"PostOffice"
+#ifndef _DEVICE_
+	#define _DEVICE_								"PostOffice"
 #endif
 
 // Define Cloud Parameters
-#ifndef _BackEnd_Server_
-	#define _BackEnd_Server_ 		"165.227.154.147"
+#ifndef _PostMan_Server_
+	#define _PostMan_Server_ 						"165.227.154.147"
 #endif
-#ifndef _BackEnd_EndPoint_
-	#define _BackEnd_EndPoint_ 		"/"
+#ifndef _PostMan_EndPoint_
+	#define _PostMan_EndPoint_ 						"/"
 #endif
 
 // Firewall Parameters
-#ifndef _AT_FRWL_1_IP_
-	#define _AT_FRWL_1_IP_			"213.14.250.214"
+#ifndef _PostMan_Firewall_1_
+	#define _PostMan_Firewall_1_					"213.14.250.214"
+#endif
+#ifndef _PostMan_Firewall_2_
+	#define _PostMan_Firewall_2_					"167.99.137.254"
+#endif
+#ifndef _PostMan_Firewall_3_
+	#define _PostMan_Firewall_3_					"176.240.98.205"
 #endif
 
-#ifndef _AT_FRWL_2_IP_
-	#define _AT_FRWL_2_IP_			"167.99.137.254"
+// Firmware Update Parameters
+#ifndef _PostMan_Firmware_Name_
+	#define _PostMan_Firmware_Name_					"FW.HEX"
 #endif
 
-#ifndef _AT_FRWL_3_IP_
-	#define _AT_FRWL_3_IP_			"176.240.98.205"
-#endif
+// Define Pack Types
+#define Pack_None									0
+#define Pack_Online									1
+#define Pack_Update									2
+#define Pack_Timed									3
+#define Pack_Interrupt								4
+#define Pack_Alarm									5
+#define Pack_Offline								6
+#define Pack_FOTA_Info								90
+#define Pack_FOTA_Download							91
+#define Pack_FOTA_Burn								99
 
-// Define Server Address
-#ifndef _FOTA_Server_
-	#define FOTA_Server 			"165.227.154.147"
-#endif
-
-// Define Server Folder
-#ifndef _FOTA_Folder_
-	#define FOTA_Folder 			"firmware"
-#endif
-
-// Define Server UserName
-#ifndef _FOTA_UserName_
-	#define FOTA_UserName 			"fota"
-#endif
-
-// Define Server Password
-#ifndef _FOTA_PassWord_
-	#define FOTA_PassWord 			"123456"
-#endif
-
-// Define FTP SD Parameters
-#ifndef _FOTA_SD_FileName_
-	#define FOTA_SD_FileName		"firmware.hex"
-#endif
-
-// Define LOG SD Parameters
-#ifndef _LOG_SD_File_Name_
-	#define _LOG_SD_File_Name_		"LOG.txt"
-#endif

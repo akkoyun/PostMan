@@ -8,9 +8,12 @@
 
 // Include Definitions
 #include "AT_Definitions.h"
+#include "Definitions/Modem.h"
+#include "Definitions/SIM.h"
+#include "Definitions/Response.h"
 
 // Define Response Max Length
-#define Max_OK_Response_Length 20
+#define Max_AT_OK_Response_Length 20
 
 // Modem AT Command Set Class
 class AT_Command_Set_LE910S1_EAG {
@@ -62,20 +65,20 @@ class AT_Command_Set_LE910S1_EAG {
 				_Buffer_Variable[_Buffer->Read_Order] = GSM_Serial->read();
 
 				// Control for Response
-				if (this->Find(_OK_, _Buffer_Variable, _Buffer->Read_Order)) {
+				if (this->Find(_AT_OK_, _Buffer_Variable, _Buffer->Read_Order)) {
 
 					// End Function
-					return(_OK_);
+					return(_AT_OK_);
 
-				} else if (this->Find(_ERROR_, _Buffer_Variable, _Buffer->Read_Order)) {
-
-					// End Function
-					return(_ERROR_);
-
-				} else if (this->Find(_CME_, _Buffer_Variable, _Buffer->Read_Order)) {
+				} else if (this->Find(_AT_ERROR_, _Buffer_Variable, _Buffer->Read_Order)) {
 
 					// End Function
-					return(_CME_);
+					return(_AT_ERROR_);
+
+				} else if (this->Find(_AT_CME_, _Buffer_Variable, _Buffer->Read_Order)) {
+
+					// End Function
+					return(_AT_CME_);
 
 				}
 
@@ -91,7 +94,7 @@ class AT_Command_Set_LE910S1_EAG {
 			}
 
 			// End Function
-			return(_TIMEOUT_);
+			return(_AT_TIMEOUT_);
 
 		}
 
@@ -99,21 +102,21 @@ class AT_Command_Set_LE910S1_EAG {
 		bool Find(const uint8_t _Type, char * _Buffer, uint8_t _Size) {
 
 			// Select Find Type
-			if (_Type == _OK_) {
+			if (_Type == _AT_OK_) {
 
 				// \r\nOK\r\n
 
 				// Control for <\r\nOK\r\n> Response
 				if (_Buffer[_Size - 5] == 13 and _Buffer[_Size - 4] == 10 and _Buffer[_Size - 3] == 79 and _Buffer[_Size - 2] == 75 and _Buffer[_Size - 1] == 13 and _Buffer[_Size - 0] == 10) return(true);
 
-			} else if (_Type == _ERROR_) {
+			} else if (_Type == _AT_ERROR_) {
 
 				// \r\nERROR\r\n
 
 				// Control for <\r\nERROR\r\n> Response
 				if (_Buffer[_Size - 8] == 13 and _Buffer[_Size - 7] == 10 and _Buffer[_Size - 6] == 69 and _Buffer[_Size - 5] == 82 and _Buffer[_Size - 4] == 82 and _Buffer[_Size - 3] == 79 and _Buffer[_Size - 2] == 82 and _Buffer[_Size - 1] == 13 and _Buffer[_Size - 0] == 10) return(true);
 
-			} else if (_Type == _CME_) {
+			} else if (_Type == _AT_CME_) {
 
 				// \r\n+CME ERROR: 614\r\n
 				// \r\n+CME ERROR: 4\r\n
@@ -185,7 +188,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -206,7 +209,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -225,7 +228,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -247,7 +250,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -287,7 +290,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 
 				// AT+CGMI\r\n
 				// \r\nTelit\r\n\r\nOK\r\n
@@ -302,13 +305,13 @@ class AT_Command_Set_LE910S1_EAG {
 				sscanf(Buffer_Variable, "\r\n%s\r\n\r\nOK\r\n", _Manufacturer_Name);
 
 				// Set No Manufacturer
-				_Manufacturer = _UNKNOWN_MANUFACTURER_;
+				_Manufacturer = _MODEM_MANUFACTURER_UNKNOWN_;
 
 				// Control for Manufacturer Name
-				if (strstr(_Manufacturer_Name, "Telit") != NULL) _Manufacturer = _TELIT_;
+				if (strstr(_Manufacturer_Name, "Telit") != NULL) _Manufacturer = _MODEM_MANUFACTURER_TELIT_;
 
 				// End Function
-				if (_Manufacturer != _UNKNOWN_MANUFACTURER_) return(true);
+				if (_Manufacturer != _MODEM_MANUFACTURER_UNKNOWN_) return(true);
 
 				// End Function
 				return(false);
@@ -353,7 +356,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 
 				// AT+CGMM\r\n
 				// \r\nLE910C1-EUX\r\n\r\nOK\r\n
@@ -368,18 +371,18 @@ class AT_Command_Set_LE910S1_EAG {
 				sscanf(Buffer_Variable, "\r\n%s\r\n\r\nOK\r\n", _Model_Name);
 
 				// Set No Model
-				_Model = _UNKNOWN_MODEL_;
+				_Model = _MODEM_MODEL_UNKNOWN_;
 
 				// Control for Model Name
-				if (strstr(_Model_Name, "GE910-QUAD") != NULL) _Model = _GE910_QUAD_;
-				else if (strstr(_Model_Name, "GE910-QUAD-V3") != NULL) _Model = _GE910_QUAD_V3_;
-				else if (strstr(_Model_Name, "LE910S1-EA") != NULL) _Model = _LE910S1_EA_;
-				else if (strstr(_Model_Name, "LE910S1-EAG") != NULL) _Model = _LE910S1_EAG_;
-				else if (strstr(_Model_Name, "LE910R1-EU") != NULL) _Model = _LE910R1_EU_;
-				else if (strstr(_Model_Name, "LE910C1-EUX") != NULL) _Model = _LE910C1_EUX_;
+				if (strstr(_Model_Name, "GE910-QUAD") != NULL) _Model = _MODEM_MODEL_GE910_QUAD_;
+				else if (strstr(_Model_Name, "GE910-QUAD-V3") != NULL) _Model = _MODEM_MODEL_GE910_QUAD_V3_;
+				else if (strstr(_Model_Name, "LE910S1-EA") != NULL) _Model = _MODEM_MODEL_LE910S1_EA_;
+				else if (strstr(_Model_Name, "LE910S1-EAG") != NULL) _Model = _MODEM_MODEL_LE910S1_EAG_;
+				else if (strstr(_Model_Name, "LE910R1-EU") != NULL) _Model = _MODEM_MODEL_LE910R1_EU_;
+				else if (strstr(_Model_Name, "LE910C1-EUX") != NULL) _Model = _MODEM_MODEL_LE910C1_EUX_;
 
 				// End Function
-				if (_Model != _UNKNOWN_MODEL_) return(true);
+				if (_Model != _MODEM_MODEL_UNKNOWN_) return(true);
 
 				// End Function
 				return(false);
@@ -424,7 +427,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 
 				// AT#SWPKGV\r\n
 				// \r\n25.30.226-P0F.225200\r\nM0F.223006\r\nP0F.225200\r\nA0F.223006\r\n\r\nOK\r\n
@@ -485,7 +488,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 
 				// AT+CGSN=1\r\n
 				// \r\n+CGSN: 354485417617003\r\n\r\nOK\r\n
@@ -534,7 +537,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -556,7 +559,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -578,7 +581,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -600,7 +603,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -640,7 +643,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 				
 				// Handle Variables
 				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#CEER: %03d\r\n\r\nOK\r\n", &_Code);
@@ -692,7 +695,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -714,7 +717,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -736,7 +739,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -776,7 +779,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 
 				// \r\n+CPIN: READY\r\n\r\nOK\r\n
 
@@ -843,7 +846,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 
 				// Handle for Response
 				for (size_t i = 0; i < Buffer.Size; i++) {
@@ -908,7 +911,7 @@ class AT_Command_Set_LE910S1_EAG {
 				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) return(true);
+				if (_Response == _AT_OK_) return(true);
 
 				// End Function
 				return(false);
@@ -930,7 +933,7 @@ class AT_Command_Set_LE910S1_EAG {
 				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) {
+				if (_Response == _AT_OK_) {
 
 					// Define Handle Variable
 					int _SIMDET_Mode = 0;
@@ -976,7 +979,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1005,7 +1008,7 @@ class AT_Command_Set_LE910S1_EAG {
 				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) return(true);
+				if (_Response == _AT_OK_) return(true);
 
 				// End Function
 				return(false);
@@ -1029,7 +1032,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1051,7 +1054,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -1070,7 +1073,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1091,7 +1094,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -1110,7 +1113,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer
@@ -1130,7 +1133,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -1173,7 +1176,7 @@ class AT_Command_Set_LE910S1_EAG {
 				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) return(true);
+				if (_Response == _AT_OK_) return(true);
 
 				// End Function
 				return(false);
@@ -1191,7 +1194,7 @@ class AT_Command_Set_LE910S1_EAG {
 				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) {
+				if (_Response == _AT_OK_) {
 					
 					// Handle Variables
 					sscanf(Buffer_Variable, "\r\n+CREG: %hhu,%hhu\r\n\r\nOK\r\n", &_Mode, &_Stat);
@@ -1261,7 +1264,7 @@ class AT_Command_Set_LE910S1_EAG {
 				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) return(true);
+				if (_Response == _AT_OK_) return(true);
 
 				// End Function
 				return(false);
@@ -1279,7 +1282,7 @@ class AT_Command_Set_LE910S1_EAG {
 				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) {
+				if (_Response == _AT_OK_) {
 					
 					// Handle Variables
 					sscanf(Buffer_Variable, "\r\n+CGREG: %hhu,%hhu\r\n\r\nOK\r\n", &_Mode, &_Stat);
@@ -1325,7 +1328,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1352,7 +1355,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -1395,7 +1398,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 
 				// \r\n#SGACT: 000.000.000.000\r\n\r\nOK\r\n
 
@@ -1460,7 +1463,7 @@ class AT_Command_Set_LE910S1_EAG {
 				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) {
+				if (_Response == _AT_OK_) {
 
 					// AT+WS46?\r\n
 					// \r\n+WS46: 30\r\n\r\nOK\r\n
@@ -1525,7 +1528,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 
 				// \r\n#MONI:TR TURKCELL RSRP:-110 RSRQ:15 TAC:2242 Id:B5D125 EARFCN:100 PWR:-95 DRX:128 pci:335 QRxlevMin:-124\r\n\r\nOK\r\n
 				// \r\n#MONI:TR TURKCELL RSRP:-99 RSRQ:-16 TAC:2242 Id:859315 EARFCN:6400 PWR:-66 DRX:128 pci:438 QRxlevMin:-124\r\n\r\nOK\r\n
@@ -1569,7 +1572,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1601,7 +1604,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -1620,7 +1623,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1652,7 +1655,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -1671,7 +1674,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1703,7 +1706,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -1725,7 +1728,7 @@ class AT_Command_Set_LE910S1_EAG {
 					0, 						// Read Order
 					0, 						// Data Order
 					1000, 					// Time Out
-					Max_OK_Response_Length		// Buffer Size
+					Max_AT_OK_Response_Length		// Buffer Size
 				};
 
 				// Declare Buffer Variable
@@ -1750,7 +1753,7 @@ class AT_Command_Set_LE910S1_EAG {
 				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) return(true);
+				if (_Response == _AT_OK_) return(true);
 
 				// End Function
 				return(false);
@@ -1787,7 +1790,7 @@ class AT_Command_Set_LE910S1_EAG {
 				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) return(true);
+				if (_Response == _AT_OK_) return(true);
 
 				// #define	_AT_FRWL_1_IP_			"213.014.250.214"
 				// #define	_AT_FRWL_2_IP_			"167.099.137.254"
@@ -1817,7 +1820,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1839,7 +1842,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -1879,7 +1882,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 
 				/*
 				--> AT+CCLK?\r\n
@@ -1922,7 +1925,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1944,7 +1947,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -1963,7 +1966,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1985,7 +1988,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -2004,7 +2007,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2026,7 +2029,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -2045,7 +2048,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				140000, 				// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2079,7 +2082,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -2098,7 +2101,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				5000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2120,7 +2123,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -2139,7 +2142,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2167,7 +2170,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -2210,7 +2213,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 				
 
 				// End Function
@@ -2257,7 +2260,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 
 				// \r\n#SS: 2,4,5.26.173.230,80\r\n\r\nOK\r\n
 				// \r\n#SS: 2,2,5.26.173.230,80,213.14.250.214,54883\r\n\r\nOK\r\n
@@ -2304,7 +2307,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -2323,7 +2326,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				2000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2400,7 +2403,7 @@ class AT_Command_Set_LE910S1_EAG {
 				Buffer_Variable[Buffer_Get.Read_Order] = GSM_Serial->read();
 
 				// Control for <OK> Response
-				Buffer_Get.Response = this->Find(_OK_, Buffer_Variable, Buffer_Get.Read_Order);
+				Buffer_Get.Response = this->Find(_AT_OK_, Buffer_Variable, Buffer_Get.Read_Order);
 
 				// Increase Read Order
 				if (isAscii(Buffer_Variable[Buffer_Get.Read_Order])) Buffer_Get.Read_Order++;
@@ -2460,7 +2463,7 @@ class AT_Command_Set_LE910S1_EAG {
 				Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
 
 				// Control for <OK> Response
-				Buffer.Response = this->Find(_OK_, Buffer_Variable, Buffer.Read_Order);
+				Buffer.Response = this->Find(_AT_OK_, Buffer_Variable, Buffer.Read_Order);
 
 				// Increase Read Order
 				if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
@@ -2636,7 +2639,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				500000, 				// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -2657,7 +2660,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -2700,7 +2703,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -2744,7 +2747,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 
 				// \r\n#FTPFSIZE: 174945\r\n\r\nOK\r\n
 
@@ -2799,7 +2802,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -2847,7 +2850,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (_Response == _AT_OK_) return(true);
 
 			// End Function
 			return(false);
@@ -2888,7 +2891,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 				
 				// \r\n#FTPRECV: 200\r\n20202055\r\n:100BA00020202020000D0A002C002C002C00415495\r\n:100BB00023534C3D000D0A004154234532534C52FF\r\n:100BC000493D000D0A00415423534C4544534156BE\r\n:100BD000000D0A00415423534C45443D000D0A00CA\r\n:100BE0004\r\n\r\nOK\r\n
 				// \r\n+CME ERROR: 614\r\n	
@@ -2996,10 +2999,10 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-			else if (_Response == _ERROR_) return(false);
-			else if (_Response == _CME_) return(false);
-			else if (_Response == _TIMEOUT_) return(false);
+			if (_Response == _AT_OK_) return(true);
+			else if (_Response == _AT_ERROR_) return(false);
+			else if (_Response == _AT_CME_) return(false);
+			else if (_Response == _AT_TIMEOUT_) return(false);
 			else return(false);
 
 		}
@@ -3016,7 +3019,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				500000,					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -3038,10 +3041,10 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-			else if (_Response == _ERROR_) return(false);
-			else if (_Response == _CME_) return(false);
-			else if (_Response == _TIMEOUT_) return(false);
+			if (_Response == _AT_OK_) return(true);
+			else if (_Response == _AT_ERROR_) return(false);
+			else if (_Response == _AT_CME_) return(false);
+			else if (_Response == _AT_TIMEOUT_) return(false);
 			else return(false);
 
 		}
@@ -3058,7 +3061,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				5000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer
@@ -3080,10 +3083,10 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-			else if (_Response == _ERROR_) return(false);
-			else if (_Response == _CME_) return(false);
-			else if (_Response == _TIMEOUT_) return(false);
+			if (_Response == _AT_OK_) return(true);
+			else if (_Response == _AT_ERROR_) return(false);
+			else if (_Response == _AT_CME_) return(false);
+			else if (_Response == _AT_TIMEOUT_) return(false);
 			else return(false);
 
 		}
@@ -3100,7 +3103,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				5000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer
@@ -3119,10 +3122,10 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-			else if (_Response == _ERROR_) return(false);
-			else if (_Response == _CME_) return(false);
-			else if (_Response == _TIMEOUT_) return(false);
+			if (_Response == _AT_OK_) return(true);
+			else if (_Response == _AT_ERROR_) return(false);
+			else if (_Response == _AT_CME_) return(false);
+			else if (_Response == _AT_TIMEOUT_) return(false);
 			else return(false);
 
 		}
@@ -3142,7 +3145,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				2000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -3164,10 +3167,10 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-			else if (_Response == _ERROR_) return(false);
-			else if (_Response == _CME_) return(false);
-			else if (_Response == _TIMEOUT_) return(false);
+			if (_Response == _AT_OK_) return(true);
+			else if (_Response == _AT_ERROR_) return(false);
+			else if (_Response == _AT_CME_) return(false);
+			else if (_Response == _AT_TIMEOUT_) return(false);
 			else return(false);
 
 		}
@@ -3184,7 +3187,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -3206,10 +3209,10 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-			else if (_Response == _ERROR_) return(false);
-			else if (_Response == _CME_) return(false);
-			else if (_Response == _TIMEOUT_) return(false);
+			if (_Response == _AT_OK_) return(true);
+			else if (_Response == _AT_ERROR_) return(false);
+			else if (_Response == _AT_CME_) return(false);
+			else if (_Response == _AT_TIMEOUT_) return(false);
 			else return(false);
 
 		}
@@ -3226,7 +3229,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -3248,10 +3251,10 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-			else if (_Response == _ERROR_) return(false);
-			else if (_Response == _CME_) return(false);
-			else if (_Response == _TIMEOUT_) return(false);
+			if (_Response == _AT_OK_) return(true);
+			else if (_Response == _AT_ERROR_) return(false);
+			else if (_Response == _AT_CME_) return(false);
+			else if (_Response == _AT_TIMEOUT_) return(false);
 			else return(false);
 
 		}
@@ -3268,7 +3271,7 @@ class AT_Command_Set_LE910S1_EAG {
 				0, 						// Read Order
 				0, 						// Data Order
 				1000, 					// Time Out
-				Max_OK_Response_Length		// Buffer Size
+				Max_AT_OK_Response_Length		// Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -3289,10 +3292,10 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-			else if (_Response == _ERROR_) return(false);
-			else if (_Response == _CME_) return(false);
-			else if (_Response == _TIMEOUT_) return(false);
+			if (_Response == _AT_OK_) return(true);
+			else if (_Response == _AT_ERROR_) return(false);
+			else if (_Response == _AT_CME_) return(false);
+			else if (_Response == _AT_TIMEOUT_) return(false);
 			else return(false);
 
 		}
@@ -3330,7 +3333,7 @@ class AT_Command_Set_LE910S1_EAG {
 			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (_Response == _AT_OK_) {
 
 				// \r\n$GPSACP: ,,,,,1,,,,,,\r\n\r\nOK\r\n
 				// \r\n\r\n$GPSACP: 121313.00,3757.84237N,03235.96966E,2.91,1044.4,3,,0.693,0.374,180823,06\r\n\r\nOK\r\n
@@ -3393,9 +3396,9 @@ class AT_Command_Set_LE910S1_EAG {
 				return(true);
 
 			}
-			else if (_Response == _ERROR_) return(false);
-			else if (_Response == _CME_) return(false);
-			else if (_Response == _TIMEOUT_) return(false);
+			else if (_Response == _AT_ERROR_) return(false);
+			else if (_Response == _AT_CME_) return(false);
+			else if (_Response == _AT_TIMEOUT_) return(false);
 			else return(false);
 
 		}

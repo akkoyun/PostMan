@@ -1,6 +1,3 @@
-// Library include guard
-#pragma once
-
 // Include Arduino Library
 #ifndef __Arduino__
 	#include <Arduino.h>
@@ -8,6 +5,9 @@
 
 // Include Definitions
 #include "AT_Definitions.h"
+#include "Definitions/Modem.h"
+#include "Definitions/SIM.h"
+#include "Definitions/Response.h"
 
 // Modem AT Command Set Class
 class AT_Command_Set_LE910C1_EUX {
@@ -20,18 +20,18 @@ class AT_Command_Set_LE910C1_EUX {
 
 		// Serial Buffer Variable Structure Definition
 		struct Serial_Buffer {
-			bool 				Response;
-			uint8_t 			Read_Order;
-			uint8_t 			Data_Order;
+			uint8_t 			Response;
+			uint16_t 			Read_Order;
+			uint16_t 			Data_Order;
 			const uint32_t 		Time_Out;
-			uint8_t 			Size;
+			uint16_t 			Size;
 		};
 
 		// Clear Serial Buffer Function
 		void Clear_UART_Buffer(void) {
 
 			// Clear UART Buffer
-			while (GSM_Serial->available() > 0) {
+			while (GSM_Serial->available()) {
 				
 				// Read GSM Buffer
 				GSM_Serial->read();
@@ -44,13 +44,17 @@ class AT_Command_Set_LE910C1_EUX {
 		}
 
 		// Read Serial Buffer Function
-		uint8_t Read_UART_Buffer(Serial_Buffer * _Buffer, char * _Buffer_Variable) {
+		bool Read_UART_Buffer(Serial_Buffer * _Buffer, char * _Buffer_Variable) {
 
 			// Response Wait Delay
-			delay(2);
+			delay(5);
+
+			// Set Read Order
+			_Buffer->Read_Order = 0;
+			_Buffer->Response = _AT_TIMEOUT_;
 
 			// Read Current Time
-			const uint32_t Current_Time = millis();
+			const uint32_t _Current_Time = millis();
 
 			// Read UART Response
 			while (!_Buffer->Response) {
@@ -59,62 +63,87 @@ class AT_Command_Set_LE910C1_EUX {
 				_Buffer_Variable[_Buffer->Read_Order] = GSM_Serial->read();
 
 				// Control for Response
-				if (this->Find(_OK_, _Buffer_Variable, _Buffer->Read_Order)) {
-
-					// End Function
-					return(_OK_);
-
-				} else if (this->Find(_ERROR_, _Buffer_Variable, _Buffer->Read_Order)) {
-
-					// End Function
-					return(_ERROR_);
-
-				} else if (this->Find(_CME_, _Buffer_Variable, _Buffer->Read_Order)) {
-
-					// End Function
-					return(_CME_);
-
-				}
+				if (this->Find(_AT_OK_, _Buffer_Variable, _Buffer->Read_Order)) _Buffer->Response = _AT_OK_;
+				if (this->Find(_AT_ERROR_, _Buffer_Variable, _Buffer->Read_Order)) _Buffer->Response = _AT_ERROR_;
+				if (this->Find(_AT_CME_, _Buffer_Variable, _Buffer->Read_Order)) _Buffer->Response = _AT_CME_;
+				if (this->Find(_AT_SD_PROMPT_, _Buffer_Variable, _Buffer->Read_Order)) _Buffer->Response = _AT_SD_PROMPT_;
 
 				// Increase Read Order
 				if (isAscii(_Buffer_Variable[_Buffer->Read_Order])) _Buffer->Read_Order++;
 
 				// Handle for timeout
-				if (millis() - Current_Time >= _Buffer->Time_Out) break;
+				if (millis() - _Current_Time >= _Buffer->Time_Out) break;
 
 			}
 
+			// Control for Response
+			if (_Buffer->Response != _AT_TIMEOUT_) return(true);
+
 			// End Function
-			return(_TIMEOUT_);
+			return(false);
 
 		}
 
 		// OK Find Function
-		bool Find(const uint8_t _Type, char * _Buffer, uint8_t _Size) {
+		bool Find(const uint8_t _Type, char * _Buffer, uint16_t _Size) {
 
 			// Select Find Type
-			if (_Type == _OK_) {
+			if (_Type == _AT_OK_ and _Size > 4) {
 
 				// \r\nOK\r\n
-
 				// Control for <\r\nOK\r\n> Response
-				if (_Buffer[_Size - 5] == 13 and _Buffer[_Size - 4] == 10 and _Buffer[_Size - 3] == 79 and _Buffer[_Size - 2] == 75 and _Buffer[_Size - 1] == 13 and _Buffer[_Size - 0] == 10) return(true);
+				if (
+					(_Buffer[_Size - 5] == 13) && 	// \r
+					(_Buffer[_Size - 4] == 10) && 	// \n
+					(_Buffer[_Size - 3] == 79) && 	// O
+					(_Buffer[_Size - 2] == 75) && 	// K
+					(_Buffer[_Size - 1] == 13) && 	// \r
+					(_Buffer[_Size - 0] == 10)		// \n
+				) return(true);
 
-			} else if (_Type == _ERROR_) {
+			} else if (_Type == _AT_ERROR_ and _Size > 7) {
 
 				// \r\nERROR\r\n
-
 				// Control for <\r\nERROR\r\n> Response
-				if (_Buffer[_Size - 8] == 13 and _Buffer[_Size - 7] == 10 and _Buffer[_Size - 6] == 69 and _Buffer[_Size - 5] == 82 and _Buffer[_Size - 4] == 82 and _Buffer[_Size - 3] == 79 and _Buffer[_Size - 2] == 82 and _Buffer[_Size - 1] == 13 and _Buffer[_Size - 0] == 10) return(true);
+				if (
+					(_Buffer[_Size - 8] == 13) && 	// \r
+					(_Buffer[_Size - 7] == 10) && 	// \n
+					(_Buffer[_Size - 6] == 69) && 	// E
+					(_Buffer[_Size - 5] == 82) && 	// R
+					(_Buffer[_Size - 4] == 82) && 	// R
+					(_Buffer[_Size - 3] == 79) && 	// O
+					(_Buffer[_Size - 2] == 82) && 	// R
+					(_Buffer[_Size - 1] == 13) && 	// \r
+					(_Buffer[_Size - 0] == 10)		// \n
+				) return(true);
 
-			} else if (_Type == _CME_) {
+			} else if (_Type == _AT_CME_ and _Size > 15) {
 
 				// \r\n+CME ERROR: 614\r\n
-
 				// Control for <\r\n+CME> Response
-				if (_Buffer[_Size - 18] == '\r' and _Buffer[_Size - 17] == '\n' and _Buffer[_Size - 16] == '+' and _Buffer[_Size - 15] == 'C' and _Buffer[_Size - 14] == 'M' and _Buffer[_Size - 13] == 'E' and _Buffer[_Size - 1] == '\r' and _Buffer[_Size - 0] == '\n') return(true);
+				if (
+					(_Buffer[_Size - 18] == 13) && 	// \r
+					(_Buffer[_Size - 17] == 10) && 	// \r
+					(_Buffer[_Size - 16] == 43) && 	// +
+					(_Buffer[_Size - 15] == 67) &&	// C 
+					(_Buffer[_Size - 14] == 77) && 	// M
+					(_Buffer[_Size - 13] == 69) && 	// E
+					(_Buffer[_Size - 1] == 13) && 	// \r
+					(_Buffer[_Size - 0] == 10)		// \r
+				) return(true);
 
-			}
+			} else if (_Type == _AT_SD_PROMPT_ and _Size > 2) {
+
+				// \r\n> 
+				// Control for <\r\n> > Response
+				if (
+					(_Buffer[_Size - 3] == 13) && 
+					(_Buffer[_Size - 2] == 10) && 
+					(_Buffer[_Size - 1] == 62) && 
+					(_Buffer[_Size - 0] == 32)
+				) return(true);
+
+			} 
 
 			// End Function
 			return(false);
@@ -124,15 +153,33 @@ class AT_Command_Set_LE910C1_EUX {
 		// RSSI to Signal Quality Function
 		uint8_t RSSI_to_Signal_Quality(int8_t _RSSI) {
 
-			// Calculate Signal Level
-			if (_RSSI >= -65) return(5);
-			if (_RSSI >= -75 and _RSSI < -65) return(4);
-			if (_RSSI >= -85 and _RSSI < -75) return(3);
-			if (_RSSI >= -95 and _RSSI < -85) return(2);
-			if (_RSSI < -95) return(1);
+			// Handle for RSSI
+			if (_RSSI >= -65) {
+				
+				// Return Signal Quality
+				return 5;
 
-			// End Function
-			return(0);
+			} else if (_RSSI >= -75) {
+
+				// Return Signal Quality
+				return 4;
+
+			} else if (_RSSI >= -85) {
+
+				// Return Signal Quality
+				return 3;
+
+			} else if (_RSSI >= -95) {
+
+				// Return Signal Quality
+				return 2;
+
+			} else {
+
+				// Return Signal Quality
+				return 1;
+
+			}
 
 		}
 
@@ -149,17 +196,17 @@ class AT_Command_Set_LE910C1_EUX {
 
 		// AT Command
 		bool AT(void) {
-
+			
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				11		// Buffer Size
+				0,  	// Response
+				0,      // Read Order
+				0,      // Data Order
+				1000,   // Time Out
+				11      // Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -177,13 +224,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			return (Buffer.Response == _AT_OK_);
 
 		}
 
@@ -195,7 +239,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -218,29 +262,26 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			return (Buffer.Response == _AT_OK_);
 
 		}
 
 		// Get Manufacturer Function
-		bool CGMI(uint8_t & _Manufacturer) {
+		bool CGMI(uint8_t& _Manufacturer) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				35		// Buffer Size
+				0,  	// Response
+				0,      // Read Order
+				0,      // Data Order
+				1000,   // Time Out
+				35      // Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -258,10 +299,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (Buffer.Response == _AT_OK_) {
 
 				// AT+CGMI\r\n
 				// \r\nTelit\r\n\r\nOK\r\n
@@ -276,16 +317,13 @@ class AT_Command_Set_LE910C1_EUX {
 				sscanf(Buffer_Variable, "\r\n%s\r\n\r\nOK\r\n", _Manufacturer_Name);
 
 				// Set No Manufacturer
-				_Manufacturer = _UNKNOWN_MANUFACTURER_;
+				_Manufacturer = _MODEM_MANUFACTURER_UNKNOWN_;
 
 				// Control for Manufacturer Name
-				if (strstr(_Manufacturer_Name, "Telit") != NULL) _Manufacturer = _TELIT_;
-
-				// End Function
-				if (_Manufacturer != _UNKNOWN_MANUFACTURER_) return(true);
-
-				// End Function
-				return(false);
+				if (strstr(_Manufacturer_Name, "Telit") != NULL) {
+					_Manufacturer = _MODEM_MANUFACTURER_TELIT_;
+					return true;
+				}
 
 			}
 
@@ -295,18 +333,18 @@ class AT_Command_Set_LE910C1_EUX {
 		}
 
 		// Get Model Function
-		bool CGMM(uint8_t & _Model) {
-
+		bool CGMM(uint8_t& _Model) {
+			
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				35		// Buffer Size
+				0,  	// Response
+				0,      // Read Order
+				0,      // Data Order
+				1000,   // Time Out
+				35      // Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -323,44 +361,41 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0D);
 			GSM_Serial->write(0x0A);
 
-			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			// Get Response
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
-
-				// AT+CGMM\r\n
-				// \r\nLE910C1-EUX\r\n\r\nOK\r\n
-
+			if (Buffer.Response == _AT_OK_) {
+				
 				// Declare Variable
-				char _Model_Name[15];
+				char _Model_Name[15] = {};
 
-				// Clear Variable
-				memset(_Model_Name, '\0', 15);
-
-				// Handle Model Name
+				// Get Model Name				
 				sscanf(Buffer_Variable, "\r\n%s\r\n\r\nOK\r\n", _Model_Name);
 
 				// Set No Model
-				_Model = _UNKNOWN_MODEL_;
+				_Model = _MODEM_MODEL_UNKNOWN_;
 
 				// Control for Model Name
-				if (strstr(_Model_Name, "GE910-QUAD") != NULL) _Model = _GE910_QUAD_;
-				else if (strstr(_Model_Name, "GE910-QUAD-V3") != NULL) _Model = _GE910_QUAD_V3_;
-				else if (strstr(_Model_Name, "LE910S1-EA") != NULL) _Model = _LE910S1_EA_;
-				else if (strstr(_Model_Name, "LE910R1-EU") != NULL) _Model = _LE910R1_EU_;
-				else if (strstr(_Model_Name, "LE910C1-EUX") != NULL) _Model = _LE910C1_EUX_;
+				if (strstr(_Model_Name, "GE910-QUAD") != NULL) {
+					_Model = _MODEM_MODEL_GE910_QUAD_;
+				} else if (strstr(_Model_Name, "GE910-QUAD-V3") != NULL) {
+					_Model = _MODEM_MODEL_GE910_QUAD_V3_;
+				} else if (strstr(_Model_Name, "LE910S1-EA") != NULL) {
+					_Model = _MODEM_MODEL_LE910S1_EA_;
+				} else if (strstr(_Model_Name, "LE910R1-EU") != NULL) {
+					_Model = _MODEM_MODEL_LE910R1_EU_;
+				} else if (strstr(_Model_Name, "LE910C1-EUX") != NULL) {
+					_Model = _MODEM_MODEL_LE910C1_EUX_;
+				}
 
-				// End Function
-				if (_Model != _UNKNOWN_MODEL_) return(true);
-
-				// End Function
-				return(false);
+				// Return Response
+				return (_Model != _MODEM_MODEL_UNKNOWN_);
 
 			}
 
 			// End Function
-			return(false);
+			return false;
 
 		}
 
@@ -372,7 +407,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -394,10 +429,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (Buffer.Response == _AT_OK_) {
 
 				// AT#SWPKGV\r\n
 				// \r\n25.30.226-P0F.225200\r\nM0F.223006\r\nP0F.225200\r\nA0F.223006\r\n\r\nOK\r\n
@@ -406,18 +441,10 @@ class AT_Command_Set_LE910C1_EUX {
 				memset(_Firmware, '\0', 15);
 
 				// Handle Firmware
-				_Firmware[0] = Buffer_Variable[2];
-				_Firmware[1] = Buffer_Variable[3];
-				_Firmware[2] = Buffer_Variable[4];
-				_Firmware[3] = Buffer_Variable[5];
-				_Firmware[4] = Buffer_Variable[6];
-				_Firmware[5] = Buffer_Variable[7];
-				_Firmware[6] = Buffer_Variable[8];
-				_Firmware[7] = Buffer_Variable[9];
-				_Firmware[8] = Buffer_Variable[10];
+				strncpy(_Firmware, &Buffer_Variable[2], 9);
 
 				// End Function
-				return(true);
+				return true;
 
 			}
 
@@ -427,23 +454,23 @@ class AT_Command_Set_LE910C1_EUX {
 		}
 
 		// Get IMEI Function
-		bool CGSN(char * _IMEI) {
+		bool CGSN(char* _IMEI) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				35		// Buffer Size
+				0,  	// Response
+				0,      // Read Order
+				0,      // Data Order
+				1000,   // Time Out
+				35      // Buffer Size
 			};
 
 			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
-			
+
 			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
@@ -455,10 +482,11 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0D);
 			GSM_Serial->write(0x0A);
 
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			// Declare Response
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (Buffer.Response == _AT_OK_) {
 
 				// AT+CGSN=1\r\n
 				// \r\n+CGSN: 354485417617003\r\n\r\nOK\r\n
@@ -467,28 +495,35 @@ class AT_Command_Set_LE910C1_EUX {
 				memset(_IMEI, '\0', 17);
 
 				// Handle for Response
-				for (uint8_t i = 0; i < Buffer.Size; i++) {
+				char* _IMEI_Start = strstr(Buffer_Variable, "+CGSN: ");
 
-					// Handle IMEI
-					if (Buffer_Variable[i] > 47 and Buffer_Variable[i] < 58) {
-
-						// Set IMEI Variable
-						_IMEI[Buffer.Data_Order] = Buffer_Variable[i];
-
-						// Set Data Order
-						Buffer.Data_Order++;
+				// Control for IMEI
+				if (_IMEI_Start != nullptr) {
+					
+					// Set IMEI Start
+					_IMEI_Start += 7; // Skip "+CGSN: "
+					
+					// Get IMEI
+					for (int i = 0; i < 15; i++) {
+						
+						// Control for Digit
+						if (isdigit(_IMEI_Start[i])) {
+							_IMEI[i] = _IMEI_Start[i];
+						} else {
+							break;
+						}
 
 					}
 
-				}
+					// End Function
+					return true;
 
-				// End Function
-				return(true);
+				}
 
 			}
 
 			// End Function
-			return(false);
+			return false;
 
 		}
 
@@ -496,14 +531,19 @@ class AT_Command_Set_LE910C1_EUX {
 		bool CFUN(const uint8_t _Fun) {
 
 			// Control for Parameter
-			if (_Fun != 0 and _Fun != 1 and _Fun != 4 and _Fun != 5 and _Fun != 12) return(false);
+			if (_Fun != 0 and _Fun != 1 and _Fun != 4 and _Fun != 5 and _Fun != 12) {
+				
+				// End Function
+				return(false);
+
+			} 
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -526,13 +566,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			return (Buffer.Response == _AT_OK_);
 
 		}
 
@@ -540,14 +577,19 @@ class AT_Command_Set_LE910C1_EUX {
 		bool CMEE(const uint8_t _CMEE) {
 
 			// Control for Parameter
-			if (_CMEE != 0 and _CMEE != 1 and _CMEE != 2) return(false);
+			if (_CMEE != 0 and _CMEE != 1 and _CMEE != 2){
+				
+				// End Function
+				return(false);
+
+			}
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -570,34 +612,31 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			return (Buffer.Response == _AT_OK_);
 
 		}
 
 		// Get Error Code Function
-		bool CEER(uint16_t & _Code) {
+		bool CEER(uint16_t& _Code) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				25		// Buffer Size
+				0,  	// Response State
+				0,      // Read Order
+				0,      // Data Order
+				1000,   // Time Out
+				25      // Buffer Size
 			};
 
 			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
-			
+
 			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
@@ -610,24 +649,20 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
-				
+			if (Buffer.Response == _AT_OK_) {
+
 				// Handle Variables
-				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#CEER: %03d\r\n\r\nOK\r\n", &_Code);
-
-				// Control for Variable
-				if (_Variable_Count == 1) return(true);
-
-				// End Function
-				return(false);
+				if (sscanf(Buffer_Variable, "\r\n#CEER: %03d\r\n\r\nOK\r\n", &_Code) == 1) {
+					return true;
+				}
 
 			}
 
 			// End Function
-			return(false);
+			return false;
 
 		}
 
@@ -639,7 +674,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -648,7 +683,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
-			
+
 			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
@@ -662,13 +697,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			return (Buffer.Response == _AT_OK_);
 
 		}
 
@@ -676,14 +708,19 @@ class AT_Command_Set_LE910C1_EUX {
 		bool K(const uint8_t _K) {
 
 			// Control for Parameter
-			if (_K != 0 and _K != 3) return(false);
+			if (_K != 0 and _K != 3) {
+				
+				// End Function
+				return(false);
+			
+			}
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -692,7 +729,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
-			
+
 			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
@@ -706,34 +743,31 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			return (Buffer.Response == _AT_OK_);
 
 		}
 
 		// Get SIM PIN Status Function
-		bool CPIN(uint8_t & _Code) {
+		bool CPIN(uint8_t& _Code) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				30		// Buffer Size
+				0,  	// Response
+				0,      // Read Order
+				0,      // Data Order
+				1000,   // Time Out
+				30      // Buffer Size
 			};
 
 			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
-			
+
 			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
@@ -746,61 +780,57 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (Buffer.Response == _AT_OK_) {
 
 				// \r\n+CPIN: READY\r\n\r\nOK\r\n
 
 				// Declare Handle Variables
-				char _PIN_Response[15];
-
-				// Clear Handle Variables
-				memset(_PIN_Response, '\0', 15);
+				char _PIN_Response[15] = {};
 
 				// Handle Variables
 				sscanf(Buffer_Variable, "\r\n+CPIN: %s\r\n\r\nOK\r\n", _PIN_Response);
 
-				// Declare Variable
-				_Code = _SIM_UNKNOWN_;
-
-				// Control for Manufacturer Name
-				if (strstr(_PIN_Response, "READY")) _Code = _SIM_READY_;
-				else if (strstr(_PIN_Response, "SIM PIN")) _Code = _SIM_PIN_;
-				else if (strstr(_PIN_Response, "SIM PUK")) _Code = _SIM_PUK_;
+				// Control for SIM State
+				if (strstr(_PIN_Response, "READY")) {
+					_Code = _SIM_READY_;
+				} else if (strstr(_PIN_Response, "SIM PIN")) {
+					_Code = _SIM_PIN_;
+				} else if (strstr(_PIN_Response, "SIM PUK")) {
+					_Code = _SIM_PUK_;
+				} else {
+					_Code = _SIM_UNKNOWN_;
+				}
 
 				// Handle Status
-				if (_Code != 0) return(true);
-
-				// End Function
-				return(false);
+				return (_Code != _SIM_UNKNOWN_);
 
 			}
 
 			// End Function
-			return(false);
-
+			return false;
 		}
 
 		// Get ICCID Function
-		bool CCID(char * _ICCID) {
+		bool CCID(char* _ICCID) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				37		// Buffer Size
+				0,  	// Response
+				0,      // Read Order
+				0,      // Data Order
+				1000,   // Time Out
+				37      // Buffer Size
 			};
 
 			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
-			
+
 			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
@@ -813,55 +843,55 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (Buffer.Response == _AT_OK_) {
+
+				// Clear ICCID Variable
+				memset(_ICCID, '\0', 21);
 
 				// Handle for Response
-				for (size_t i = 0; i < Buffer.Size; i++) {
+				for (uint8_t i = 0; i < Buffer.Size; i++) {
 
-					// Handle IMEI
-					if (Buffer_Variable[i] > 47 and Buffer_Variable[i] < 58) {
+					// Handle ICCID
+					if (isdigit(Buffer_Variable[i])) {
 
-						// Set IMEI Variable
-						_ICCID[Buffer.Data_Order] = Buffer_Variable[i];
-
-						// Set Data Order
-						Buffer.Data_Order++;
+						// Set ICCID Variable
+						_ICCID[Buffer.Data_Order++] = Buffer_Variable[i];
 
 					}
 
 				}
 
 				// End Function
-				return(true);
+				return true;
 
 			}
 
 			// End Function
-			return(false);
+			return false;
 
 		}
 
 		// SIMDET Function
-		bool SIMDET(const bool _Function_Type, uint8_t _Mode, bool & _SIM_in_Pin_State) {
+		bool SIMDET(const bool _Function_Type, uint8_t _Mode, bool& _SIM_in_Pin_State) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				23		// Buffer Size
+				0,  	// Response
+				0,      // Read Order
+				0,      // Data Order
+				1000,   // Time Out
+				23      // Buffer Size
 			};
 
 			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
-			
+
 			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
@@ -878,36 +908,35 @@ class AT_Command_Set_LE910C1_EUX {
 				GSM_Serial->write(0x0A);
 
 				// Declare Response
-				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+				this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) return(true);
+				return (Buffer.Response == _AT_OK_);
 
-				// End Function
-				return(false);
+			}
 
-			} 
-			
 			// GET Function
 			if (_Function_Type == GET) {
+
+				// AT#SIMDET?\r\n
+				// \r\n#SIMDET: 2,1\r\n\r\nOK\r\n
+				// \r\n#SDE: 2,1\r\n\r\nOK\r\n
+				// \r\n#SDET: 2,1\r\n\r\nOK\r\n
 
 				// Send UART Command
 				GSM_Serial->print(F("AT#SIMDET?"));
 				GSM_Serial->write(0x0D);
 				GSM_Serial->write(0x0A);
 
-				// Response is 22 byte
-				// \r\n#SIMDET: 2,1\r\n\r\nOK\r\n
-
 				// Declare Response
-				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+				this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) {
+				if (Buffer.Response == _AT_OK_) {
 
 					// Define Handle Variable
-					int _SIMDET_Mode = 0;
-					int _SIMDET_State = 0;
+					uint16_t _SIMDET_Mode = 0;
+					uint16_t _SIMDET_State = 0;
 
 					// Handle Query Answer
 					uint8_t _Parsed_Variable = sscanf(Buffer_Variable, "\r\n#SIMDET: %d,%d\r\n\r\nOK\r\n", &_SIMDET_Mode, &_SIMDET_State);
@@ -917,23 +946,31 @@ class AT_Command_Set_LE910C1_EUX {
 					_SIM_in_Pin_State = false;
 
 					// Assign SIM State
-					if (_SIMDET_State == 1) _SIM_in_Pin_State = true;
+					if (_Parsed_Variable == 2) {
+						
+						// Assign Mode
+						_Mode = _SIMDET_Mode;
 
-					// End Function
-					if (_Parsed_Variable == 2) return(true);
+						// Assign State
+						if (_SIMDET_State == 0) _SIM_in_Pin_State = false;
+						if (_SIMDET_State == 1) _SIM_in_Pin_State = true;
 
-					// End Function
-					return(false);
+						// End Function
+						return true;
+
+					} else {
+
+						// End Function
+						return false;
+
+					}
 
 				}
-
-				// End Function
-				return(false);
 
 			}
 
 			// End Function
-			return(false);
+			return false;
 
 		}
 
@@ -945,7 +982,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -963,7 +1000,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// SET Function
 			if (_Function_Type == SET) {
-
+			
 				// Send UART Command
 				GSM_Serial->print(F("AT#GPIO="));
 				GSM_Serial->print(_Pin);
@@ -974,20 +1011,15 @@ class AT_Command_Set_LE910C1_EUX {
 				GSM_Serial->write(0x0D);
 				GSM_Serial->write(0x0A);
 
-				// Declare Response
-				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+				// Get Response
+				this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) return(true);
-
-				// End Function
-				return(false);
+				return (Buffer.Response == _AT_OK_);
 
 			}
 
-			// End Function
-			return(false);
-
+			return false;
 		}
 
 		// Set SLED Function
@@ -998,11 +1030,11 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				0,
+				0,
+				0,
+				1000,
+				7
 			};
 
 			// Declare Buffer Variable
@@ -1020,14 +1052,11 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0D);
 			GSM_Serial->write(0x0A);
 
-			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			// Get Response
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			return (Buffer.Response == _AT_OK_);
 
 		}
 
@@ -1039,7 +1068,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response 
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -1061,13 +1090,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			return (Buffer.Response == _AT_OK_);
 
 		}
 
@@ -1079,55 +1105,54 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
 				7		// Buffer Size
 			};
 
-			// Declare Buffer
+			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
 			// Command Chain Delay (Advice by Telit)
 			delay(20);
 
-			// Send UART Command
+			// Send UART Command (Pulse Duration: 0-65535)
 			GSM_Serial->print(F("AT#E2SLRI="));
 			GSM_Serial->print(_Pulse_Duration);
 			GSM_Serial->write(0x0D);
 			GSM_Serial->write(0x0A);
 
-			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			// Get Response
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			return (Buffer.Response == _AT_OK_);
 
 		}
 
 		// CREG Function
-		bool CREG(const bool _Function_Type, uint8_t & _Mode, uint8_t & _Stat) {
+		bool CREG(const bool _Function_Type, uint8_t& _Mode, uint8_t& _Stat) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				25		// Buffer Size
+				0,  	// Response
+				0,      // Read Order
+				0,      // Data Order
+				1000,   // Time Out
+				25      // Buffer Size
 			};
 
 			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
-			
+
 			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
@@ -1143,13 +1168,11 @@ class AT_Command_Set_LE910C1_EUX {
 				GSM_Serial->write(0x0D);
 				GSM_Serial->write(0x0A);
 
-				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+				// Get Response
+				this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) return(true);
-
-				// End Function
-				return(false);
+				return (Buffer.Response == _AT_OK_);
 
 			}
 
@@ -1161,56 +1184,42 @@ class AT_Command_Set_LE910C1_EUX {
 				GSM_Serial->write(0x0D);
 				GSM_Serial->write(0x0A);
 
-				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+				// Get Response
+				this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) {
-					
+				if (Buffer.Response == _AT_OK_) {
+
 					// Handle Variables
 					sscanf(Buffer_Variable, "\r\n+CREG: %hhu,%hhu\r\n\r\nOK\r\n", &_Mode, &_Stat);
 
 					// Handle Response
-					if (_Stat == 0) return(true);
-					else if (_Stat == 1) return(true);
-					else if (_Stat == 2) return(true);
-					else if (_Stat == 3) return(true);
-					else if (_Stat == 4) return(true);
-					else if (_Stat == 5) return(true);
-					else if (_Stat == 6) return(true);
-					else if (_Stat == 7) return(true);
-					else if (_Stat == 8) return(true);
-					else if (_Stat == 9) return(true);
-					else if (_Stat == 10) return(true);
-					else if (_Stat == 11) return(true);
-
-					// End Function
-					return (false);
+					if (_Stat >= 0 && _Stat <= 11) {
+						return true;
+					}
 
 				}
-
-				// End Function
-				return(false);
 
 			}
 
 			// End Function
-			return(false);
+			return false;
 
 		}
 
 		// Set CGDCONT Function
-		bool CGDCONT(const uint8_t _Cid, const char * _PDP_Type, const char * _APN) {
+		bool CGDCONT(const uint8_t _Cid, const char* _PDP_Type, const char* _APN) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				7		// Buffer Size
+				0,  	// Response
+				0,      // Read Order
+				0,      // Data Order
+				1000,   // Time Out
+				7       // Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1234,29 +1243,26 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
-
-			// End Function
-			return(false);
+			return (Buffer.Response == _AT_OK_);
 
 		}
 
 		// Set SGACT Function
-		bool SGACT(const uint8_t _Cid, const bool _Stat, char * _IP_Address) {
+		bool SGACT(const uint8_t _Cid, const bool _Stat, char* _IP_Address) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				60000, 	// Time Out
-				35		// Buffer Size
+				0, 		// Response State
+				0,      // Read Order
+				0,      // Data Order
+				60000,  // Time Out
+				35      // Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -1277,35 +1283,35 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (Buffer.Response == _AT_OK_) {
 
 				// \r\n#SGACT: 000.000.000.000\r\n\r\nOK\r\n
 
 				// Declare IP Segments
-				uint16_t	Segment_1 = 0;
-				uint16_t	Segment_2 = 0;
-				uint16_t	Segment_3 = 0;
-				uint16_t	Segment_4 = 0;
+				uint16_t Segment_1 = 0;
+				uint16_t Segment_2 = 0;
+				uint16_t Segment_3 = 0;
+				uint16_t Segment_4 = 0;
 
-				// Handle IP 
+				// Handle IP
 				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#SGACT: %d.%d.%d.%d\r\n\r\nOK\r\n", &Segment_1, &Segment_2, &Segment_3, &Segment_4);
-	
+
+				// Clear IP Address
+				memset(_IP_Address, '\0', 16);
+
 				// Parse IP Address
 				sprintf(_IP_Address, "%03d.%03d.%03d.%03d", Segment_1, Segment_2, Segment_3, Segment_4);
 
 				// Control for IP
-				if (_Variable_Count == 4) return (true);
+				return (_Variable_Count == 4);
 
-				// End Function
-				return (false);
-				
 			}
 
 			// End Function
-			return(false);
+			return false;
 
 		}
 
@@ -1317,22 +1323,22 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				1000, 	// Time Out
-				20		// Buffer Size
+				0,
+				0,
+				0,
+				1000,
+				20
 			};
 
 			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
-			
+
 			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
 			// Command Chain Delay (Advice by Telit)
 			delay(20);
-			
+
 			// GET Function
 			if (_Function_Type == GET) {
 
@@ -1342,59 +1348,61 @@ class AT_Command_Set_LE910C1_EUX {
 				GSM_Serial->write(0x0A);
 
 				// Declare Response
-				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+				this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// Handle for Response
-				if (_Response == _OK_) {
-
-					// AT+WS46?\r\n
-					// \r\n+WS46: 30\r\n\r\nOK\r\n
+				if (Buffer.Response == _AT_OK_) {
 
 					// Handle Variables
 					uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n+WS46: %02d\r\n\r\nOK\r\n", &_Mode);
 
-					// Control for Variable
-					if (_Variable_Count == 1) return(true);
-
-					// End Function
-					return(false);
+					// Handle Response
+					return (_Variable_Count == 1);
 
 				}
 
-				// End Function
-				return(false);
+			}
+
+			// SET Function
+			if (_Function_Type == SET) {
+
+				// Send UART Command
+				GSM_Serial->print(F("AT+WS46="));
+				GSM_Serial->print(_Mode);
+				GSM_Serial->write(0x0D);
+				GSM_Serial->write(0x0A);
+
+				// Declare Response
+				this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+				// Handle for Response
+				return (Buffer.Response == _AT_OK_);
 
 			}
 
 			// End Function
-			return(false);
+			return false;
 
 		}
 
 		// RFSTS Function
 		bool RFSTS(uint16_t & _MCC, uint16_t & _MNC, uint16_t & _RSSI, uint8_t & _Signal_Level, uint32_t & _Cell_ID, uint16_t & _TAC) {
 
-			// Declare Variable Structure
-			struct Operator_Structure {
-				int		Temp_Numeric;
-				char	Temp_String[50];
-			} Handle_Buffer;
-
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
-				140		// Buffer Size
+				120		// Buffer Size
 			};
 
 			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
-			
+
 			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
@@ -1406,15 +1414,17 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0D);
 			GSM_Serial->write(0x0A);
 
+			delay(20);
+
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (Buffer.Response == _AT_OK_) {
 
 				// AT#RFSTS\r\n
-				// \r\n#RFSTS:"286 01",6400,-100,-66,-18,2242,FF,0,128,10,1,859315,"286016339811626","TR TURKCELL",3,20,720,3240,-5\r\n\r\nOK\r\n
-				// \r\n#RFSTS: "286 01",6400,-97,-66,-12,2242,,128,3,1,0B5D11F,"286016339811626","Turkcell",3,20,116\r\n\r\nOK\r\n
+				// \r\n#RFSTS: "286 01",1795,-101,-67,-15,2242,,128,3,1,0B5D121,"286016339612498","Turkcell",3,3,108\r\n\r\nOK\r\n
+				// \r\n#RFSTS: "286 01",1651,-101,-66,-15,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,121\r\n\r\nOK\r\n
 
 				// #RFSTS:<PLMN>,<EARFCN>,<RSRP>,<RSSI>,<RSRQ>,<TAC>,<RAC>,[<TXPWR>],<DR X>, <MM>,<RRC>,<CID>,<IMSI>,[<NetNameAsc>],<SD>,<ABND>,<T3402>,<T3412>,<SI NR>
 				//
@@ -1438,14 +1448,161 @@ class AT_Command_Set_LE910C1_EUX {
 				// <T3412> 		- Timer T3412 in seconds										- 3240
 				// <SI NR> 		- Signal-to-Interface plus Noise Ratio							- -5
 
+				// \r\n#RFSTS: "286 01",1651,-101,-66,-15,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,121\r\n\r\nOK\r\n
+
+
+				// \r\n#RFSTS: "286 01",1651,-100,-66,-14,2242,,128,3,0,0B5D120,"286016339612498","Turkcell",3,3,126\r\n\r\nOK\r\n
+				// \r\n#RFSTS: "286 01",1795,-101,-73,-10,2242,,128,3,0,0B5D121,"286016339612498","Turkcell",3,3,138\r\n\r\nOK\r\n
+				// \r\n#RFSTS: "286 01",100,-98,-68,-10,2242,227,128,3,1,0B5D125,"286016339612498","Turkcell",3,1,120\r\n\r\nOK\r\n
+				// \r\n#RFSTS: "286 01",1651,-99,-63,-14,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,101\r\n\r\nOK\r\n
+
+				// \r\n#RFSTS: "286 01",1651,-99,-68,-12,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,128\r\n\r\nOK\r\n	[FAIL]
+				// \r\n#RFSTS: "286 01",1795,-102,-69,-15,2242,,128,3,1,0B5D121,"286016339612498","Turkcell",3,3,102\r\n\r\nOK\r\n	[FAIL]
+				// \r\n#RFSTS: "286 01",1651,-99,-67,-12,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,126\r\n\r\nOK\r\n 	[FAIL]
+				// \r\n#RFSTS: "286 01",1651,-99,-64,-14,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,107\r\n\r\nOK\r\n	[FAIL]
+
+
+
 				// Handle Variables
-				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#RFSTS: \"%03d %02d\",%05d,-%03d,-%03d,-%02d,%05d,%s,%03d,%04d,%03d,%02d,%06X,\"%s\",\"%s\",%02d,%03d,%04d\r\n\r\nOK\r\n", &_MCC, &_MNC, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &_RSSI, &Handle_Buffer.Temp_Numeric, &_TAC, Handle_Buffer.Temp_String, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &_Cell_ID, Handle_Buffer.Temp_String, Handle_Buffer.Temp_String, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric, &Handle_Buffer.Temp_Numeric);
+				char * _Segment_1 = strtok(Buffer_Variable, ",");	// \r\n#RFSTS: "286 01"
+				strtok(NULL, ",");									// 1651
+				strtok(NULL, ",");									// -101
+				char * _Segment_4 = strtok(NULL, ",");				// -66
+				strtok(NULL, ",");									// -15
+				char * _Segment_6 = strtok(NULL, ",");				// 2242
+				strtok(NULL, ",");									//	
+				strtok(NULL, ",");									// 128
+				strtok(NULL, ",");									// 3
+				strtok(NULL, ",");									// 1
+				char * _Segment_11 = strtok(NULL, ",");				// 0B5D120
+
+				// Handle MCC, MNC
+				_MCC = 0; _MNC = 0;
+				sscanf(_Segment_1, "\r\n#RFSTS: \"%03d %02d\"", &_MCC, &_MNC);
+
+				// Handle RSSI
+				_RSSI = 0;
+				sscanf(_Segment_4, "-%03d", &_RSSI);
 
 				// Calculate Signal Level
+				_Signal_Level = 0;
 				_Signal_Level = this->RSSI_to_Signal_Quality(_RSSI * -1);
 
-				// Control for Variable
-				if (_Variable_Count == 20) return(true);
+				// Handle TAC
+				_TAC = 0;
+				sscanf(_Segment_6, "%05d", &_TAC);
+
+				// Handle Cell ID
+				_Cell_ID = 0;
+				sscanf(_Segment_11, "%lX", &_Cell_ID);
+
+				// End Function
+				return(true);
+
+			}
+
+			// End Function
+			return(false);
+
+		}
+
+		// MONI Function
+		bool MONI(uint16_t & _TAC, uint32_t & _Cell_ID, uint16_t & _RSSI, uint8_t & _Signal_Level, uint32_t & _PCell_ID) {
+
+			// Clear UART Buffer
+			this->Clear_UART_Buffer();
+
+			// Declare Buffer Object
+			Serial_Buffer Buffer = {
+				0, 		// Response State
+				0, 		// Read Order
+				0, 		// Data Order
+				1000, 	// Time Out
+				130		// Buffer Size
+			};
+
+			// Declare Buffer Variable
+			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
+			memset(Buffer_Variable, '\0', Buffer.Size);
+
+			// Command Chain Delay (Advice by Telit)
+			delay(20);
+
+			// Send UART Command
+			GSM_Serial->print(F("AT#MONI"));
+			GSM_Serial->write(0x0D);
+			GSM_Serial->write(0x0A);
+
+			// Declare Response
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+			// Handle for Response
+			if (Buffer.Response == _AT_OK_) {
+
+				// Control for GSM or LTE
+				if (strstr(Buffer_Variable, "bsic") != NULL) {
+
+					// GSM network
+					// #MONI: <netname> BSIC:<bsic> RxQual:<qual> LAC:<lac> Id:<id> ARFCN:<arfcn> PWR:<dBm> dBm TA: <timadv>
+
+				} else {
+
+					// LTE network
+					// #MONI: <netmame> RSRP:<rsrp> RSRQ:<rsrq> TAC:<tac> Id:<id> EARFCN:<earfcn> PWR:<dBm> DRX:<drx> pci:<physicalCellId> QRxLevMin:<QRxLevMin>
+
+					// <netname>			- network name
+					// <id>					- cell identifier
+					// <dBm>				- received signal strength in dBm
+					// <drx>				- Discontinuous reception cycle length
+					// <physicalCellId>		- physical cell identifier
+					// <rsrp>				- Reference Signal Received Power
+					// <rsrq>				- Reference Signal Received Quality
+					// <tac>				- Tracking Area Code
+					// <earfcn>				- E-UTRA Absolute Radio Frequency Channel Number
+					// <QRxLevMin>			- Minimum required received signal level
+
+					// AT#MONI\r\n
+					// \r\n#MONI: Turkcell RSRP:-97 RSRQ:-11 TAC:2242 Id:0B5D125 EARFCN:100 PWR:-66dbm DRX:128 pci:335 QRxLevMin:0\r\n\r\nOK\r\n
+
+					// Handle Variables
+					strtok(Buffer_Variable, " ");				// \r\n#MONI:
+					strtok(NULL, " ");							// Turkcell
+					strtok(NULL, " ");							// RSRP:-97
+					strtok(NULL, " ");							// RSRQ:-11
+					char * _Segment_5 = strtok(NULL, " ");		// TAC:2242
+					char * _Segment_6 = strtok(NULL, " ");		// Id:0B5D125
+					strtok(NULL, " ");							// EARFCN:100
+					char * _Segment_8 = strtok(NULL, " ");		// PWR:-66dbm
+					strtok(NULL, " ");							// DRX:128
+					char * _Segment_10 = strtok(NULL, " ");		// pci:335
+					strtok(NULL, " ");							// QRxLevMin:0\r\n\r\nOK\r\n
+
+					// Handle TAC
+					_TAC = 0;
+					sscanf(_Segment_5, "TAC:%05d", &_TAC);
+
+					// Handle Cell ID
+					_Cell_ID = 0;
+					sscanf(_Segment_6, "Id:%lX", &_Cell_ID);
+
+					// Handle RSSI
+					_RSSI = 0;
+					sscanf(_Segment_8, "PWR:-%03ddbm", &_RSSI);
+
+					// Handle PCell ID
+					_PCell_ID = 0;
+					sscanf(_Segment_10, "pci:%lX", &_PCell_ID);
+
+					// Calculate Signal Level
+					_Signal_Level = 0;
+					_Signal_Level = this->RSSI_to_Signal_Quality(_RSSI * -1);
+
+					// End Function
+					return(true);
+
+				}
 
 				// End Function
 				return(false);
@@ -1465,7 +1622,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -1498,13 +1655,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -1516,7 +1670,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -1549,13 +1703,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -1567,7 +1718,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -1600,13 +1751,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -1621,11 +1769,11 @@ class AT_Command_Set_LE910C1_EUX {
 
 				// Declare Buffer Object
 				Serial_Buffer Buffer = {
-					false, 	// Response State
+					0, 		// Response
 					0, 		// Read Order
 					0, 		// Data Order
 					1000, 	// Time Out
-					7		// Buffer Size
+					15		// Buffer Size TODO: test
 				};
 
 				// Declare Buffer Variable
@@ -1647,56 +1795,10 @@ class AT_Command_Set_LE910C1_EUX {
 				GSM_Serial->write(0x0A);
 
 				// Declare Response
-				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-				// Handle for Response
-				if (_Response == _OK_) return(true);
+				this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 				// End Function
-				return(false);
-
-			}
-
-			// GET Function
-			if (_Function_Type == GET) {
-
-				// Declare Buffer Object
-				Serial_Buffer Buffer = {
-					false, 	// Response State
-					0, 		// Read Order
-					0, 		// Data Order
-					1000, 	// Time Out
-					200		// Buffer Size
-				};
-
-				// Declare Buffer Variable
-				char Buffer_Variable[Buffer.Size];
-
-				// Clear Buffer Variable
-				memset(Buffer_Variable, '\0', Buffer.Size);
-
-				// Command Chain Delay (Advice by Telit)
-				delay(20);
-
-				// Send UART Command
-				GSM_Serial->print(F("AT#FRWL?"));
-				GSM_Serial->write(0x0D);
-				GSM_Serial->write(0x0A);
-
-				// Declare Response
-				uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-				// Handle for Response
-				if (_Response == _OK_) return(true);
-
-				// #define	_AT_FRWL_1_IP_			"213.014.250.214"
-				// #define	_AT_FRWL_2_IP_			"167.099.137.254"
-				// #define	_AT_FRWL_3_IP_			"045.133.037.013"
-
-				// AT#FRWL?\r\n\r\n#FRWL: "213.12.250.214","255.255.255.0"\r\n\r\n#FRWL: "167.81.137.254","255.255.255.0"\r\n\r\n#FRWL: "37.133.31.11","255.255.255.0"\r\n\r\nOK\r\n
-
-				// End Function
-				return (true);
+				return(Buffer.Response == _AT_OK_);
 
 			}
 
@@ -1713,11 +1815,11 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
-				7		// Buffer Size
+				15		// Buffer Size TODO: test
 			};
 
 			// Declare Buffer Variable
@@ -1736,25 +1838,22 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
 		// Get Clock Function
-		bool CCLK(uint16_t & _Year, uint16_t & _Month, uint16_t & _Day, uint16_t & _Hour, uint16_t & _Minute, uint16_t & _Second, uint16_t & _Time_Zone) {
+		bool CCLK(uint16_t& _Year, uint16_t& _Month, uint16_t& _Day, uint16_t& _Hour, uint16_t& _Minute, uint16_t& _Second, uint16_t& _Time_Zone) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -1763,7 +1862,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
-			
+
 			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
@@ -1776,10 +1875,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (Buffer.Response == _AT_OK_) {
 
 				/*
 				--> AT+CCLK?\r\n
@@ -1790,23 +1889,15 @@ class AT_Command_Set_LE910C1_EUX {
 				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n+CCLK: \"%02d/%02d/%02d,%02d:%02d:%02d+%02d\"\r\n\r\nOK\r\n", &_Year, &_Month, &_Day, &_Hour, &_Minute, &_Second, &_Time_Zone);
 
 				// Control for Variables
-				if (_Year > 24 and _Year < 22) return(false);	
-				if (_Month > 12 and _Month < 0) return(false);	
-				if (_Day > 31 and _Day < 0) return(false);	
-				if (_Hour > 24 and _Hour < 0) return(false);	
-				if (_Minute > 59 and _Minute < 0) return(false);	
-				if (_Second > 59 and _Second < 0) return(false);
+				if (_Year > 24 || _Year < 22 || _Month > 12 || _Month < 0 || _Day > 31 || _Day < 0 || _Hour > 24 || _Hour < 0 || _Minute > 59 || _Minute < 0 || _Second > 59 || _Second < 0) return false;
 
 				// Control for Variable
-				if (_Variable_Count == 7) return(true);
-
-				// End Function
-				return (false);
+				if (_Variable_Count == 7) return true;
 
 			}
 
 			// End Function
-			return(false);
+			return false;
 
 		}
 
@@ -1818,7 +1909,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -1841,13 +1932,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -1859,7 +1947,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -1882,13 +1970,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -1900,7 +1985,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -1923,13 +2008,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -1941,7 +2023,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response
 				0, 		// Read Order
 				0, 		// Data Order
 				140000, // Time Out
@@ -1976,13 +2058,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -1994,7 +2073,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				5000, 	// Time Out
@@ -2017,13 +2096,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -2035,7 +2111,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -2064,13 +2140,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -2082,7 +2155,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				15000, 	// Time Out
@@ -2107,19 +2180,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) {
-				
-
-				// End Function
-				return (true);
-
-			}
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -2131,7 +2195,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -2154,10 +2218,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (Buffer.Response == _AT_OK_) {
 
 				// \r\n#SS: 2,4,5.26.173.230,80\r\n\r\nOK\r\n
 				// \r\n#SS: 2,2,5.26.173.230,80,213.14.250.214,54883\r\n\r\nOK\r\n
@@ -2183,13 +2247,19 @@ class AT_Command_Set_LE910C1_EUX {
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
-			Serial_Buffer Buffer = {false, 0, 0, 5000};
+			Serial_Buffer Buffer = {
+				0, 
+				0, 
+				0, 
+				5000,
+				20
+			};
 
 			// Declare Buffer Variable
-			char Buffer_Variable[255];
+			char Buffer_Variable[Buffer.Size];
 
 			// Clear Buffer Variable
-			memset(Buffer_Variable, '\0', 255);
+			memset(Buffer_Variable, '\0', Buffer.Size);
 
 			// Command Chain Delay (Advice by Telit)
 			delay(20);
@@ -2201,10 +2271,65 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+			// End Function
+			return(Buffer.Response == _AT_OK_);
+
+		}
+
+		// Socket Info Function
+		bool SI(const uint8_t _ConnID, uint16_t & _Buffer) {
+
+			// Clear UART Buffer
+			this->Clear_UART_Buffer();
+
+			// Declare Buffer Object
+			Serial_Buffer Buffer = {
+				0,  	// Response State
+				0,      // Read Order
+				0,      // Data Order
+				1000,   // Time Out
+				50      // Buffer Size
+			};
+
+			// Declare Buffer Variable
+			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
+			memset(Buffer_Variable, '\0', Buffer.Size);
+
+			// Command Chain Delay (Advice by Telit)
+			delay(20);
+
+			// Send UART Command
+			GSM_Serial->print(F("AT#SI="));
+			GSM_Serial->print(String(_ConnID));
+			GSM_Serial->write(0x0D);
+			GSM_Serial->write(0x0A);
+
+			// Declare Response
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) return(true);
+			if (Buffer.Response == _AT_OK_) {
+
+				// \r\n#SI: 2,51,0,13900,0\r\n\r\nOK\r\n
+
+				// Handle Variables
+				strtok(Buffer_Variable, ",");				// \r\n#SI: 2
+				strtok(NULL, ",");							// 51
+				strtok(NULL, ",");							// 0
+				char * _Buffer_Size = strtok(NULL, ",");	// 13900
+
+				// Handle Buffer Size
+				_Buffer = 0;
+				sscanf(_Buffer_Size, "%5d", &_Buffer);
+
+				// End Function
+				return(true);
+
+			}
 
 			// End Function
 			return(false);
@@ -2212,14 +2337,14 @@ class AT_Command_Set_LE910C1_EUX {
 		}
 
 		// Socket Pack Send Function
-		bool SSEND(const uint8_t _ConnID, const uint8_t _Header_Type, const uint16_t _Response_Code, const char * _IP, const char * _URL, const char * _Data_Pack) {
+		bool SSEND(const uint8_t _ConnID, const uint8_t _Method_Type, const uint16_t _Response_Code, const char * _URL, const char * _Data_Pack) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer_Set = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				2000, 	// Time Out
@@ -2238,80 +2363,55 @@ class AT_Command_Set_LE910C1_EUX {
 			// Send UART Command
 			GSM_Serial->print(F("AT#SSEND="));
 			GSM_Serial->print(_ConnID);
-			GSM_Serial->print(F("\r\n"));
+			GSM_Serial->write(0x0D);
+			GSM_Serial->write(0x0A);
 
-			// Read Current Time
-			uint32_t Current_Time = millis();
+			// Declare Response
+			this->Read_UART_Buffer(&Buffer_Set, Buffer_Variable);
 
-			// Response Wait Delay
-			delay(10);
+			// Handle for Response
+			if (Buffer_Set.Response == _AT_SD_PROMPT_) {
 
-			// Read UART Response
-			while (!Buffer_Set.Response) {
+				// Send Delay
+				delay(10);
 
-				// Read Serial Char
-				Buffer_Variable[Buffer_Set.Read_Order] = GSM_Serial->read();
+				// Print HTTP Header
+				this->Header(_Method_Type, _Response_Code, _URL, _Data_Pack);
 
-				// Control for <OK> Response
-				if (Buffer_Variable[Buffer_Set.Read_Order - 1] == '>' and Buffer_Variable[Buffer_Set.Read_Order] == ' ') Buffer_Set.Response = true;
+				// Send Data Pack
+				GSM_Serial->print(_Data_Pack);
 
-				// Increase Read Order
-				if (Buffer_Variable[Buffer_Set.Read_Order] > 31 and Buffer_Variable[Buffer_Set.Read_Order] < 127) Buffer_Set.Read_Order += 1;
+				// Print End Char
+				GSM_Serial->print((char)26);
 
-				// Handle for timeout
-				if (millis() - Current_Time >= Buffer_Set.Time_Out) return(false);
+				// Declare Buffer Object
+				Serial_Buffer Buffer_Get = {
+					0, 		// Response State
+					0, 		// Read Order
+					0, 		// Data Order
+					2000, 	// Time Out
+					7		// Buffer Size
+				};
 
-			}
+				// Declare Buffer Variable
+				char Buffer_Variable[Buffer_Get.Size];
 
-			// Send Delay
-			delay(10);
+				// Clear Buffer Variable
+				memset(Buffer_Variable, '\0', Buffer_Get.Size);
 
-			// Print HTTP Header
-			this->Header(_Header_Type, _Response_Code, _IP, _URL, _Data_Pack);
+				// Command Chain Delay (Advice by Telit)
+				delay(20);
 
-			// Send Data Pack
-			GSM_Serial->print(_Data_Pack);
+				// Declare Response
+				this->Read_UART_Buffer(&Buffer_Get, Buffer_Variable);
 
-			// Print End Char
-			GSM_Serial->print((char)26);
-
-			// Declare Buffer Object
-			Serial_Buffer Buffer_Get = {
-				false, 	// Response State
-				0, 		// Read Order
-				0, 		// Data Order
-				2000, 	// Time Out
-				7		// Buffer Size
-			};
-
-			// Declare Buffer
-			memset(Buffer_Variable, '\0', Buffer_Get.Size);
-
-			// Command Chain Delay (Advice by Telit)
-			delay(20);
-
-			// Read Current Time
-			Current_Time = millis();
-
-			// Read UART Response
-			while (!Buffer_Get.Response) {
-
-				// Read Serial Char
-				Buffer_Variable[Buffer_Get.Read_Order] = GSM_Serial->read();
-
-				// Control for <OK> Response
-				Buffer_Get.Response = this->Find(_OK_, Buffer_Variable, Buffer_Get.Read_Order);
-
-				// Increase Read Order
-				if (isAscii(Buffer_Variable[Buffer_Get.Read_Order])) Buffer_Get.Read_Order++;
-
-				// Handle for timeout
-				if (millis() - Current_Time >= Buffer_Get.Time_Out) return(false);
+				// End Function
+				return(Buffer_Get.Response == _AT_OK_);
 
 			}
 
 			// End Function
-			return (true);
+			return (false);
 
 		}
 
@@ -2323,18 +2423,12 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0,		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
-				5000, 	// Time Out
-				255		// Buffer Size
+				5000,	// Time Out
+				1023	// Buffer Size
 			};
-
-			// Declare Buffer Variable
-			char Buffer_Variable[Buffer.Size];
-
-			// Clear Buffer Variable
-			memset(Buffer_Variable, '\0', Buffer.Size);
 
 			// Command Chain Delay (Advice by Telit)
 			delay(20);
@@ -2347,66 +2441,14 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0D);
 			GSM_Serial->write(0x0A);
 
-			// Read Current Time
-			const uint32_t Current_Time = millis();
+			// Declare Response
+			this->Read_UART_Buffer(&Buffer, _Data);
 
-			// Response Wait Delay
-			delay(2);
-
-			// Read UART Response
-			while (!Buffer.Response) {
-
-				// Read Serial Char
-				Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
-
-				// Control for <OK> Response
-				Buffer.Response = this->Find(_OK_, Buffer_Variable, Buffer.Read_Order);
-
-				// Increase Read Order
-				if (isAscii(Buffer_Variable[Buffer.Read_Order])) Buffer.Read_Order++;
-
-				// Handle for timeout
-				if (millis() - Current_Time >= Buffer.Time_Out) return(false);
-
-			}
-
-			// Declare Data Handle Variable
-			bool Data_Handle = false;
-
-			// Declare Data Order
-			int Data_Order = 0;
-
-			// \r\n#SRECV: 2,129\r\nPOST / HTTP/1.1\r\nHost: 5.26.173.230\r\nContent-Length: 70\r\n\r\n{\n    "Request": {\n        "Event": 900,\n        "Firmware": 6\n    }\n}\r\n\r\nOK\r\n
-
-			// Control for Buffer
-			for (uint16_t i = 10; i <= Buffer.Read_Order; i++) {
-
-				// Handle JSON Data
-				if (Buffer_Variable[i] == '{') Data_Handle = true;
-
-				// Get Data
-				if (Data_Handle) {
-
-					// Handle for Space
-					if (Buffer_Variable[i] != ' ' and Buffer_Variable[i] != '\n' and Buffer_Variable[i] != '\r') {
-
-						// Set Data
-						_Data[Data_Order] = Buffer_Variable[i];
-						
-						// Increase Data Order
-						Data_Order += 1;
-
-					}
-
-				}
-
-				// Handle JSON Data
-				if (Buffer_Variable[i-2] == '}' and Buffer_Variable[i-1] == '\r' and Buffer_Variable[i] == '\n') Data_Handle = false;
-
-			}
+			// Handle for Response
+			if (Buffer.Response == _AT_OK_) return (true);
 
 			// End Function
-			return (true);
+			return (false);
 
 		}
 
@@ -2415,7 +2457,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				50000, 	// Time Out
@@ -2440,10 +2482,10 @@ class AT_Command_Set_LE910C1_EUX {
 				Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
 
 				// Handle for Message End
-				if (Buffer.Read_Order > 5 and Buffer_Variable[Buffer.Read_Order - 1] == '\r' and Buffer_Variable[Buffer.Read_Order] == '\n') Buffer.Response = true;
+				if (Buffer.Read_Order > 5 && Buffer_Variable[Buffer.Read_Order - 1] == '\r' && Buffer_Variable[Buffer.Read_Order] == '\n') Buffer.Response = true;
 
 				// Increase Read Order
-				if (Buffer_Variable[Buffer.Read_Order] > 31 and Buffer_Variable[Buffer.Read_Order] < 127) Buffer.Read_Order += 1;
+				if (Buffer_Variable[Buffer.Read_Order] > 31 && Buffer_Variable[Buffer.Read_Order] < 127) Buffer.Read_Order += 1;
 				if (Buffer_Variable[Buffer.Read_Order] == '\r') Buffer.Read_Order += 1;
 				if (Buffer_Variable[Buffer.Read_Order] == '\n') Buffer.Read_Order += 1;
 
@@ -2465,19 +2507,81 @@ class AT_Command_Set_LE910C1_EUX {
 			return(false);
 
 		}
+		bool SRING(void) {
+
+			// Declare Buffer Object
+			Serial_Buffer Buffer = {
+				0, 		// Response State
+				0, 		// Read Order
+				0, 		// Data Order
+				50000, 	// Time Out
+				20		// Buffer Size
+			};
+
+			// Declare Buffer Variable
+			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
+			memset(Buffer_Variable, '\0', Buffer.Size);
+
+			// Read Current Time
+			const uint32_t Current_Time = millis();
+
+			// \r\nSRING: 3,108\r\n
+
+			// Read UART Response
+			while (!Buffer.Response) {
+
+				// Read Serial Char
+				Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
+
+				// Handle for Message End
+				if (Buffer.Read_Order > 5 && Buffer_Variable[Buffer.Read_Order - 1] == '\r' && Buffer_Variable[Buffer.Read_Order] == '\n') Buffer.Response = true;
+
+				// Increase Read Order
+				if (Buffer_Variable[Buffer.Read_Order] > 31 && Buffer_Variable[Buffer.Read_Order] < 127) Buffer.Read_Order += 1;
+				if (Buffer_Variable[Buffer.Read_Order] == '\r') Buffer.Read_Order += 1;
+				if (Buffer_Variable[Buffer.Read_Order] == '\n') Buffer.Read_Order += 1;
+
+				// Handle for timeout
+				if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+
+			}
+
+			// Control for SRING
+			if (strstr(Buffer_Variable, "\r\nSRING") != NULL) return(true);
+
+			// End Function
+			return(false);
+
+		}
 
 		// Send HTTP Pack Header Function
-		bool Header(const uint8_t _Header_Type, const uint16_t _Response_Code, const char *_IP, const char *_URL, const char *_Data) {
+		bool Header(const uint8_t _Method, const uint16_t _Response_Code, const char * _URL, const char *_Data) {
 
-			// Handle Type
-			if (_Header_Type == 1) {
+			// Control for Method
+			if (_Method == HTTP_RESPONSE) {
 
 				// Select Response Code
-				if (_Response_Code == 200) GSM_Serial->print(F("HTTP/1.1 200 OK\r\n"));
-				if (_Response_Code == 202) GSM_Serial->print(F("HTTP/1.1 202 Accepted\r\n"));
-				if (_Response_Code == 400) GSM_Serial->print(F("HTTP/1.1 400 Bad Request\r\n"));
-				if (_Response_Code == 405) GSM_Serial->print(F("HTTP/1.1 405 Method Not Allowed\r\n"));
-				if (_Response_Code == 406) GSM_Serial->print(F("HTTP/1.1 406 Not Acceptable\r\n"));
+				switch (_Response_Code) {
+					case 200:
+						GSM_Serial->print(F("HTTP/1.1 200 OK\r\n"));
+						break;
+					case 202:
+						GSM_Serial->print(F("HTTP/1.1 202 Accepted\r\n"));
+						break;
+					case 400:
+						GSM_Serial->print(F("HTTP/1.1 400 Bad Request\r\n"));
+						break;
+					case 405:
+						GSM_Serial->print(F("HTTP/1.1 405 Method Not Allowed\r\n"));
+						break;
+					case 406:
+						GSM_Serial->print(F("HTTP/1.1 406 Not Acceptable\r\n"));
+						break;
+					default:
+						break;
+				}
 
 				// Print Connection Header
 				GSM_Serial->print(F("Connection: close\r\n"));
@@ -2486,41 +2590,65 @@ class AT_Command_Set_LE910C1_EUX {
 				GSM_Serial->print(F("Content-Type: application/json\r\n"));
 
 				// Print User Agent
-				GSM_Serial->print(F("User-Agent: STF-PowerStat\r\n"));
+				GSM_Serial->print(F("User-Agent: PostOffice\r\n"));
 
 				// End of Header
 				GSM_Serial->print(F("\r\n"));
 
 				// End Function
-				return(true);
+				return true;
 
-			} else if (_Header_Type == 2) {
+			} else if (_Method == HTTP_POST) {
 
 				// Print HTTP Header
-				GSM_Serial->print(F("POST ")); GSM_Serial->print(_URL); GSM_Serial->print(F(" HTTP/1.1\r\n"));
+				GSM_Serial->print(F("POST "));
+				GSM_Serial->print(_URL);
+				GSM_Serial->print(F(" HTTP/1.1\r\n"));
 
 				// Print Host
-				GSM_Serial->print(F("Host: ")); GSM_Serial->print(_IP); GSM_Serial->print(F("\r\n"));
+				GSM_Serial->print(F("Host: "));
+				GSM_Serial->print(_PostMan_Server_);
+				GSM_Serial->print(F("\r\n"));
 
 				// Print Content Length
-				GSM_Serial->print(F("Content-Length: ")); GSM_Serial->print(String(_Data).length()); GSM_Serial->print(F("\r\n"));
+				GSM_Serial->print(F("Content-Length: "));
+				GSM_Serial->print(String(_Data).length());
+				GSM_Serial->print(F("\r\n"));
 
 				// Print Content Type
 				GSM_Serial->print(F("Content-Type: application/json\r\n"));
 
 				// Print User Agent
-				GSM_Serial->print(F("User-Agent: PowerStat\r\n"));
+				GSM_Serial->print(F("User-Agent: PostOffice\r\n"));
 
 				// End of Header
 				GSM_Serial->print(F("\r\n"));
 
 				// End Function
-				return(true);
+				return true;
+
+			} else if (_Method == HTTP_GET) {
+
+				// Print HTTP Header
+				GSM_Serial->print(F("GET "));
+				GSM_Serial->print(_URL);
+				GSM_Serial->print(F(" HTTP/1.1\r\n"));
+
+				// Print Host
+				GSM_Serial->print(F("Host: "));
+				GSM_Serial->print(_PostMan_Server_);
+				GSM_Serial->print(F("\r\n"));
+
+				// End of Header
+				GSM_Serial->print(F("\r\n"));
+
+				// End Function
+				return true;
 
 			}
 
 			// End Function
-			return(false);
+			return false;
 
 		}
 
@@ -2532,7 +2660,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				500000, // Time Out
@@ -2554,13 +2682,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -2572,7 +2697,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				500000,	// Time Out
@@ -2597,13 +2722,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -2615,7 +2737,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				500000, // Time Out
@@ -2641,10 +2763,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (Buffer.Response == _AT_OK_) {
 
 				// \r\n#FTPFSIZE: 174945\r\n\r\nOK\r\n
 
@@ -2669,7 +2791,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				100000,	// Time Out
@@ -2696,13 +2818,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -2714,7 +2833,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				100000,	// Time Out
@@ -2744,13 +2863,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -2762,7 +2878,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				15000,	// Time Out
@@ -2785,10 +2901,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// Handle for Response
-			if (_Response == _OK_) {
+			if (Buffer.Response == _AT_OK_) {
 				
 				// \r\n#FTPRECV: 200\r\n20202055\r\n:100BA00020202020000D0A002C002C002C00415495\r\n:100BB00023534C3D000D0A004154234532534C52FF\r\n:100BC000493D000D0A00415423534C4544534156BE\r\n:100BD000000D0A00415423534C45443D000D0A00CA\r\n:100BE0004\r\n\r\nOK\r\n
 				// \r\n+CME ERROR: 614\r\n	
@@ -2854,7 +2970,6 @@ class AT_Command_Set_LE910C1_EUX {
 				// End Function
 				return(false);
 
-
 			}
 
 			// End Function
@@ -2870,7 +2985,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				1000, 	// Time Out
@@ -2893,13 +3008,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -2911,7 +3023,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				500000,	// Time Out
@@ -2934,13 +3046,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -2952,15 +3061,17 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				5000, 	// Time Out
 				7		// Buffer Size
 			};
 
-			// Declare Buffer
+			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
 			// Command Chain Delay (Advice by Telit)
@@ -2973,13 +3084,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 
@@ -2991,15 +3099,17 @@ class AT_Command_Set_LE910C1_EUX {
 
 			// Declare Buffer Object
 			Serial_Buffer Buffer = {
-				false, 	// Response State
+				0, 		// Response State
 				0, 		// Read Order
 				0, 		// Data Order
 				5000, 	// Time Out
 				7		// Buffer Size
 			};
 
-			// Declare Buffer
+			// Declare Buffer Variable
 			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
 			memset(Buffer_Variable, '\0', Buffer.Size);
 
 			// Command Chain Delay (Advice by Telit)
@@ -3011,13 +3121,10 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0A);
 
 			// Declare Response
-			uint8_t _Response = this->Read_UART_Buffer(&Buffer, Buffer_Variable);
-
-			// Handle for Response
-			if (_Response == _OK_) return(true);
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
 
 			// End Function
-			return(false);
+			return(Buffer.Response == _AT_OK_);
 
 		}
 

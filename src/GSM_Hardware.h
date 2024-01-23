@@ -1,57 +1,90 @@
-// Library include guard
-#pragma once
-
 // Define Arduino Library
 #ifndef __Arduino__
 	#include <Arduino.h>
 #endif
 
-// Hardware Functions
-class Hardware {
+// Include Configurations
+#include "Config/PinOut.h"
 
+// Define Configurations
+#define ENABLE  true
+#define DISABLE false
+
+// Hardware Functions
+class GSM_Hardware {
+
+    // Public Context
 	public:
 
-		// GSM_RING 		- PJ2
-		// GSM_PWMon 		- PJ3
-		// GSM_SWReady		- PJ4
-		// GSM_COMM_ENABLE	- PJ5
-		// GSM_ON_OFF		- PJ6
-		// GSM_SDOWN		- PJ7
-		// 3V8_EN			- PE2
-
 		// Constractor
-		Hardware(void) {
+		GSM_Hardware(void) {
 
 
 		}
 
-		// Enable Communication Buffer.
-		void Communication(const bool _State) {
+		// SD Multiplexer Function
+		void SD_Multiplexer(const bool _State) {
 
-			// Enable Communication 
-			if (_State) PORTJ &= 0b11011111;
+			// Control for SD Sense
+			if (_State) {
 
-			// Disable Communication
-			if (!_State) PORTJ |= 0b00100000;
+				// Set SD_EN
+				PORT_SD_EN |= (1 << PIN_SD_EN);
+
+			} else {
+
+				// Clear SD_EN
+				PORT_SD_EN &= ~(1 << PIN_SD_EN);
+
+			}
+
+			// SD Wait Delay
+			delay(200);
 
 		}
 
 		// Power Switch
-		void Power_Switch(const bool _State) {
+		void Power_Switch(const bool _State = false) {
 
-			// Set GSM Power Enable
-			if (_State) PORTE |= 0b00000100;
+			// Control for _State
+			if (_State) {
 
-			// Set GSM Power Disable
-			if (!_State) PORTE &= 0b11111011;
-		
+				// Set PIN_EN_3V8 pin HIGH
+				PORT_EN_3V8 |= (1 << PIN_EN_3V8);
+
+
+			} else {
+
+				// Set PIN_EN_3V8 pin LOW
+				PORT_EN_3V8 &= ~(1 << PIN_EN_3V8);
+
+			}
+
+		}
+
+		// Enable Communication Buffer.
+		void Communication(const bool _State = false) {
+
+			// Control for _State
+			if (_State) {
+
+				// Set GSM_COMM_EN pin LOW
+				PORT_GSM_COMM_EN &= ~(1 << PIN_GSM_COMM_EN);
+
+			} else {
+
+				// Set GSM_COMM_EN pin HIGH
+				PORT_GSM_COMM_EN |= (1 << PIN_GSM_COMM_EN);
+
+			}
+
 		}
 
 		// On or Off Modem.
 		void OnOff(const uint16_t _Time) {
 
-			// Set On/Off Signal HIGH [PJ6]
-			PORTJ |= 0b01000000;
+			// Set PIN_GSM_ONOFF Signal HIGH
+			PORT_GSM_ONOFF |= (1 << PIN_GSM_ONOFF);
 
 			// Command Delay
 			for (uint8_t i = 0; i < 36; i++) {
@@ -64,30 +97,30 @@ class Hardware {
 
 			}
 
-			// Set On/Off Signal LOW [PJ6]
-			PORTJ &= 0b10111111;
+			// Set PIN_GSM_ONOFF Signal LOW
+			PORT_GSM_ONOFF &= ~(1 << PIN_GSM_ONOFF);
 
 		}
 
 		// ShutDown Modem
 		void ShutDown(const uint16_t _Time) {
 
-			// Set Shut Down Signal HIGH [PJ5]
-			PORTJ |= 0b10000000;
+			// Set PIN_GSM_SDOWN Signal HIGH
+			PORT_GSM_SDOWN |= (1 << PIN_GSM_SDOWN);
 
 			// Command Delay
 			delay(_Time);
 
-			// Set Shut Down Signal LOW [PJ5]
-			PORTJ &= 0b01111111;
+			// Set PIN_GSM_SDOWN Signal LOW
+			PORT_GSM_SDOWN &= ~(1 << PIN_GSM_SDOWN);
 
 		}
 
 		// Get Power Monitor
 		bool PowerMonitor(void) {
 
-			// Control for PWMon (PJ3)
-			if ((PINJ & (1 << PINJ3)) == (1 << PINJ3)) {
+			// Control for PIN_GSM_PMON pin
+			if ((PIN_REGISTER_GSM_PMON & (1 << PIN_GSM_PMON)) == (1 << PIN_GSM_PMON)) {
 
 				// End Function
 				return (true);
@@ -104,8 +137,8 @@ class Hardware {
 		// Get Software Ready
 		bool SWReady(void) {
 
-			// Control for SWReady (PJ4)
-			if ((PINJ & (1 << PINJ4)) == (1 << PINJ4)) {
+			// Control for PIN_GSM_SWREADY pin
+			if ((PIN_REGISTER_GSM_SWREADY & (1 << PIN_GSM_SWREADY)) == (1 << PIN_GSM_SWREADY)) {
 
 				// End Function
 				return (true);
@@ -122,18 +155,21 @@ class Hardware {
 		// Power ON Sequence of Modem
 		bool ON(void) {
 
+			// Get Start Time
+			uint32_t _Start_Time = millis();
+
 			// Enable GSM Modem Power Switch
 			this->Power_Switch(true);  
 
 			// Power On Delay
-			delay(50);
-			
+			delay(10);
+
 			// Set Communication Signal LOW
 			this->Communication(true);
 
 			// Communication Delay
-			delay(50);
-			
+			delay(10);
+
 			// Turn On Modem
 			if (this->PowerMonitor()) {
 
@@ -145,32 +181,27 @@ class Hardware {
 				// Send On Off Signal
 				this->OnOff(1500);
 
-				// Boot Delay
-				delay(10000);
+				// Wait for Power Monitor
+				while (millis() - _Start_Time < 15000) {
 
-				// Control for PWMon (PJ3)
-				if (this->PowerMonitor()) {
+					// Control for PWMon (PJ3)
+					if (this->PowerMonitor()) {
 
-					// Boot Delay
-					delay(10000);
+						// Wait for Software Ready
+						while (millis() - _Start_Time < 30000) {
 
-					// Control for SWReady (PJ4)
-					if (this->SWReady()) {
+							// Control for SWReady (PJ4)
+							if (this->SWReady()) return (true);
 
-						// End Function
-						return (true);
+							// Wait Delay
+							delay(10);
 
-					} else {
-
-						// Send On Off Signal
-						this->OnOff(3000);
+						}
 
 					}
 
-				} else {
-
-					// Send On Off Signal
-					this->OnOff(3000);
+					// Wait Delay
+					delay(10);
 
 				}
 
