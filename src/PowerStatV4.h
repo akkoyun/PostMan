@@ -25,22 +25,12 @@
     
 #endif
 
-// Define DS28C Object
+// Include Libraries
 #include <DS28C.h>
-
-// Define RV3028 Object
 #include <RV3028.h>
-
-// Define Environment Object
 #include <Environment.h>
-
-// Define MAX17055 Object
 #include <MAX17055.h>
-
-// Define BQ24298 Object
 #include <BQ24298.h>
-
-// Include SD Library
 #include <SPI.h>
 #include "SD.h"
 
@@ -1658,23 +1648,15 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							if (this->Status.Terminal) {
 
 								// Print Signal Level Value
-								GSM_Terminal->Text(14, 65, _Console_WHITE_, F("[-   ]"));
-								GSM_Terminal->Text(14, 67, _Console_GRAY_, String(this->Operator.RSSI));
+								GSM_Terminal->Show_RSSI(14, 65, this->Operator.RSSI);
 
 								// Print Signal Level Bar
-								GSM_Terminal->Text(14, 74, _Console_GRAY_, F("_____"));
-								for (uint8_t i = 1; i <= this->Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_GRAY_, F("X"));
+								GSM_Terminal->Show_Signal_Quality(14, 74, this->Operator.Signal);
 
 								// Print Operator Value
 								char _Operator[6];
 								sprintf(_Operator, "%d%d", this->Operator.MCC, this->Operator.MNC);
 								GSM_Terminal->Text(15, 74, _Console_GRAY_, String(_Operator));
-
-								// Print Modem LAC Value
-//								GSM_Terminal->Text(17, 72, _Console_GRAY_, uint64ToString(this->Operator.TAC));
-
-								// Print Modem Cell ID Value
-//								GSM_Terminal->Text(18, 72, _Console_GRAY_, String(this->Operator.Cell_ID));
 
 							}
 
@@ -2816,25 +2798,15 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					if (this->Status.Terminal) {
 
 						// Print Signal Level Value
-						GSM_Terminal->Text(14, 65, _Console_WHITE_, F("[-   ]"));
-						GSM_Terminal->Text(14, 67, _Console_GRAY_, String(this->Operator.RSSI));
+						GSM_Terminal->Show_RSSI(14, 65, this->Operator.RSSI);
 
 						// Print Signal Level Bar
-						GSM_Terminal->Text(14, 74, _Console_GRAY_, F("_____"));
-						for (uint8_t i = 1; i <= this->Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_GRAY_, F("X"));
+						GSM_Terminal->Show_Signal_Quality(14, 74, this->Operator.Signal);
 
 						// Print Operator Value
-						GSM_Terminal->Text(15, 74, _Console_GRAY_, String(this->Operator.MCC));
-						GSM_Terminal->Text(15, 77, _Console_GRAY_, F("0"));
-						GSM_Terminal->Text(15, 78, _Console_GRAY_, String(this->Operator.MNC));
-
-						// Print Modem LAC Value
-//						GSM_Terminal->Text(17, 72, _Console_GRAY_, uint64ToString(this->Operator.TAC));
-
-						// Print Modem Cell ID Value
-//						GSM_Terminal->Text(18, 72, _Console_GRAY_, String(this->Operator.Cell_ID, HEX));
-
-
+						char _Operator[6];
+						sprintf(_Operator, "%d%d", this->Operator.MCC, this->Operator.MNC);
+						GSM_Terminal->Text(15, 74, _Console_GRAY_, String(_Operator));
 
 						// Show Connection Type
 						GSM_Terminal->Show_Connection_Type(17, 70, this->Operator.WDS);
@@ -3073,26 +3045,18 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
 
 					// Print Signal Level Value
-					GSM_Terminal->Text(14, 65, _Console_WHITE_, F("[-   ]"));
-					GSM_Terminal->Text(14, 67, _Console_GRAY_, String(this->Operator.RSSI));
+					GSM_Terminal->Show_RSSI(14, 65, this->Operator.RSSI);
 
 					// Print Signal Level Bar
-					GSM_Terminal->Text(14, 74, _Console_GRAY_, F("_____"));
-					for (uint8_t i = 1; i <= this->Operator.Signal; i++) GSM_Terminal->Text(14, 73 + i, _Console_GRAY_, F("X"));
+					GSM_Terminal->Show_Signal_Quality(14, 74, this->Operator.Signal);
 
 					// Print Operator Value
-					GSM_Terminal->Text(15, 74, _Console_GRAY_, String(this->Operator.MCC));
-					GSM_Terminal->Text(15, 77, _Console_GRAY_, F("0"));
-					GSM_Terminal->Text(15, 78, _Console_GRAY_, String(this->Operator.MNC));
+					char _Operator[6];
+					sprintf(_Operator, "%d%d", this->Operator.MCC, this->Operator.MNC);
+					GSM_Terminal->Text(15, 74, _Console_GRAY_, String(_Operator));
 
 					// Print IP
 					GSM_Terminal->Text(16, 64, _Console_GRAY_, this->IPAddress_to_String(this->Operator.IP_Address));
-
-					// Print Modem LAC Value
-//					GSM_Terminal->Text(17, 75, _Console_GRAY_, this->uint64ToString(this->Operator.TAC));
-
-					// Print Modem Cell ID Value
-//					GSM_Terminal->Text(18, 75, _Console_GRAY_, String(this->Operator.Cell_ID, HEX));
 
 					// Show Connection Type
 					GSM_Terminal->Show_Connection_Type(17, 70, this->Operator.WDS);
