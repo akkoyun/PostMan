@@ -78,23 +78,23 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			char 		ICCID[21];
 			uint16_t 	MCC 				= 0;
 			uint16_t	MNC					= 0;
-			uint16_t	WDS					= 0;
+			uint8_t		WDS					= 0;
 			uint16_t	RSSI				= 0;
 			uint8_t		Signal				= 0;
 			uint16_t	TAC					= 0;
 			uint32_t	Cell_ID				= 0;
 			uint32_t	PCell_ID			= 0;
-			char 		IP_Address[16];
+			uint8_t		IP_Address[4];
 			uint16_t 	Connection_Time		= 0;
 		} Operator;
 		struct Struct_Time {
-			uint16_t 	Year				= 0;
-			uint16_t 	Month				= 0;
-			uint16_t 	Day					= 0;
-			uint16_t 	Hour				= 0;
-			uint16_t 	Minute				= 0;
-			uint16_t 	Second				= 0;
-			uint16_t	Time_Zone			= 0;
+			uint8_t 	Year				= 0;
+			uint8_t 	Month				= 0;
+			uint8_t 	Day					= 0;
+			uint8_t 	Hour				= 0;
+			uint8_t 	Minute				= 0;
+			uint8_t 	Second				= 0;
+			uint8_t		Time_Zone			= 0;
 		} Time;
 		struct Struct_Buffer {
 			uint32_t 	Connection_Time_Buffer	= 0;
@@ -1532,7 +1532,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							if (this->Status.Terminal) {
 
 								// Print IP Address
-								GSM_Terminal->Text(16, 64, _Console_GRAY_, String(this->Operator.IP_Address));
+								GSM_Terminal->Text(16, 64, _Console_GRAY_, this->IPAddress_to_String(this->Operator.IP_Address));
 
 							}
 
@@ -3124,6 +3124,20 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 		}
 
+		// IP Address to String Converter Function
+		String IPAddress_to_String(const uint8_t _IP_Address[4]) {
+
+			// Define IP char Array
+			char _IP_Char[16];
+
+			// Set IP char Array
+			sprintf(_IP_Char, "%03d.%03d.%03d.%03d", _IP_Address[0], _IP_Address[1], _IP_Address[2], _IP_Address[3]);
+
+			// End Function
+			return(String(_IP_Char));
+
+		}
+
 	// Public Functions
 	public:
 
@@ -3200,7 +3214,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					GSM_Terminal->Text(15, 78, _Console_GRAY_, String(this->Operator.MNC));
 
 					// Print IP
-					GSM_Terminal->Text(16, 64, _Console_GRAY_, String(this->Operator.IP_Address));
+					GSM_Terminal->Text(16, 64, _Console_GRAY_, this->IPAddress_to_String(this->Operator.IP_Address));
 
 					// Print Modem LAC Value
 					GSM_Terminal->Text(17, 75, _Console_GRAY_, this->uint64ToString(this->Operator.TAC));
@@ -3728,7 +3742,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									char * _Content_Length = strtok(NULL, "\r\n");
 
 									// Handle Content Length
-									sscanf(_Content_Length, "Content-Length: %u", &FOTA.File_Size);
+									sscanf(_Content_Length, "Content-Length: %lu", &FOTA.File_Size);
 
 									// Print Message
 									#ifdef _DEBUG_
@@ -3740,7 +3754,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											char _File_Size_Buffer[8];
 
 											// Set Buffer
-											sprintf(_File_Size_Buffer, "%07u", this->FOTA.File_Size);
+											sprintf(_File_Size_Buffer, "%07lu", this->FOTA.File_Size);
 
 											// Print File Size
 											GSM_Terminal->Text(15, 112, _Console_CYAN_, String(_File_Size_Buffer));
@@ -3778,7 +3792,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											char _Download_Size_Buffer[8];
 
 											// Set Buffer
-											sprintf(_Download_Size_Buffer, "%07u", this->FOTA.Download_Size);
+											sprintf(_Download_Size_Buffer, "%07lu", this->FOTA.Download_Size);
 
 											// Print Download Time
 											GSM_Terminal->Text(18, 111, _Console_CYAN_, String((millis() - _Download_Start_Time) / 1000));
@@ -3896,7 +3910,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											char _Download_Size_Buffer[8];
 
 											// Set Buffer
-											sprintf(_Download_Size_Buffer, "%07u", this->FOTA.Download_Size);
+											sprintf(_Download_Size_Buffer, "%07lu", this->FOTA.Download_Size);
 
 											// Print SD File Size
 											GSM_Terminal->Text(16, 112, _Console_CYAN_, String(_Download_Size_Buffer));
@@ -3923,7 +3937,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											uint32_t _Time = (millis() - _Download_Start_Time) / 1000;
 
 											// Set Buffer
-											sprintf(_Download_Time_Buffer, "%04u", _Time);
+											sprintf(_Download_Time_Buffer, "%04lu", _Time);
 
 											// Print Download Time
 											GSM_Terminal->Text(18, 111, _Console_CYAN_, String(_Download_Time_Buffer));

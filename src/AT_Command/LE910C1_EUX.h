@@ -631,7 +631,7 @@ class AT_Command_Set_LE910C1_EUX {
 				0,      // Read Order
 				0,      // Data Order
 				1000,   // Time Out
-				25      // Buffer Size
+				21      // Buffer Size
 			};
 
 			// Declare Buffer Variable
@@ -655,14 +655,12 @@ class AT_Command_Set_LE910C1_EUX {
 			if (Buffer.Response == _AT_OK_) {
 
 				// Handle Variables
-				if (sscanf(Buffer_Variable, "\r\n#CEER: %03hu\r\n\r\nOK\r\n", &_Code) == 1) {
-					return true;
-				}
+				if (sscanf(Buffer_Variable, "\r\n#CEER: %03d\r\n\r\nOK\r\n", &_Code) == 1) return (true);
 
 			}
 
 			// End Function
-			return false;
+			return (false);
 
 		}
 
@@ -918,11 +916,6 @@ class AT_Command_Set_LE910C1_EUX {
 			// GET Function
 			if (_Function_Type == GET) {
 
-				// AT#SIMDET?\r\n
-				// \r\n#SIMDET: 2,1\r\n\r\nOK\r\n
-				// \r\n#SDE: 2,1\r\n\r\nOK\r\n
-				// \r\n#SDET: 2,1\r\n\r\nOK\r\n
-
 				// Send UART Command
 				GSM_Serial->print(F("AT#SIMDET?"));
 				GSM_Serial->write(0x0D);
@@ -934,16 +927,18 @@ class AT_Command_Set_LE910C1_EUX {
 				// Handle for Response
 				if (Buffer.Response == _AT_OK_) {
 
-					// Define Handle Variable
-					uint16_t _SIMDET_Mode = 0;
-					uint16_t _SIMDET_State = 0;
-
-					// Handle Query Answer
-					uint8_t _Parsed_Variable = sscanf(Buffer_Variable, "\r\n#SIMDET: %01hu,%01hu\r\n\r\nOK\r\n", &_SIMDET_Mode, &_SIMDET_State);
-
 					// Clear Variables
 					_Mode = 0;
 					_SIM_in_Pin_State = false;
+
+					// \r\n#SIMDET: 2,1\r\n\r\nOK\r\n
+
+					// Define Handle Variable
+					uint8_t _SIMDET_Mode = 0;
+					uint8_t _SIMDET_State = 0;
+
+					// Handle Query Answer
+					uint8_t _Parsed_Variable = sscanf(Buffer_Variable, "\r\n#SIMDET: %01hhu,%01hhu\r\n\r\nOK\r\n", &_SIMDET_Mode, &_SIMDET_State);
 
 					// Assign SIM State
 					if (_Parsed_Variable == 2) {
@@ -956,21 +951,19 @@ class AT_Command_Set_LE910C1_EUX {
 						if (_SIMDET_State == 1) _SIM_in_Pin_State = true;
 
 						// End Function
-						return true;
-
-					} else {
-
-						// End Function
-						return false;
+						return (true);
 
 					}
+
+					// End Function
+					return (false);
 
 				}
 
 			}
 
 			// End Function
-			return false;
+			return (false);
 
 		}
 
@@ -1251,7 +1244,7 @@ class AT_Command_Set_LE910C1_EUX {
 		}
 
 		// Set SGACT Function
-		bool SGACT(const uint8_t _Cid, const bool _Stat, char* _IP_Address) {
+		bool SGACT(const uint8_t _Cid, const bool _Stat, uint8_t _IP_Segment[4]) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
@@ -1290,20 +1283,8 @@ class AT_Command_Set_LE910C1_EUX {
 
 				// \r\n#SGACT: 000.000.000.000\r\n\r\nOK\r\n
 
-				// Declare IP Segments
-				uint16_t Segment_1 = 0;
-				uint16_t Segment_2 = 0;
-				uint16_t Segment_3 = 0;
-				uint16_t Segment_4 = 0;
-
 				// Handle IP
-				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#SGACT: %03hu.%03hu.%03hu.%03hu\r\n\r\nOK\r\n", &Segment_1, &Segment_2, &Segment_3, &Segment_4);
-
-				// Clear IP Address
-				memset(_IP_Address, '\0', 16);
-
-				// Parse IP Address
-				sprintf(_IP_Address, "%03d.%03d.%03d.%03d", Segment_1, Segment_2, Segment_3, Segment_4);
+				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n#SGACT: %03hhu.%03hhu.%03hhu.%03hhu\r\n\r\nOK\r\n", &_IP_Segment[0], &_IP_Segment[1], &_IP_Segment[2], &_IP_Segment[3]);
 
 				// Control for IP
 				return (_Variable_Count == 4);
@@ -1316,7 +1297,7 @@ class AT_Command_Set_LE910C1_EUX {
 		}
 
 		// WS46 Function
-		bool WS46(const bool _Function_Type, uint16_t & _Mode) {
+		bool WS46(const bool _Function_Type, uint8_t & _Mode) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
@@ -1354,7 +1335,7 @@ class AT_Command_Set_LE910C1_EUX {
 				if (Buffer.Response == _AT_OK_) {
 
 					// Handle Variables
-					uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n+WS46: %02hu\r\n\r\nOK\r\n", &_Mode);
+					uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n+WS46: %02hhu\r\n\r\nOK\r\n", &_Mode);
 
 					// Handle Response
 					return (_Variable_Count == 1);
@@ -1448,18 +1429,16 @@ class AT_Command_Set_LE910C1_EUX {
 				// <T3412> 		- Timer T3412 in seconds										- 3240
 				// <SI NR> 		- Signal-to-Interface plus Noise Ratio							- -5
 
+				// Example Response
 				// \r\n#RFSTS: "286 01",1651,-101,-66,-15,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,121\r\n\r\nOK\r\n
-
-
 				// \r\n#RFSTS: "286 01",1651,-100,-66,-14,2242,,128,3,0,0B5D120,"286016339612498","Turkcell",3,3,126\r\n\r\nOK\r\n
 				// \r\n#RFSTS: "286 01",1795,-101,-73,-10,2242,,128,3,0,0B5D121,"286016339612498","Turkcell",3,3,138\r\n\r\nOK\r\n
 				// \r\n#RFSTS: "286 01",100,-98,-68,-10,2242,227,128,3,1,0B5D125,"286016339612498","Turkcell",3,1,120\r\n\r\nOK\r\n
 				// \r\n#RFSTS: "286 01",1651,-99,-63,-14,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,101\r\n\r\nOK\r\n
-
-				// \r\n#RFSTS: "286 01",1651,-99,-68,-12,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,128\r\n\r\nOK\r\n	[FAIL]
-				// \r\n#RFSTS: "286 01",1795,-102,-69,-15,2242,,128,3,1,0B5D121,"286016339612498","Turkcell",3,3,102\r\n\r\nOK\r\n	[FAIL]
-				// \r\n#RFSTS: "286 01",1651,-99,-67,-12,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,126\r\n\r\nOK\r\n 	[FAIL]
-				// \r\n#RFSTS: "286 01",1651,-99,-64,-14,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,107\r\n\r\nOK\r\n	[FAIL]
+				// \r\n#RFSTS: "286 01",1651,-99,-68,-12,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,128\r\n\r\nOK\r\n
+				// \r\n#RFSTS: "286 01",1795,-102,-69,-15,2242,,128,3,1,0B5D121,"286016339612498","Turkcell",3,3,102\r\n\r\nOK\r\n
+				// \r\n#RFSTS: "286 01",1651,-99,-67,-12,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,126\r\n\r\nOK\r\n
+				// \r\n#RFSTS: "286 01",1651,-99,-64,-14,2242,,128,3,1,0B5D120,"286016339612498","Turkcell",3,3,107\r\n\r\nOK\r\n
 
 
 
@@ -1478,11 +1457,11 @@ class AT_Command_Set_LE910C1_EUX {
 
 				// Handle MCC, MNC
 				_MCC = 0; _MNC = 0;
-				sscanf(_Segment_1, "\r\n#RFSTS: \"%03hu %02hu\"", &_MCC, &_MNC);
+				sscanf(_Segment_1, "\r\n#RFSTS: \"%03u %02u\"", &_MCC, &_MNC);
 
 				// Handle RSSI
 				_RSSI = 0;
-				sscanf(_Segment_4, "-%03hu", &_RSSI);
+				sscanf(_Segment_4, "-%03u", &_RSSI);
 
 				// Calculate Signal Level
 				_Signal_Level = 0;
@@ -1490,11 +1469,11 @@ class AT_Command_Set_LE910C1_EUX {
 
 				// Handle TAC
 				_TAC = 0;
-				sscanf(_Segment_6, "%05hu", &_TAC);
+				sscanf(_Segment_6, "%05u", &_TAC);
 
 				// Handle Cell ID
 				_Cell_ID = 0;
-				sscanf(_Segment_11, "%X", &_Cell_ID);
+				sscanf(_Segment_11, "%lX", &_Cell_ID);
 
 				// End Function
 				return(true);
@@ -1581,19 +1560,19 @@ class AT_Command_Set_LE910C1_EUX {
 
 					// Handle TAC
 					_TAC = 0;
-					sscanf(_Segment_5, "TAC:%05hu", &_TAC);
+					sscanf(_Segment_5, "TAC:%05u", &_TAC);
 
 					// Handle Cell ID
 					_Cell_ID = 0;
-					sscanf(_Segment_6, "Id:%x", &_Cell_ID);
+					sscanf(_Segment_6, "Id:%lx", &_Cell_ID);
 
 					// Handle RSSI
 					_RSSI = 0;
-					sscanf(_Segment_8, "PWR:-%03hudbm", &_RSSI);
+					sscanf(_Segment_8, "PWR:-%03udbm", &_RSSI);
 
 					// Handle PCell ID
 					_PCell_ID = 0;
-					sscanf(_Segment_10, "pci:%x", &_PCell_ID);
+					sscanf(_Segment_10, "pci:%lx", &_PCell_ID);
 
 					// Calculate Signal Level
 					_Signal_Level = 0;
@@ -1846,7 +1825,7 @@ class AT_Command_Set_LE910C1_EUX {
 		}
 
 		// Get Clock Function
-		bool CCLK(uint16_t& _Year, uint16_t& _Month, uint16_t& _Day, uint16_t& _Hour, uint16_t& _Minute, uint16_t& _Second, uint16_t& _Time_Zone) {
+		bool CCLK(uint8_t& _Year, uint8_t& _Month, uint8_t& _Day, uint8_t& _Hour, uint8_t& _Minute, uint8_t& _Second, uint8_t& _Time_Zone) {
 
 			// Clear UART Buffer
 			this->Clear_UART_Buffer();
@@ -1886,7 +1865,7 @@ class AT_Command_Set_LE910C1_EUX {
 				*/
 
 				// Handle Variables
-				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n+CCLK: \"%02hu/%02hu/%02hu,%02hu:%02hu:%02hu+%02hu\"\r\n\r\nOK\r\n", &_Year, &_Month, &_Day, &_Hour, &_Minute, &_Second, &_Time_Zone);
+				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n+CCLK: \"%02hhu/%02hhu/%02hhu,%02hhu:%02hhu:%02hhu+%02hhu\"\r\n\r\nOK\r\n", &_Year, &_Month, &_Day, &_Hour, &_Minute, &_Second, &_Time_Zone);
 
 				// Control for Variables
 				if (_Year > 24 || _Year < 22 || _Month > 12 || _Month < 0 || _Day > 31 || _Day < 0 || _Hour > 24 || _Hour < 0 || _Minute > 59 || _Minute < 0 || _Second > 59 || _Second < 0) return false;
@@ -2324,7 +2303,7 @@ class AT_Command_Set_LE910C1_EUX {
 
 				// Handle Buffer Size
 				_Buffer = 0;
-				sscanf(_Buffer_Size, "%05hu", &_Buffer);
+				sscanf(_Buffer_Size, "%05u", &_Buffer);
 
 				// End Function
 				return(true);
@@ -2498,7 +2477,7 @@ class AT_Command_Set_LE910C1_EUX {
 			uint16_t _Buffer;
 
 			// Handle Variables
-			uint8_t _Parsed = sscanf(Buffer_Variable, "\r\nSRING: %01hu,%03hu\r\n", &_Buffer, &_Length);
+			uint8_t _Parsed = sscanf(Buffer_Variable, "\r\nSRING: %01u,%03u\r\n", &_Buffer, &_Length);
 
 			// Handle for Parse Count
 			if (_Parsed == 2) return(true);
@@ -2771,7 +2750,7 @@ class AT_Command_Set_LE910C1_EUX {
 				// \r\n#FTPFSIZE: 174945\r\n\r\nOK\r\n
 
 				// Handle Variables
-				sscanf(Buffer_Variable, "\r\n#FTPFSIZE:%u\r\n\r\nOK\r\n", &_Length);
+				sscanf(Buffer_Variable, "\r\n#FTPFSIZE:%lu\r\n\r\nOK\r\n", &_Length);
 
 				// End Function
 				return (true);
@@ -2916,7 +2895,7 @@ class AT_Command_Set_LE910C1_EUX {
 				if (Buffer.Response) {
 
 					// Parse Size
-					sscanf(Buffer_Variable, "\r\n#FTPRECV: %03hu\r\n", &_ReadSize);
+					sscanf(Buffer_Variable, "\r\n#FTPRECV: %03u\r\n", &_ReadSize);
 
 					// Calculate Header Length
 					const int _Start = 14 + (int)log10(_ReadSize) + 1;
