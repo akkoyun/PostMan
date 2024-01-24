@@ -1594,70 +1594,8 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							// Control for Terminal State
 							if (this->Status.Terminal) {
 
-								// Print RED WDS Type
-								GSM_Terminal->Text(46, 3, _Console_RED_, F("2G"));
-								GSM_Terminal->Text(46, 6, _Console_RED_, F("3G"));
-								GSM_Terminal->Text(46, 9, _Console_RED_, F("LTE"));
-
-								// Print WDS Type
-								if (this->Operator.WDS == 12) {
-
-									// Print 2G WDS Type
-									GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
-
-								} else if (this->Operator.WDS == 22) {
-
-									// Print 3G WDS Type
-									GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
-
-								} else if (this->Operator.WDS == 25) {
-
-									// Print 2G WDS Type
-									GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
-
-									// Print 3G WDS Type
-									GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
-
-									// Print LTE WDS Type
-									GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
-
-								} else if (this->Operator.WDS == 28) {
-
-									// Print LTE WDS Type
-									GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
-
-								} else if (this->Operator.WDS == 29) {
-
-									// Print 2G WDS Type
-									GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
-
-									// Print 3G WDS Type
-									GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
-
-								} else if (this->Operator.WDS == 30) {
-
-									// Print 2G WDS Type
-									GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
-
-									// Print LTE WDS Type
-									GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
-
-								} else if (this->Operator.WDS == 31) {
-
-									// Print 3G WDS Type
-									GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
-
-									// Print LTE WDS Type
-									GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
-
-								} else {
-
-									// Print RED WDS Type
-									GSM_Terminal->Text(46, 3, _Console_RED_, F("2G"));
-									GSM_Terminal->Text(46, 6, _Console_RED_, F("3G"));
-									GSM_Terminal->Text(46, 9, _Console_RED_, F("LTE"));
-
-								}
+								// Print Connection Type
+								GSM_Terminal->Show_Connection_Type(17, 70, this->Operator.WDS);
 
 							}
 
@@ -1733,10 +1671,10 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								GSM_Terminal->Text(15, 74, _Console_GRAY_, String(_Operator));
 
 								// Print Modem LAC Value
-								GSM_Terminal->Text(17, 72, _Console_GRAY_, uint64ToString(this->Operator.TAC));
+//								GSM_Terminal->Text(17, 72, _Console_GRAY_, uint64ToString(this->Operator.TAC));
 
 								// Print Modem Cell ID Value
-								GSM_Terminal->Text(18, 72, _Console_GRAY_, String(this->Operator.Cell_ID));
+//								GSM_Terminal->Text(18, 72, _Console_GRAY_, String(this->Operator.Cell_ID));
 
 							}
 
@@ -2618,14 +2556,11 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						if (this->Status.Terminal) {
 
 							// Print Socket State
-							GSM_Terminal->Text(46, 33, _Console_WHITE_, F("Socket [2] :                        "));
-
-							// Print Socket State
-							if (this->Status.Socket_State == 0) GSM_Terminal->Text(46, 46, _Console_RED_, F("Closed"));
-							else if (this->Status.Socket_State == 1) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Active Transfer"));
-							else if (this->Status.Socket_State == 2) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Suspended"));
-							else if (this->Status.Socket_State == 3) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Pending Data"));
-							else if (this->Status.Socket_State == 4) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Listening"));
+							if (this->Status.Socket_State == 0) GSM_Terminal->Text(18, 64, _Console_RED_, F("    Closed     "));
+							else if (this->Status.Socket_State == 1) GSM_Terminal->Text(18, 64, _Console_GRAY_, F("Active Transfer"));
+							else if (this->Status.Socket_State == 2) GSM_Terminal->Text(18, 64, _Console_GRAY_, F("   Suspended   "));
+							else if (this->Status.Socket_State == 3) GSM_Terminal->Text(18, 64, _Console_GRAY_, F("  Pending Data "));
+							else if (this->Status.Socket_State == 4) GSM_Terminal->Text(18, 64, _Console_GRAY_, F("   Listening   "));
 
 						}
 
@@ -2723,14 +2658,11 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						if (this->Status.Terminal) {
 
 							// Print Socket State
-							GSM_Terminal->Text(46, 33, _Console_WHITE_, F("Socket [2] :                        "));
-
-							// Print Socket State
-							if (this->Status.Socket_State == 0) GSM_Terminal->Text(46, 46, _Console_RED_, F("Closed"));
-							else if (this->Status.Socket_State == 1) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Active Transfer"));
-							else if (this->Status.Socket_State == 2) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Suspended"));
-							else if (this->Status.Socket_State == 3) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Pending Data"));
-							else if (this->Status.Socket_State == 4) GSM_Terminal->Text(46, 46, _Console_GREEN_, F("Listening"));
+							if (this->Status.Socket_State == 0) GSM_Terminal->Text(18, 64, _Console_RED_, F("    Closed     "));
+							else if (this->Status.Socket_State == 1) GSM_Terminal->Text(18, 64, _Console_GRAY_, F("Active Transfer"));
+							else if (this->Status.Socket_State == 2) GSM_Terminal->Text(18, 64, _Console_GRAY_, F("   Suspended   "));
+							else if (this->Status.Socket_State == 3) GSM_Terminal->Text(18, 64, _Console_GRAY_, F("  Pending Data "));
+							else if (this->Status.Socket_State == 4) GSM_Terminal->Text(18, 64, _Console_GRAY_, F("   Listening   "));
 
 						}
 
@@ -2897,75 +2829,15 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						GSM_Terminal->Text(15, 78, _Console_GRAY_, String(this->Operator.MNC));
 
 						// Print Modem LAC Value
-						GSM_Terminal->Text(17, 72, _Console_GRAY_, uint64ToString(this->Operator.TAC));
+//						GSM_Terminal->Text(17, 72, _Console_GRAY_, uint64ToString(this->Operator.TAC));
 
 						// Print Modem Cell ID Value
-						GSM_Terminal->Text(18, 72, _Console_GRAY_, String(this->Operator.Cell_ID, HEX));
+//						GSM_Terminal->Text(18, 72, _Console_GRAY_, String(this->Operator.Cell_ID, HEX));
 
-						// Print RED WDS Type
-						GSM_Terminal->Text(46, 3, _Console_RED_, F("2G"));
-						GSM_Terminal->Text(46, 6, _Console_RED_, F("3G"));
-						GSM_Terminal->Text(46, 9, _Console_RED_, F("LTE"));
 
-						// Print WDS Type
-						if (this->Operator.WDS == 12) {
 
-							// Print 2G WDS Type
-							GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
-
-						} else if (this->Operator.WDS == 22) {
-
-							// Print 3G WDS Type
-							GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
-
-						} else if (this->Operator.WDS == 25) {
-
-							// Print 2G WDS Type
-							GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
-
-							// Print 3G WDS Type
-							GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
-
-							// Print LTE WDS Type
-							GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
-
-						} else if (this->Operator.WDS == 28) {
-
-							// Print LTE WDS Type
-							GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
-
-						} else if (this->Operator.WDS == 29) {
-
-							// Print 2G WDS Type
-							GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
-
-							// Print 3G WDS Type
-							GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
-
-						} else if (this->Operator.WDS == 30) {
-
-							// Print 2G WDS Type
-							GSM_Terminal->Text(46, 3, _Console_GREEN_, F("2G"));
-
-							// Print LTE WDS Type
-							GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
-
-						} else if (this->Operator.WDS == 31) {
-
-							// Print 3G WDS Type
-							GSM_Terminal->Text(46, 6, _Console_GREEN_, F("3G"));
-
-							// Print LTE WDS Type
-							GSM_Terminal->Text(46, 9, _Console_GREEN_, F("LTE"));
-
-						} else {
-
-							// Print RED WDS Type
-							GSM_Terminal->Text(46, 3, _Console_RED_, F("2G"));
-							GSM_Terminal->Text(46, 6, _Console_RED_, F("3G"));
-							GSM_Terminal->Text(46, 9, _Console_RED_, F("LTE"));
-
-						}
+						// Show Connection Type
+						GSM_Terminal->Show_Connection_Type(17, 70, this->Operator.WDS);
 
 					}
 
@@ -3217,10 +3089,14 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					GSM_Terminal->Text(16, 64, _Console_GRAY_, this->IPAddress_to_String(this->Operator.IP_Address));
 
 					// Print Modem LAC Value
-					GSM_Terminal->Text(17, 75, _Console_GRAY_, this->uint64ToString(this->Operator.TAC));
+//					GSM_Terminal->Text(17, 75, _Console_GRAY_, this->uint64ToString(this->Operator.TAC));
 
 					// Print Modem Cell ID Value
-					GSM_Terminal->Text(18, 75, _Console_GRAY_, String(this->Operator.Cell_ID, HEX));
+//					GSM_Terminal->Text(18, 75, _Console_GRAY_, String(this->Operator.Cell_ID, HEX));
+
+					// Show Connection Type
+					GSM_Terminal->Show_Connection_Type(17, 70, this->Operator.WDS);
+
 
 				}
 
