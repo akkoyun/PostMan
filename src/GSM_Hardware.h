@@ -264,4 +264,14 @@ class GSM_Hardware {
 
 		}
 
+		// Heartbeat Function
+		void WD_Heartbeat(void) {
+
+			// Turn ON HeartBeat
+			PORT_HEARTBEAT |= (1 << PIN_HEARTBEAT);
+
+			// Turn OFF HeartBeat
+			PORT_HEARTBEAT &= ~(1 << PIN_HEARTBEAT);
+
+		}
 };

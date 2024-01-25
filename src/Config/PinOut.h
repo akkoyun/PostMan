@@ -95,3 +95,17 @@
 #ifndef PIN_GSM_SDOWN
     #define PIN_GSM_SDOWN				PJ7
 #endif
+
+// HEARTBEAT Pin Definition
+#ifndef DDR_HEARTBEAT
+    #define DDR_HEARTBEAT				DDRL
+#endif
+#ifndef PORT_HEARTBEAT
+    #define PORT_HEARTBEAT				PORTL
+#endif
+#ifndef PIN_REGISTER_HEARTBEAT
+    #define PIN_REGISTER_HEARTBEAT		PINL
+#endif
+#ifndef PIN_HEARTBEAT
+    #define PIN_HEARTBEAT				PL3
+#endif
