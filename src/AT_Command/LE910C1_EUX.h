@@ -1824,6 +1824,48 @@ class AT_Command_Set_LE910C1_EUX {
 
 		}
 
+		// Ping Function
+		bool Ping(void) {
+
+			// Clear UART Buffer
+			this->Clear_UART_Buffer();
+
+			// Declare Buffer Object
+			Serial_Buffer Buffer = {
+				0, 		// Response State
+				0, 		// Read Order
+				0, 		// Data Order
+				6000, 	// Time Out
+				150		// Buffer Size
+			};
+
+			// Declare Buffer Variable
+			char Buffer_Variable[Buffer.Size];
+
+			// Clear Buffer Variable
+			memset(Buffer_Variable, '\0', Buffer.Size);
+
+			// Command Chain Delay (Advice by Telit)
+			delay(20);
+
+			// Send UART Command
+			GSM_Serial->print(F("AT#PING=\""));
+			GSM_Serial->print(_PostMan_Server_);
+			GSM_Serial->print(F("\",1"));
+			GSM_Serial->write(0x0D);
+			GSM_Serial->write(0x0A);
+
+			// Declare Response
+			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+
+			// \r\n#PING: 01,"159.89.111.150",0,51\r\n
+			// \r\nOK\r\n
+
+			// End Function
+			return(Buffer.Response == _AT_OK_);
+
+		}
+
 		// Get Clock Function
 		bool CCLK(uint8_t& _Year, uint8_t& _Month, uint8_t& _Day, uint8_t& _Hour, uint8_t& _Minute, uint8_t& _Second, uint8_t& _Time_Zone) {
 

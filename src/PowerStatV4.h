@@ -59,7 +59,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			uint8_t		SIM_PIN				= 0;
 			bool 		Initialize		 	= false;
 			bool		Connection			= false;
-			bool 		Clock_Update		= false;
 			uint8_t		Socket_State		= 0;
 			bool		Ring				= false;
 		} Status;
@@ -2262,109 +2261,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				// Connection Success
 				return(true);
 
-			} else {
-
-				// TODO: Modem bağlanmadı bildirimi yazılacak
-
-
-			}
+			} 
 
 			// FireWall Configuration Failed
-			return(false);
-
-		}
-
-		// Set Clock Configuration
-		bool Clock(void) {
-
-			// Control for Connection
-			if (this->Status.Connection) {
-
-				// Print Batch Description
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Batch Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_ + 30, _Console_WHITE_, F("[    ]"));
-
-					}
-
-				#endif
-
-				// Print Command Description
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Command Description
-						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+CCLK"));
-
-					}
-
-				#endif
-
-				// CCLK Command (Real Time Clock Configuration)
-				bool _Clock_State = AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second, this->Time.Time_Zone);
-
-				// Update Status
-				this->Status.Clock_Update = _Clock_State;
-
-				// Print Command State
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Command State
-						GSM_Terminal->OK(_Clock_State, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
-
-					}
-
-				#endif
-
-				// Print Connection Time
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Calculate Connection Time
-						this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
-
-						// Print Connection Time
-						GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
-
-					}
-
-				#endif
-
-				// Print Batch Description
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Batch Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-
-					}
-
-				#endif
-
-				// Connection Success
-				return(true);
-
-			} else {
-
-				// Print Command State
-
-			}
-
-			// Time Configuration Failed
 			return(false);
 
 		}
@@ -2652,6 +2551,294 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 			// End Function
 			return(false);
+
+		}
+
+		// Send Request Response Function
+		bool Response(const uint16_t _Response_Code, const uint16_t _Response) {
+
+			// Clear Message Field
+			#ifdef _DEBUG_
+
+				// Control for Terminal State
+				if (this->Status.Terminal) {
+
+					// Print Batch Description
+					GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+
+				}
+
+			#endif
+
+			// Declare Response JSON Array
+			char Buffer_Variable[_PostMan_Response_JSON_Size_];
+
+			// Clear Buffer Variable
+			memset(Buffer_Variable, '\0', _PostMan_Response_JSON_Size_);
+
+			// Declare JSON Object
+			StaticJsonDocument<_PostMan_Response_JSON_Size_> Response_JSON;
+
+			// Declare JSON Data
+			Response_JSON[F("Response")] = _Response;
+
+			// Clear Unused Data
+			Response_JSON.garbageCollect();
+
+			// Serialize JSON	
+			serializeJson(Response_JSON, Buffer_Variable);
+
+			// Send Socket Answer
+			if (AT_Command_Set::SSEND(_PostMan_Incomming_Socket_, HTTP_RESPONSE, _Response_Code, "", Buffer_Variable)) {
+
+				// Print Message
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Sending Response..."));
+
+					}
+
+				#endif
+
+				// Command Delay
+				delay(20);
+
+				// Closing Socket
+				if (AT_Command_Set::SH(_PostMan_Incomming_Socket_)) {
+
+					// Command Delay
+					delay(20);
+
+					// Control for Incoming Call
+					this->Listen(true);
+
+					// Print Message
+					#ifdef _DEBUG_
+
+						// Control for Terminal State
+						if (this->Status.Terminal) {
+
+							// Print Batch Description
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+
+						}
+
+					#endif
+
+					// End Function
+					return(true);
+
+				} else {
+
+					// End Function
+					return(false);
+
+				}
+
+			} else {
+
+				// End Function
+				return(false);
+
+			}
+			
+		}
+
+		// Get Server Command Function
+		uint16_t Get(void) {
+
+			// Control for Connection
+			if (this->Status.Connection) {
+
+				// Clear Message Field
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+
+					}
+
+				#endif
+
+				// Wait for Sring
+				if (AT_Command_Set::SRING()) {
+
+					// Declare JSON Variable
+					char _JSON_Data[_PostMan_Recieve_JSON_Size_];
+
+					// Clear JSON Data
+					memset(_JSON_Data, '\0', _PostMan_Recieve_JSON_Size_);
+
+					// Print Message
+					#ifdef _DEBUG_
+
+						// Control for Terminal State
+						if (this->Status.Terminal) {
+
+							// Print Batch Description
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Recieving Message..."));
+
+						}
+
+					#endif
+
+					// Declare Request Pack Length
+					uint16_t _Length = 0;
+
+					// Answer Socket
+					AT_Command_Set::SA(_PostMan_Incomming_Socket_, 1, _Length);
+
+					// Handle Max Length
+					if (_Length > _PostMan_Recieve_JSON_Size_) _Length = _PostMan_Recieve_JSON_Size_;
+
+					// Get Request Data
+					AT_Command_Set::SRECV(_PostMan_Incomming_Socket_, _Length, _JSON_Data);
+
+					// Declare Handle Variable
+					bool Data_Handle = false;
+
+					// Declare JSON Variable
+					char _Data[_Length];
+
+					// Clear JSON Data
+					memset(_Data, '\0', _Length);
+
+					// Declare Data Order
+					uint16_t _Data_Order = 0;
+
+					// Control for Buffer
+					for (uint16_t i = 0; i < _PostMan_Recieve_JSON_Size_; i++) {
+
+						// Handle JSON Data
+						if (_JSON_Data[i] == '{') Data_Handle = true;
+
+						// Get Data
+						if (Data_Handle) {
+
+							// Handle for Space
+							if (_JSON_Data[i] != ' ' and _JSON_Data[i] != '\n' and _JSON_Data[i] != '\r') {
+
+								// Set Data
+								_Data[_Data_Order] = _JSON_Data[i];
+								
+								// Increase Data Order
+								_Data_Order += 1;
+
+							}
+
+						}
+
+						// Handle JSON Data
+						if (_JSON_Data[i-2] == '}' and _JSON_Data[i-1] == '\r' and _JSON_Data[i] == '\n') Data_Handle = false;
+
+					}
+
+					// Declare JSON Object
+					StaticJsonDocument<_PostMan_Recieve_JSON_Size_> Incoming_JSON;
+
+					// Deserialize the JSON document
+					DeserializationError Error = deserializeJson(Incoming_JSON, _Data);
+
+					// Declare Event Variable
+					uint16_t _Event = 0;
+
+					// Handle JSON
+					if (!Error) _Event = Incoming_JSON["Request"]["Event"];
+
+					// Print Message
+					#ifdef _DEBUG_
+
+						// Control for Terminal State
+						if (this->Status.Terminal) {
+
+							// Print Batch Description
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Response --> [   ]"));
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_ + 14, _Console_CYAN_, String(_Event));
+
+						}
+
+					#endif
+
+					// Handle Command
+					if (_Event == Command_Reset) {
+
+						// Print Message
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
+
+								// Beep
+								GSM_Terminal->Beep();
+
+								// Print Batch Description
+								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Resetting..."));
+
+							}
+
+						#endif
+
+						// Send Response
+						this->Response(HTTP_OK, Command_OK);
+
+						// End Function
+						return(Command_Reset);
+
+					} else if (_Event == Command_FOTA_Download) {
+
+						// Print Message
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
+
+								// Beep
+								GSM_Terminal->Beep();
+
+								// Print Batch Description
+								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Firmware Download..."));
+
+							}
+
+						#endif
+
+						// Send Response
+						this->Response(HTTP_OK, Command_OK);
+
+						// End Function
+						return(Command_FOTA_Download);
+
+					} else {
+
+						// Send Response
+						this->Response(HTTP_BadRequest, Command_NOK);
+
+						// End Function
+						return(Command_NOK);
+
+					}
+
+					// Port Control
+					this->Listen(true);
+
+				} 
+
+			}
+
+			// End Function
+			return(Command_NOK);
 
 		}
 
@@ -3010,11 +3197,25 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 		// Define Interrupt Structure
 		struct Interrupt_Structure {
+			
+			// Ring Interrupt
 			bool Ring = false;
+
+			// Publish Interrupt Variable
+			uint8_t Publish = Pack_None;
+
 		};
 
 		// Define Interrupt Variables
 		static Interrupt_Structure PostMan_Interrupt;
+
+		// PCMSK1 Mask Handler Function
+		static void PCMSK1_Handler(void) {
+
+			// Set Interrupt State
+			PostMan_Interrupt.Ring = true;
+
+		}
 
 		// PostMan Constructor
 		Postman_PowerStatV4(Stream &_Serial, PowerStat_Console& _Terminal) : AT_Command_Set(_Serial), GSM_Hardware(), GSM_Terminal(&_Terminal) {
@@ -3121,7 +3322,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			this->Firewall();
 			
 			// Update Clock
-			this->Clock();
+			this->Syncronize_Time();
 
 			// Open Socket
 			this->Listen(true);
@@ -3140,8 +3341,97 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 		}
 
+		// Set Clock Configuration
+		bool Syncronize_Time(void) {
+
+			// Control for Connection
+			if (this->Status.Connection) {
+
+				// Print Batch Description
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_ + 30, _Console_WHITE_, F("[    ]"));
+
+					}
+
+				#endif
+
+				// Print Command Description
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Command Description
+						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+CCLK"));
+
+					}
+
+				#endif
+
+				// CCLK Command (Real Time Clock Configuration)
+				bool _Clock_State = AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second, this->Time.Time_Zone);
+
+				// Print Command State
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Command State
+						GSM_Terminal->OK(_Clock_State, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+
+					}
+
+				#endif
+
+				// Print Command Description
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Command Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Updating RTC Clock..."));
+
+					}
+
+				#endif
+
+				// Set RTC Clock
+				GSM_RTC.Set_Time(this->Time.Second, this->Time.Minute, this->Time.Hour, this->Time.Day, this->Time.Month, this->Time.Year);
+
+				// Clear Message Field
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+
+					}
+
+				#endif
+
+				// Connection Success
+				return(true);
+
+			}
+
+			// Time Configuration Failed
+			return(false);
+
+		}
+
 		// Set Variables Function
-		bool Add_Payload(const char* _Name, float _Value) {
+		bool Variable(const char* _Name, float _Value) {
 
 			// Control for Existing Variable
 			for (int i = 0; i < this->Buffer.Variable_Count; i++) {
@@ -3423,265 +3713,18 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 		}
 
-		// Get Server Command Function
-		void Get(void) {
-
-			// Control for Connection
-			if (this->Status.Connection) {
-
-				// Clear Message Field
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Batch Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-
-					}
-
-				#endif
-
-				// Wait for Sring
-				if (AT_Command_Set::SRING()) {
-
-					// Declare JSON Variable
-					char _JSON_Data[_PostMan_Recieve_JSON_Size_];
-
-					// Clear JSON Data
-					memset(_JSON_Data, '\0', _PostMan_Recieve_JSON_Size_);
-
-					// Print Message
-					#ifdef _DEBUG_
-
-						// Control for Terminal State
-						if (this->Status.Terminal) {
-
-							// Print Batch Description
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Recieving Message..."));
-
-						}
-
-					#endif
-
-					// Declare Request Pack Length
-					uint16_t _Length = 0;
-
-					// Answer Socket
-					AT_Command_Set::SA(_PostMan_Incomming_Socket_, 1, _Length);
-
-					// Handle Max Length
-					if (_Length > _PostMan_Recieve_JSON_Size_) _Length = _PostMan_Recieve_JSON_Size_;
-
-					// Get Request Data
-					AT_Command_Set::SRECV(_PostMan_Incomming_Socket_, _Length, _JSON_Data);
-
-					// Declare Handle Variable
-					bool Data_Handle = false;
-
-					// Declare JSON Variable
-					char _Data[_Length];
-
-					// Clear JSON Data
-					memset(_Data, '\0', _Length);
-
-					// Declare Data Order
-					uint16_t _Data_Order = 0;
-
-					// Control for Buffer
-					for (uint16_t i = 0; i < _PostMan_Recieve_JSON_Size_; i++) {
-
-						// Handle JSON Data
-						if (_JSON_Data[i] == '{') Data_Handle = true;
-
-						// Get Data
-						if (Data_Handle) {
-
-							// Handle for Space
-							if (_JSON_Data[i] != ' ' and _JSON_Data[i] != '\n' and _JSON_Data[i] != '\r') {
-
-								// Set Data
-								_Data[_Data_Order] = _JSON_Data[i];
-								
-								// Increase Data Order
-								_Data_Order += 1;
-
-							}
-
-						}
-
-						// Handle JSON Data
-						if (_JSON_Data[i-2] == '}' and _JSON_Data[i-1] == '\r' and _JSON_Data[i] == '\n') Data_Handle = false;
-
-					}
-
-					// Declare JSON Object
-					StaticJsonDocument<_PostMan_Recieve_JSON_Size_> Incoming_JSON;
-
-					// Deserialize the JSON document
-					DeserializationError Error = deserializeJson(Incoming_JSON, _Data);
-
-					// Declare Event Variable
-					uint16_t _Event = 0;
-
-					// Handle JSON
-					if (!Error) _Event = Incoming_JSON["Request"]["Event"];
-
-					// Print Message
-					#ifdef _DEBUG_
-
-						// Control for Terminal State
-						if (this->Status.Terminal) {
-
-							// Print Batch Description
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Response --> [   ]"));
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_ + 14, _Console_CYAN_, String(_Event));
-
-						}
-
-					#endif
-
-					// Handle Command
-					if (_Event == Command_Reset) {
-
-						// Print Message
-						#ifdef _DEBUG_
-
-							// Control for Terminal State
-							if (this->Status.Terminal) {
-
-								// Beep
-								GSM_Terminal->Beep();
-
-								// Print Batch Description
-								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Resetting..."));
-
-							}
-
-						#endif
-
-						// Send Response
-						this->Response(HTTP_OK, Command_OK);
-
-					} else {
-
-						// Send Response
-						this->Response(HTTP_BadRequest, Command_NOK);
-
-					}
-
-					// Port Control
-					this->Listen(true);
-
-				} 
-
-			}
-
-		}
-
-		// Send Request Response Function
-		bool Response(const uint16_t _Response_Code, const uint16_t _Response) {
-
-			// Clear Message Field
-			#ifdef _DEBUG_
-
-				// Control for Terminal State
-				if (this->Status.Terminal) {
-
-					// Print Batch Description
-					GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-
-				}
-
-			#endif
-
-			// Declare Response JSON Array
-			char Buffer_Variable[_PostMan_Response_JSON_Size_];
-
-			// Clear Buffer Variable
-			memset(Buffer_Variable, '\0', _PostMan_Response_JSON_Size_);
-
-			// Declare JSON Object
-			StaticJsonDocument<_PostMan_Response_JSON_Size_> Response_JSON;
-
-			// Declare JSON Data
-			Response_JSON[F("Response")] = _Response;
-
-			// Clear Unused Data
-			Response_JSON.garbageCollect();
-
-			// Serialize JSON	
-			serializeJson(Response_JSON, Buffer_Variable);
-
-			// Send Socket Answer
-			if (AT_Command_Set::SSEND(_PostMan_Incomming_Socket_, HTTP_RESPONSE, _Response_Code, "", Buffer_Variable)) {
-
-				// Print Message
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Batch Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Sending Response..."));
-
-					}
-
-				#endif
-
-				// Command Delay
-				delay(20);
-
-				// Closing Socket
-				if (AT_Command_Set::SH(_PostMan_Incomming_Socket_)) {
-
-					// Command Delay
-					delay(20);
-
-					// Control for Incoming Call
-					this->Listen(true);
-
-					// Print Message
-					#ifdef _DEBUG_
-
-						// Control for Terminal State
-						if (this->Status.Terminal) {
-
-							// Print Batch Description
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-
-						}
-
-					#endif
-
-					// End Function
-					return(true);
-
-				} else {
-
-					// End Function
-					return(false);
-
-				}
-
-			} else {
-
-				// End Function
-				return(false);
-
-			}
-			
-		}
-
 		// Download Firmware
 		bool Download(const uint16_t _Firmware_ID) {
 
 			// Control for Connection
 			if (this->Status.Connection) {
+
+				// Clear Variables
+				this->FOTA.Download_Time = 0;
+				this->FOTA.File_Size = 0;
+				this->FOTA.Download_Size = 0;
+				this->FOTA.SD_File_Size = 0;
+				this->FOTA.Download_Status = 0;
 
 				// Clear Message Field
 				#ifdef _DEBUG_
@@ -4165,9 +4208,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 						}
 
-						// End Function
-						return(false);
-
 					} else {
 
 						// Set Download Status
@@ -4180,6 +4220,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 					// End Function
 					if (this->FOTA.Download_Status == FOTA_Download_OK)	return(true);
+
+					// End Function
+					return(false);
 
 				} else {
 
@@ -4210,26 +4253,21 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		}
 
 		// Control for Process Function
-		void IoT_Control(void) {
+		uint16_t IoT_Control(void) {
 
 			// Ring Control
 			if (PostMan_Interrupt.Ring) {
 
-				// Get Server Command
-				this->Get();
-
 				// Reset Ring
 				PostMan_Interrupt.Ring = false;
 
+				// Get Server Command
+				return(this->Get());
+
 			}
 
-		}
-
-		// PCMSK1 Mask Handler Function
-		static void PCMSK1_Handler(void) {
-
-			// Set Interrupt State
-			PostMan_Interrupt.Ring = true;
+			// End Function
+			return(0);
 
 		}
 
@@ -4238,7 +4276,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 // Define Interrupt Variables Structure
 Postman_PowerStatV4::Interrupt_Structure Postman_PowerStatV4::PostMan_Interrupt;
 
-// Interrupt Routine PCMSK1 [PCINT8 - PCINT15]
+// Interrupt Routine PCMSK1 [PCINT11]
 ISR(PCINT1_vect, ISR_NOBLOCK) {
 
 	// PCMSK1 Handler
