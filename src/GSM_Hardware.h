@@ -274,4 +274,5 @@ class GSM_Hardware {
 			PORT_HEARTBEAT &= ~(1 << PIN_HEARTBEAT);
 
 		}
+
 };

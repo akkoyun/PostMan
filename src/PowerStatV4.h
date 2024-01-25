@@ -34,6 +34,10 @@
 #include <SPI.h>
 #include "SD.h"
 
+// Include Definitions
+#include "Definitions/Command.h"
+#include "Definitions/Pack.h"
+
 // Cloud Functions
 class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
