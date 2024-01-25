@@ -3187,6 +3187,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			// Control for Connection
 			if (this->Status.Connection) {
 
+				// Stop Socket Listen
+				this->Listen(false);
+
 				// Clear Message Field
 				#ifdef _DEBUG_
 
