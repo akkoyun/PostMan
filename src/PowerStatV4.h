@@ -57,6 +57,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			bool		Connection			= false;
 			bool 		Clock_Update		= false;
 			uint8_t		Socket_State		= 0;
+			bool		Ring				= false;
 		} Status;
 		struct Struct_Module {
 			char 		IMEI[17];
@@ -1095,8 +1096,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#endif
 
 					// Power ON Modem
-					// TODO: Power ON Modem prosedürü düzenlenecek
-//					Hardware::ON();
+					Hardware::ON();
 
 				}
 
@@ -1847,7 +1847,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFG(_PostMan_Incomming_Socket_, 1, 1500, 90, 300, 50)) this->Status.Connection = false;
+						if (!AT_Command_Set::SCFG(_PostMan_Incomming_Socket_, 1, 1500, 90, 1200, 50)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -1897,57 +1897,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFGEXT(_PostMan_Incomming_Socket_, 2, 0, 0, 0, 0)) this->Status.Connection = false;
-
-						// Print Command State
-						#ifdef _DEBUG_
-
-							// Control for Terminal State
-							if (this->Status.Terminal) {
-
-								// Print Command State
-								GSM_Terminal->OK(this->Status.Initialize, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
-
-							}
-
-						#endif
-
-						// Print Connection Time
-						#ifdef _DEBUG_
-
-							// Control for Terminal State
-							if (this->Status.Terminal) {
-
-								// Calculate Connection Time
-								this->Operator.Connection_Time = ((millis() - this->Buffer.Connection_Time_Buffer));
-
-								// Print Connection Time
-								GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
-
-							}
-
-						#endif
-
-					} else break;
-
-					// SCFGEXT2 (In Port) Command (Send Data Port Extended 2 Configuration)
-					if (this->Status.Connection) {
-
-						// Print Command Description
-						#ifdef _DEBUG_
-
-							// Control for Terminal State
-							if (this->Status.Terminal) {
-
-								// Print Command Description
-								GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#SCFGEXT2=3,1,0,0,0,0"));
-
-							}
-
-						#endif
-
-						// Send Command
-						if (!AT_Command_Set::SCFGEXT2(_PostMan_Incomming_Socket_, 1, 0, 0, 0, 0)) this->Status.Connection = false;
+						if (!AT_Command_Set::SCFGEXT(_PostMan_Incomming_Socket_, 1, 0, 1, 0, 0)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -2982,8 +2932,85 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 		}
 
+		// Module PCIEx Mask Function [PCIE0]
+		inline void PCIEx_Mask(bool _PCIE0 = false, bool _PCIE1 = false, bool _PCIE2 = false) {
+
+			// Define PCICR Mask
+			uint8_t _PCICR_Mask = PCICR;
+
+			// Set PCICR Mask
+			if (_PCIE0) _PCICR_Mask |= (1 << PCIE0);	// Set PCIE0
+			if (_PCIE1) _PCICR_Mask |= (1 << PCIE1);	// Set PCIE1
+			if (_PCIE2) _PCICR_Mask |= (1 << PCIE2);	// Set PCIE2
+
+			// Set PCICR with the calculated mask
+			PCICR = _PCICR_Mask;
+
+		}
+
+		// Interrupt Function
+		inline void PCINTxx_Interrupt(uint8_t _PCINT, bool _Status = false) {
+
+			// Set PCINTxx Interrupt
+			if (_PCINT >= 0 && _PCINT <= 7) {
+
+				// Control for Status
+				if (_Status) {
+
+					// Set PCINTxx [0 - 7]
+					PCMSK0 |= (1 << _PCINT);
+
+				} else {
+
+					// Clear PCINTxx [0 - 7]
+					PCMSK0 &= ~(1 << _PCINT);
+
+				}
+
+			} else if (_PCINT >= 8 && _PCINT <= 15) {
+
+				// Control for Status
+				if (_Status) {
+
+					// Set PCINTxx [8 - 15]
+					PCMSK1 |= (1 << (_PCINT - 8));
+
+				} else {
+
+					// Clear PCINTxx [8 - 15]
+					PCMSK1 &= ~(1 << (_PCINT - 8));
+
+				}
+
+			} else if (_PCINT >= 16 && _PCINT <= 23) {
+
+				// Control for Status
+				if (_Status) {
+
+					// Set PCINTxx [16 - 23]
+					PCMSK2 |= (1 << (_PCINT - 16));
+
+				} else {
+
+					// Clear PCINTxx [16 - 23]
+					PCMSK2 &= ~(1 << (_PCINT - 16));
+
+				}
+
+			}
+
+		}
+
 	// Public Functions
 	public:
+
+		// Define Interrupt Structure
+		struct Interrupt_Structure {
+			bool Ring = false;
+		};
+
+		// Define Interrupt Variables
+		static Interrupt_Structure PostMan_Interrupt;
 
 		// PostMan Constructor
 		Postman_PowerStatV4(Stream &_Serial, PowerStat_Console& _Terminal) : AT_Command_Set(_Serial), GSM_Hardware(), GSM_Terminal(&_Terminal) {
@@ -3094,6 +3121,18 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 			// Open Socket
 			this->Listen(true);
+
+			// Disable Interrupts
+			cli();
+
+			// Set PCICR Mask
+			this->PCIEx_Mask(false, true, false);
+
+			// Enable Ring Interrupt
+			this->PCINTxx_Interrupt(11, true);
+
+			// Enable Interrupts
+			sei();
 
 		}
 
@@ -3375,6 +3414,260 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			// End Function
 			return(false);
 
+		}
+
+		// Get Server Command Function
+		void Get(void) {
+
+			// Control for Connection
+			if (this->Status.Connection) {
+
+				// Clear Message Field
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+
+					}
+
+				#endif
+
+				// Wait for Sring
+				if (AT_Command_Set::SRING()) {
+
+					// Declare JSON Variable
+					char _JSON_Data[_PostMan_Recieve_JSON_Size_];
+
+					// Clear JSON Data
+					memset(_JSON_Data, '\0', _PostMan_Recieve_JSON_Size_);
+
+					// Print Message
+					#ifdef _DEBUG_
+
+						// Control for Terminal State
+						if (this->Status.Terminal) {
+
+							// Print Batch Description
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Recieving Message..."));
+
+						}
+
+					#endif
+
+					// Declare Request Pack Length
+					uint16_t _Length = 0;
+
+					// Answer Socket
+					AT_Command_Set::SA(_PostMan_Incomming_Socket_, 1, _Length);
+
+					// Handle Max Length
+					if (_Length > _PostMan_Recieve_JSON_Size_) _Length = _PostMan_Recieve_JSON_Size_;
+
+					// Get Request Data
+					AT_Command_Set::SRECV(_PostMan_Incomming_Socket_, _Length, _JSON_Data);
+
+					// Declare Handle Variable
+					bool Data_Handle = false;
+
+					// Declare JSON Variable
+					char _Data[_Length];
+
+					// Clear JSON Data
+					memset(_Data, '\0', _Length);
+
+					// Declare Data Order
+					uint16_t _Data_Order = 0;
+
+					// Control for Buffer
+					for (uint16_t i = 0; i < _PostMan_Recieve_JSON_Size_; i++) {
+
+						// Handle JSON Data
+						if (_JSON_Data[i] == '{') Data_Handle = true;
+
+						// Get Data
+						if (Data_Handle) {
+
+							// Handle for Space
+							if (_JSON_Data[i] != ' ' and _JSON_Data[i] != '\n' and _JSON_Data[i] != '\r') {
+
+								// Set Data
+								_Data[_Data_Order] = _JSON_Data[i];
+								
+								// Increase Data Order
+								_Data_Order += 1;
+
+							}
+
+						}
+
+						// Handle JSON Data
+						if (_JSON_Data[i-2] == '}' and _JSON_Data[i-1] == '\r' and _JSON_Data[i] == '\n') Data_Handle = false;
+
+					}
+
+					// Declare JSON Object
+					StaticJsonDocument<_PostMan_Recieve_JSON_Size_> Incoming_JSON;
+
+					// Deserialize the JSON document
+					DeserializationError Error = deserializeJson(Incoming_JSON, _Data);
+
+					// Declare Event Variable
+					uint16_t _Event = 0;
+
+					// Handle JSON
+					if (!Error) _Event = Incoming_JSON["Request"]["Event"];
+
+					// Print Message
+					#ifdef _DEBUG_
+
+						// Control for Terminal State
+						if (this->Status.Terminal) {
+
+							// Print Batch Description
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Response --> [   ]"));
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_ + 14, _Console_CYAN_, String(_Event));
+
+						}
+
+					#endif
+
+					// Handle Command
+					if (_Event == Command_Reset) {
+
+						// Print Message
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
+
+								// Beep
+								GSM_Terminal->Beep();
+
+								// Print Batch Description
+								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Resetting..."));
+
+							}
+
+						#endif
+
+						// Send Response
+						this->Response(HTTP_OK, Command_OK);
+
+					} else {
+
+						// Send Response
+						this->Response(HTTP_BadRequest, Command_NOK);
+
+					}
+
+					// Port Control
+					this->Listen(true);
+
+				} 
+
+			}
+
+		}
+
+		// Send Request Response Function
+		bool Response(const uint16_t _Response_Code, const uint16_t _Response) {
+
+			// Clear Message Field
+			#ifdef _DEBUG_
+
+				// Control for Terminal State
+				if (this->Status.Terminal) {
+
+					// Print Batch Description
+					GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+
+				}
+
+			#endif
+
+			// Declare Response JSON Array
+			char Buffer_Variable[_PostMan_Response_JSON_Size_];
+
+			// Clear Buffer Variable
+			memset(Buffer_Variable, '\0', _PostMan_Response_JSON_Size_);
+
+			// Declare JSON Object
+			StaticJsonDocument<_PostMan_Response_JSON_Size_> Response_JSON;
+
+			// Declare JSON Data
+			Response_JSON[F("Response")] = _Response;
+
+			// Clear Unused Data
+			Response_JSON.garbageCollect();
+
+			// Serialize JSON	
+			serializeJson(Response_JSON, Buffer_Variable);
+
+			// Send Socket Answer
+			if (AT_Command_Set::SSEND(_PostMan_Incomming_Socket_, HTTP_RESPONSE, _Response_Code, "", Buffer_Variable)) {
+
+				// Print Message
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Sending Response..."));
+
+					}
+
+				#endif
+
+				// Command Delay
+				delay(20);
+
+				// Closing Socket
+				if (AT_Command_Set::SH(_PostMan_Incomming_Socket_)) {
+
+					// Command Delay
+					delay(20);
+
+					// Control for Incoming Call
+					this->Listen(true);
+
+					// Print Message
+					#ifdef _DEBUG_
+
+						// Control for Terminal State
+						if (this->Status.Terminal) {
+
+							// Print Batch Description
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+
+						}
+
+					#endif
+
+					// End Function
+					return(true);
+
+				} else {
+
+					// End Function
+					return(false);
+
+				}
+
+			} else {
+
+				// End Function
+				return(false);
+
+			}
+			
 		}
 
 		// Download Firmware
@@ -3790,8 +4083,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									if (_WD > 100) break;
 
 									// Turn ON HeartBeat
-									PORT_HEARTBEAT |= (1 << PIN_HEARTBEAT);
-									PORT_HEARTBEAT &= ~(1 << PIN_HEARTBEAT);
+									GSM_Hardware::WD_Heartbeat();
 
 								}
 
@@ -3910,4 +4202,40 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 		}
 
+		// Control for Process Function
+		void IoT_Control(void) {
+
+			// Ring Control
+			if (PostMan_Interrupt.Ring) {
+
+				// Get Server Command
+				this->Get();
+
+				// Reset Ring
+				PostMan_Interrupt.Ring = false;
+
+			}
+
+		}
+
+		// PCMSK1 Mask Handler Function
+		static void PCMSK1_Handler(void) {
+
+			// Set Interrupt State
+			PostMan_Interrupt.Ring = true;
+
+		}
+
 };
+
+// Define Interrupt Variables Structure
+Postman_PowerStatV4::Interrupt_Structure Postman_PowerStatV4::PostMan_Interrupt;
+
+// Interrupt Routine PCMSK1 [PCINT8 - PCINT15]
+ISR(PCINT1_vect, ISR_NOBLOCK) {
+
+	// PCMSK1 Handler
+	Postman_PowerStatV4::PCMSK1_Handler();
+
+}
+

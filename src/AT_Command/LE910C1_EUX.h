@@ -2158,11 +2158,41 @@ class AT_Command_Set_LE910C1_EUX {
 			GSM_Serial->write(0x0D);
 			GSM_Serial->write(0x0A);
 
-			// Declare Response
-			this->Read_UART_Buffer(&Buffer, Buffer_Variable);
+			// Read Current Time
+			const uint32_t Current_Time = millis();
+
+			// \r\nOK\r\n\r\nSRING: 2,86\r\n
+
+			// Read UART Response
+			while (!Buffer.Response) {
+
+				// Read Serial Char
+				Buffer_Variable[Buffer.Read_Order] = GSM_Serial->read();
+
+				// Handle for Message End
+				if (Buffer.Read_Order > 10 && Buffer_Variable[Buffer.Read_Order - 1] == '\r' && Buffer_Variable[Buffer.Read_Order] == '\n') Buffer.Response = true;
+
+				// Increase Read Order
+				if (Buffer_Variable[Buffer.Read_Order] > 31 && Buffer_Variable[Buffer.Read_Order] < 127) Buffer.Read_Order += 1;
+				if (Buffer_Variable[Buffer.Read_Order] == '\r') Buffer.Read_Order += 1;
+				if (Buffer_Variable[Buffer.Read_Order] == '\n') Buffer.Read_Order += 1;
+
+				// Handle for timeout
+				if (millis() - Current_Time >= Buffer.Time_Out) return(false);
+
+			}
+
+			// Declare Buffer Variable
+			uint16_t _Buffer;
+
+			// Handle Variables
+			uint8_t _Parsed = sscanf(Buffer_Variable, "\r\nOK\r\n\r\nSRING: %01u,%03u\r\n", &_Buffer, &_Length);
+
+			// Handle for Parse Count
+			if (_Parsed == 2) return(true);
 
 			// End Function
-			return(Buffer.Response == _AT_OK_);
+			return(false);
 
 		}
 
