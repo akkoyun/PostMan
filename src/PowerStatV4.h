@@ -1100,7 +1100,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					#endif
 
 					// Power ON Modem
-					Hardware::ON();
+					GSM_Hardware::ON();
 
 				}
 
