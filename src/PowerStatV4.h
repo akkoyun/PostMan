@@ -52,6 +52,12 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		BQ24298 GSM_Charger;
 		DS28C GSM_Serial_ID;
 
+		// Define Callback Function
+		typedef void (*CallBack_FOTA)(uint16_t);
+
+		// Define Callback Function
+		CallBack_FOTA _CallBack_FOTA;
+
 		// Define IoT Structures
 		struct Struct_Status {
 			bool		Terminal			= false;
@@ -2667,29 +2673,12 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			// Control for Connection
 			if (this->Status.Connection) {
 
-				// Clear Message Field
-				#ifdef _DEBUG_
+				if (this->PostMan_Interrupt.Ring) {
 
-					// Control for Terminal State
-					if (this->Status.Terminal) {
+					// Reset Ring
+					this->PostMan_Interrupt.Ring = false;
 
-						// Print Batch Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-
-					}
-
-				#endif
-
-				// Wait for Sring
-				if (AT_Command_Set::SRING()) {
-
-					// Declare JSON Variable
-					char _JSON_Data[_PostMan_Recieve_JSON_Size_];
-
-					// Clear JSON Data
-					memset(_JSON_Data, '\0', _PostMan_Recieve_JSON_Size_);
-
-					// Print Message
+					// Clear Message Field
 					#ifdef _DEBUG_
 
 						// Control for Terminal State
@@ -2697,114 +2686,19 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 							// Print Batch Description
 							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Recieving Message..."));
 
 						}
 
 					#endif
 
-					// Declare Request Pack Length
-					uint16_t _Length = 0;
+					// Wait for Sring
+					if (AT_Command_Set::SRING()) {
 
-					// Answer Socket
-					AT_Command_Set::SA(_PostMan_Incomming_Socket_, 1, _Length);
+						// Declare JSON Variable
+						char _JSON_Data[_PostMan_Recieve_JSON_Size_];
 
-					// Handle Max Length
-					if (_Length > _PostMan_Recieve_JSON_Size_) _Length = _PostMan_Recieve_JSON_Size_;
-
-					// Get Request Data
-					AT_Command_Set::SRECV(_PostMan_Incomming_Socket_, _Length, _JSON_Data);
-
-					// Declare Handle Variable
-					bool Data_Handle = false;
-
-					// Declare JSON Variable
-					char _Data[_Length];
-
-					// Clear JSON Data
-					memset(_Data, '\0', _Length);
-
-					// Declare Data Order
-					uint16_t _Data_Order = 0;
-
-					// Control for Buffer
-					for (uint16_t i = 0; i < _PostMan_Recieve_JSON_Size_; i++) {
-
-						// Handle JSON Data
-						if (_JSON_Data[i] == '{') Data_Handle = true;
-
-						// Get Data
-						if (Data_Handle) {
-
-							// Handle for Space
-							if (_JSON_Data[i] != ' ' and _JSON_Data[i] != '\n' and _JSON_Data[i] != '\r') {
-
-								// Set Data
-								_Data[_Data_Order] = _JSON_Data[i];
-								
-								// Increase Data Order
-								_Data_Order += 1;
-
-							}
-
-						}
-
-						// Handle JSON Data
-						if (_JSON_Data[i-2] == '}' and _JSON_Data[i-1] == '\r' and _JSON_Data[i] == '\n') Data_Handle = false;
-
-					}
-
-					// Declare JSON Object
-					StaticJsonDocument<_PostMan_Recieve_JSON_Size_> Incoming_JSON;
-
-					// Deserialize the JSON document
-					DeserializationError Error = deserializeJson(Incoming_JSON, _Data);
-
-					// Declare Event Variable
-					uint16_t _Event = 0;
-
-					// Handle JSON
-					if (!Error) _Event = Incoming_JSON["Request"]["Event"];
-
-					// Print Message
-					#ifdef _DEBUG_
-
-						// Control for Terminal State
-						if (this->Status.Terminal) {
-
-							// Print Batch Description
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Response --> [   ]"));
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_ + 14, _Console_CYAN_, String(_Event));
-
-						}
-
-					#endif
-
-					// Handle Command
-					if (_Event == Command_Reset) {
-
-						// Print Message
-						#ifdef _DEBUG_
-
-							// Control for Terminal State
-							if (this->Status.Terminal) {
-
-								// Beep
-								GSM_Terminal->Beep();
-
-								// Print Batch Description
-								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Resetting..."));
-
-							}
-
-						#endif
-
-						// Send Response
-						this->Response(HTTP_OK, Command_OK);
-
-					} else if (_Event == Command_FOTA_Download) {
+						// Clear JSON Data
+						memset(_JSON_Data, '\0', _PostMan_Recieve_JSON_Size_);
 
 						// Print Message
 						#ifdef _DEBUG_
@@ -2814,32 +2708,151 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 								// Print Batch Description
 								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Firmware Download..."));
+								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Recieving Message..."));
 
 							}
 
 						#endif
 
-						// Send Response
-						this->Response(HTTP_OK, Command_OK);
+						// Declare Request Pack Length
+						uint16_t _Length = 0;
 
-						// Handle FW ID
-						uint16_t _Firmware_ID = Incoming_JSON["Request"]["FW_ID"];
+						// Answer Socket
+						AT_Command_Set::SA(_PostMan_Incomming_Socket_, 1, _Length);
 
-						// Call User Callback
-						if (_CallBack_FOTA != nullptr) _CallBack_FOTA(_Firmware_ID);
+						// Handle Max Length
+						if (_Length > _PostMan_Recieve_JSON_Size_) _Length = _PostMan_Recieve_JSON_Size_;
 
-					} else {
+						// Get Request Data
+						AT_Command_Set::SRECV(_PostMan_Incomming_Socket_, _Length, _JSON_Data);
 
-						// Send Response
-						this->Response(HTTP_BadRequest, Command_NOK);
+						// Declare Handle Variable
+						bool Data_Handle = false;
 
-					}
+						// Declare JSON Variable
+						char _Data[_Length];
 
-					// Port Control
-					this->Listen(true);
+						// Clear JSON Data
+						memset(_Data, '\0', _Length);
 
-				} 
+						// Declare Data Order
+						uint16_t _Data_Order = 0;
+
+						// Control for Buffer
+						for (uint16_t i = 0; i < _PostMan_Recieve_JSON_Size_; i++) {
+
+							// Handle JSON Data
+							if (_JSON_Data[i] == '{') Data_Handle = true;
+
+							// Get Data
+							if (Data_Handle) {
+
+								// Handle for Space
+								if (_JSON_Data[i] != ' ' and _JSON_Data[i] != '\n' and _JSON_Data[i] != '\r') {
+
+									// Set Data
+									_Data[_Data_Order] = _JSON_Data[i];
+									
+									// Increase Data Order
+									_Data_Order += 1;
+
+								}
+
+							}
+
+							// Handle JSON Data
+							if (_JSON_Data[i-2] == '}' and _JSON_Data[i-1] == '\r' and _JSON_Data[i] == '\n') Data_Handle = false;
+
+						}
+
+						// Declare JSON Object
+						StaticJsonDocument<_PostMan_Recieve_JSON_Size_> Incoming_JSON;
+
+						// Deserialize the JSON document
+						DeserializationError Error = deserializeJson(Incoming_JSON, _Data);
+
+						// Declare Event Variable
+						uint16_t _Event = 0;
+
+						// Handle JSON
+						if (!Error) _Event = Incoming_JSON["Request"]["Event"];
+
+						// Print Message
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
+
+								// Print Batch Description
+								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Response --> [   ]"));
+								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_ + 14, _Console_CYAN_, String(_Event));
+
+							}
+
+						#endif
+
+						// Handle Command
+						if (_Event == Command_Reset) {
+
+							// Print Message
+							#ifdef _DEBUG_
+
+								// Control for Terminal State
+								if (this->Status.Terminal) {
+
+									// Beep
+									GSM_Terminal->Beep();
+
+									// Print Batch Description
+									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Resetting..."));
+
+								}
+
+							#endif
+
+							// Send Response
+							this->Response(HTTP_OK, Command_OK);
+
+						} else if (_Event == Command_FOTA_Download) {
+
+							// Print Message
+							#ifdef _DEBUG_
+
+								// Control for Terminal State
+								if (this->Status.Terminal) {
+
+									// Print Batch Description
+									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Firmware Download..."));
+
+								}
+
+							#endif
+
+							// Send Response
+							this->Response(HTTP_OK, Command_OK);
+
+							// Handle FW ID
+							uint16_t _Firmware_ID = Incoming_JSON["Request"]["FW_ID"];
+
+							// Call User Callback
+							if (_CallBack_FOTA != nullptr) _CallBack_FOTA(_Firmware_ID);
+
+						} else {
+
+							// Send Response
+							this->Response(HTTP_BadRequest, Command_NOK);
+
+						}
+
+						// Port Control
+						this->Listen(true);
+
+					} 
+
+				}
 
 			}
 
@@ -3200,12 +3213,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 	// Public Functions
 	public:
-
-		// Define Callback Function
-		typedef void (*CallBack_FOTA)(uint16_t);
-
-		// Define Callback Function
-		CallBack_FOTA _CallBack_FOTA;
 
 		// Set Callback Function
 		void Set_FOTA_CallBack(CallBack_FOTA _CallBack) {
@@ -4301,16 +4308,8 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		// Control for Process Function
 		void Heartbeat(void) {
 
-			// Ring Control
-			if (PostMan_Interrupt.Ring) {
-
-				// Reset Ring
-				PostMan_Interrupt.Ring = false;
-
-				// Get Server Command
-				this->Get();
-
-			}
+			// Get Ring Port
+			this->Get();
 
 		}
 
@@ -4320,10 +4319,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 Postman_PowerStatV4::Interrupt_Structure Postman_PowerStatV4::PostMan_Interrupt;
 
 // Interrupt Routine PCMSK1 [PCINT11]
-ISR(PCINT1_vect, ISR_NOBLOCK) {
+ISR(PCINT1_vect) {
 
 	// PCMSK1 Handler
 	Postman_PowerStatV4::PCMSK1_Handler();
 
 }
-
