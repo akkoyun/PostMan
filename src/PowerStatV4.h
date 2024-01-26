@@ -90,10 +90,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			uint8_t 	Second				= 0;
 			uint8_t		Time_Zone			= 0;
 		} Time;
-		struct Struct_Buffer {
-			uint32_t 	Connection_Time_Buffer	= 0;
-			uint8_t		Variable_Count			= 0;
-		} Buffer;
 		struct Struct_FOTA {
 			uint32_t		Download_Time		= 0;
 			uint32_t		File_Size			= 0;
@@ -101,16 +97,32 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			uint32_t		SD_File_Size 		= 0;
 			uint8_t 		Download_Status		= 0;
 		} FOTA;
+		struct Struct_Buffer {
+			uint32_t 	Connection_Time_Buffer	= 0;
+		} Buffer;
 		struct Struct_JSON_Variable {
-			char Name[10];
-			float Value;
-		};
+
+			// Define Variable Count
+			uint8_t	Variable_Count				= 0;
+
+			// Define Variable Structure
+			struct Struct_Variable {
+				
+				// Define Variable Name
+				char Name[10];
+
+				// Define Variable Value
+				float Value;
+
+			};
+
+			// Define Variable Array
+			Struct_Variable Variable[MAX_VARIABLE_COUNT];
+
+		} Data;
 
 		// Declare JSON Variable
 		char JSON_Pack[_PostMan_Send_JSON_Size_];
-
-		// Define Variable Array
-		Struct_JSON_Variable JSON_Variable[MAX_VARIABLE_COUNT];
 
 		// Initialize GSM Modem
 		bool Initialize(void) {
@@ -2650,7 +2662,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		}
 
 		// Get Server Command Function
-		uint16_t Get(void) {
+		void Get(void) {
 
 			// Control for Connection
 			if (this->Status.Connection) {
@@ -2792,9 +2804,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						// Send Response
 						this->Response(HTTP_OK, Command_OK);
 
-						// End Function
-						return(Command_Reset);
-
 					} else if (_Event == Command_FOTA_Download) {
 
 						// Print Message
@@ -2802,9 +2811,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 							// Control for Terminal State
 							if (this->Status.Terminal) {
-
-								// Beep
-								GSM_Terminal->Beep();
 
 								// Print Batch Description
 								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
@@ -2817,16 +2823,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						// Send Response
 						this->Response(HTTP_OK, Command_OK);
 
-						// End Function
-						return(Command_FOTA_Download);
+						// Handle FW ID
+						uint16_t _Firmware_ID = Incoming_JSON["Request"]["FW_ID"];
+
+						// Call User Callback
+						if (_CallBack_FOTA != nullptr) _CallBack_FOTA(_Firmware_ID);
 
 					} else {
 
 						// Send Response
 						this->Response(HTTP_BadRequest, Command_NOK);
-
-						// End Function
-						return(Command_NOK);
 
 					}
 
@@ -2836,9 +2842,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				} 
 
 			}
-
-			// End Function
-			return(Command_NOK);
 
 		}
 
@@ -3047,15 +3050,18 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			JSON_Payload[F("PCB_H")] = GSM_TH_Sensor.Humidity();
 
 			// Set Payload Variables
-			for (int i = 0; i < this->Buffer.Variable_Count; i++) {
+			for (uint8_t i = 0; i < this->Data.Variable_Count; i++) {
 
 				// Set Payload Variables
-				JSON_Payload[this->JSON_Variable[i].Name] = this->JSON_Variable[i].Value;
+				JSON_Payload[this->Data.Variable[i].Name] = this->Data.Variable[i].Value;
 
 			}
 
 			// Clear Unused Data
 			JSON.garbageCollect();
+
+			// Clear Variables
+			this->Clear_Variable();
 
 			// Serialize JSON	
 			uint16_t _JSON_Size = serializeJson(JSON, this->JSON_Pack);
@@ -3195,6 +3201,20 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 	// Public Functions
 	public:
 
+		// Define Callback Function
+		typedef void (*CallBack_FOTA)(uint16_t);
+
+		// Define Callback Function
+		CallBack_FOTA _CallBack_FOTA;
+
+		// Set Callback Function
+		void Set_FOTA_CallBack(CallBack_FOTA _CallBack) {
+			
+			// Set Callback Function
+			_CallBack_FOTA = _CallBack;
+
+		}
+
 		// Define Interrupt Structure
 		struct Interrupt_Structure {
 			
@@ -3218,13 +3238,21 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		}
 
 		// PostMan Constructor
-		Postman_PowerStatV4(Stream &_Serial, PowerStat_Console& _Terminal) : AT_Command_Set(_Serial), GSM_Hardware(), GSM_Terminal(&_Terminal) {
+		Postman_PowerStatV4(Stream &_Serial, PowerStat_Console& _Terminal) : 
+			AT_Command_Set(_Serial), 
+			GSM_Hardware(), 
+			GSM_Terminal(&_Terminal), 
+			_CallBack_FOTA(nullptr) {
 
 			// Control Terminal
 			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
 
 		}
-		Postman_PowerStatV4(Stream &_Serial) : AT_Command_Set(_Serial), GSM_Hardware(), GSM_Terminal(nullptr) {
+		Postman_PowerStatV4(Stream &_Serial) : 
+			AT_Command_Set(_Serial), 
+			GSM_Hardware(), 
+			GSM_Terminal(nullptr), 
+			_CallBack_FOTA(nullptr) {
 
 			// Control Terminal
 			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
@@ -3434,40 +3462,57 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		bool Variable(const char* _Name, float _Value) {
 
 			// Control for Existing Variable
-			for (int i = 0; i < this->Buffer.Variable_Count; i++) {
+			for (uint8_t i = 0; i < this->Data.Variable_Count; i++) {
 
 				// Check for Existing Variable
-				if (strcmp(JSON_Variable[i].Name, _Name) == 0) {
+				if (strcmp(Data.Variable[i].Name, _Name) == 0) {
 
 					// Update Value
-					JSON_Variable[i].Value = _Value;
+					Data.Variable[i].Value = _Value;
 
 					// End Function
-					return(true);
+					return true;
 
 				}
 
 			}
 
 			// Control for Max Variable Count
-			if (this->Buffer.Variable_Count < MAX_VARIABLE_COUNT) {
+			if (this->Data.Variable_Count < MAX_VARIABLE_COUNT) {
 
-				// Set Variable Name
-				strcpy(JSON_Variable[this->Buffer.Variable_Count].Name, _Name);
+				//	Set Variable Name
+				strncpy(Data.Variable[this->Data.Variable_Count].Name, _Name, sizeof(Data.Variable[this->Data.Variable_Count].Name) - 1);
+
+				//	Set Variable Name Terminator
+				Data.Variable[this->Data.Variable_Count].Name[sizeof(Data.Variable[this->Data.Variable_Count].Name) - 1] = '\0';
 
 				// Set Variable Value
-				JSON_Variable[this->Buffer.Variable_Count].Value = _Value;
+				Data.Variable[this->Data.Variable_Count].Value = _Value;
 
 				// Increase Variable Count
-				this->Buffer.Variable_Count++;
+				this->Data.Variable_Count++;
 
 				// End Function
-				return(true);
+				return true;
 
 			}
 
-			// End Function
-			return(false);
+			// Failed to add variable (likely due to reaching max count)
+			return false;
+
+		}
+		void Clear_Variable(void) {
+
+			// Loop through all variables
+			for (uint8_t i = 0; i < MAX_VARIABLE_COUNT; i++) {
+
+				// Clear the name of the variable
+				memset(Data.Variable[i].Name, '\0', sizeof(Data.Variable[i].Name));
+
+			}
+
+			// Clear the variable count
+			this->Data.Variable_Count = 0;
 
 		}
 
@@ -3681,9 +3726,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 									// Clear Variables
 									if (_Response_Command == 200) {
-										
-										// Clear Variables
-										this->Buffer.Variable_Count = 0;
 
 										// End Function
 										return(true);
@@ -4218,6 +4260,10 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					// Set Download Duration
 					FOTA.Download_Time = (millis() - _Download_Start_Time) / 1000;
 
+					// Add Variable to Payload
+					this->Variable("FOTA_ID", _Firmware_ID);
+					this->Variable("FOTA_Status", FOTA.Download_Status);
+
 					// End Function
 					if (this->FOTA.Download_Status == FOTA_Download_OK)	return(true);
 
@@ -4253,7 +4299,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		}
 
 		// Control for Process Function
-		uint16_t IoT_Control(void) {
+		void Heartbeat(void) {
 
 			// Ring Control
 			if (PostMan_Interrupt.Ring) {
@@ -4262,12 +4308,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				PostMan_Interrupt.Ring = false;
 
 				// Get Server Command
-				return(this->Get());
+				this->Get();
 
 			}
-
-			// End Function
-			return(0);
 
 		}
 
