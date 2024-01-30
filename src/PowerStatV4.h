@@ -2815,6 +2815,12 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							// Send Response
 							this->Response(HTTP_OK, Command_OK);
 
+							// Set FOTA Power Enable Pin
+							PORT_FOTA_POWER_EN |= (1 << PIN_FOTA_POWER_EN);
+							delay(50);
+							PORT_FOTA_POWER_EN &= ~(1 << PIN_FOTA_POWER_EN);
+
+
 						} else if (_Event == Command_FOTA_Download) {
 
 							// Print Message
@@ -2837,8 +2843,18 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							// Handle FW ID
 							uint16_t _Firmware_ID = Incoming_JSON["Request"]["FW_ID"];
 
+							// Stop RTC Timer
+							GSM_RTC.Timer(false);
+
 							// Call User Callback
 							if (_CallBack_FOTA != nullptr) _CallBack_FOTA(_Firmware_ID);
+
+						} else if (_Event == Command_Update) {
+
+							// Send Response
+							this->Response(HTTP_OK, Command_OK);
+
+							this->PostMan_Interrupt.Pack_Type = Pack_Alarm;
 
 						} else {
 
@@ -3224,12 +3240,15 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 		// Define Interrupt Structure
 		struct Interrupt_Structure {
-			
+
 			// Ring Interrupt
 			bool Ring = false;
 
-			// Publish Interrupt Variable
-			uint8_t Publish = Pack_None;
+			// FOTA Download Interrupt
+			bool FOTA_Download = false;
+
+			// Pack Type Interrupt
+			uint8_t Pack_Type = Pack_None;
 
 		};
 
@@ -3805,6 +3824,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 				#endif
 
+				// Enable SD Multiplexer
+				GSM_Hardware::SD_Multiplexer(true);
+
 				// Declare SD File Object
 				File SD_File;
 
@@ -4271,6 +4293,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					this->Variable("FOTA_ID", _Firmware_ID);
 					this->Variable("FOTA_Status", FOTA.Download_Status);
 
+					// Disable SD Multiplexer
+					GSM_Hardware::SD_Multiplexer(false);
+
 					// End Function
 					if (this->FOTA.Download_Status == FOTA_Download_OK)	return(true);
 
@@ -4293,12 +4318,18 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 					#endif
 
+					// Disable SD Multiplexer
+					GSM_Hardware::SD_Multiplexer(false);
+
 					// End Function
 					return(false);
 
 				}
 
 			}
+
+			// Disable SD Multiplexer
+			GSM_Hardware::SD_Multiplexer(false);
 
 			// End Function
 			return(false);
