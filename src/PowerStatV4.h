@@ -2740,7 +2740,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						uint16_t _Data_Order = 0;
 
 						// Control for Buffer
-						for (uint16_t i = 0; i < _PostMan_Recieve_JSON_Size_; i++) {
+						for (uint16_t i = 2; i < _PostMan_Recieve_JSON_Size_; i++) {
 
 							// Handle JSON Data
 							if (_JSON_Data[i] == '{') Data_Handle = true;
