@@ -39,7 +39,7 @@ class GSM_Hardware {
 			}
 
 			// SD Wait Delay
-			delay(200);
+			delay(300);
 
 		}
 

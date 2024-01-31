@@ -32,7 +32,7 @@
 #include <MAX17055.h>
 #include <BQ24298.h>
 #include <SPI.h>
-#include "SD.h"
+#include "SdFat.h"
 
 // Include Definitions
 #include "AT_Command/Definitions/Command.h"
@@ -51,6 +51,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		MAX17055 GSM_Battery_Gauge;
 		BQ24298 GSM_Charger;
 		DS28C GSM_Serial_ID;
+		SdFat GSM_SD;
 
 		// Define Callback Function
 		typedef void (*CallBack_FOTA)(uint16_t);
@@ -2815,6 +2816,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							// Send Response
 							this->Response(HTTP_OK, Command_OK);
 
+							// Disable SD Multiplexer
+							GSM_Hardware::SD_Multiplexer(false);
+
 							// Set FOTA Power Enable Pin
 							PORT_FOTA_POWER_EN |= (1 << PIN_FOTA_POWER_EN);
 							delay(50);
@@ -3288,11 +3292,11 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		// Begin Function
 		void Begin(void) {
 
-			// Set SD Mulptiplexer ON
+			// Enable SD Multiplexer
 			GSM_Hardware::SD_Multiplexer(true);
 
 			// Start SD Card
-			SD.begin(53);
+			GSM_SD.begin(53);
 
 			// Set Device_ID Variable
 			GSM_Serial_ID.Begin();
@@ -3787,6 +3791,12 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			// Control for Connection
 			if (this->Status.Connection) {
 
+				// Beep
+				GSM_Terminal->Beep();
+
+				// Enable SD Multiplexer
+				GSM_Hardware::SD_Multiplexer(true);
+
 				// Clear Variables
 				this->FOTA.Download_Time = 0;
 				this->FOTA.File_Size = 0;
@@ -3824,17 +3834,17 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 				#endif
 
-				// Enable SD Multiplexer
-				GSM_Hardware::SD_Multiplexer(true);
-
 				// Declare SD File Object
 				File SD_File;
 
+				// Delay
+				delay(100);
+
 				// Control for Existing File
-				if (SD.exists(_PostMan_Firmware_Name_)) {
+				if (GSM_SD.exists(_PostMan_Firmware_Name_)) {
 
 					// Remove Existing File
-					SD.remove(_PostMan_Firmware_Name_);
+					GSM_SD.remove(_PostMan_Firmware_Name_);
 
 					// Print Message
 					#ifdef _DEBUG_
@@ -3872,7 +3882,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 				}
 
 				// Open File for Write
-				SD_File = SD.open(_PostMan_Firmware_Name_, O_WRITE | O_CREAT);
+				SD_File = GSM_SD.open(_PostMan_Firmware_Name_, O_WRITE | O_CREAT);
 
 				// Command Delay
 				delay(100);
@@ -4232,10 +4242,10 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					SD_File.close();
 
 					// Control for Existing File
-					if (SD.exists(_PostMan_Firmware_Name_)) {
+					if (GSM_SD.exists(_PostMan_Firmware_Name_)) {
 
 						// Open File for Write
-						SD_File = SD.open(_PostMan_Firmware_Name_, FILE_READ);
+						SD_File = GSM_SD.open(_PostMan_Firmware_Name_, FILE_READ);
 
 						// Get File Size
 						this->FOTA.SD_File_Size = SD_File.size();
