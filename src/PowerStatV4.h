@@ -55,9 +55,11 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 		// Define Callback Function
 		typedef void (*CallBack_FOTA)(uint16_t);
+		typedef void (*CallBack_Interval_Update)();
 
 		// Define Callback Function
 		CallBack_FOTA _CallBack_FOTA;
+		CallBack_Interval_Update _CallBack_Interval_Update;
 
 		// Define IoT Structures
 		struct Struct_Status {
@@ -2860,6 +2862,64 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 							this->PostMan_Interrupt.Pack_Type = Pack_Alarm;
 
+						} else if (_Event == Command_Paremeter_Interval) {
+
+							// Print Message
+							#ifdef _DEBUG_
+
+								// Control for Terminal State
+								if (this->Status.Terminal) {
+
+									// Print Batch Description
+									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Send Interval Update..."));
+
+								}
+
+							#endif
+
+							// Declare Variables
+							uint16_t _Online_Interval = 0;
+							uint16_t _Offline_Interval = 0;
+
+							// Control for JSON (Request)
+							if (Incoming_JSON.containsKey("Request")) {
+
+								// Control for JSON (Online)
+								if (Incoming_JSON["Request"].containsKey("Online")) {
+
+									// Handle Online Interval
+									_Online_Interval = Incoming_JSON["Request"]["Online"];
+
+									// Write EEPROM
+									if (_Online_Interval >= 1 and _Online_Interval <= 255) GSM_RTC.Write_EEPROM(__EEPROM_Online_Interval__, _Online_Interval);
+
+								} 
+
+								// Control for JSON (Offline)
+								if (Incoming_JSON["Request"].containsKey("Offline")) {
+
+									// Handle Offline Interval
+									_Offline_Interval = Incoming_JSON["Request"]["Offline"];
+
+									// Write EEPROM
+									if (_Offline_Interval >= 1 and _Offline_Interval <= 255) GSM_RTC.Write_EEPROM(__EEPROM_Offline_Interval__, _Offline_Interval);
+
+								} 
+
+								// Send Response
+								this->Response(HTTP_Accepted, Command_OK);
+
+							} else {
+
+								// Send Response
+								this->Response(HTTP_BadRequest, Command_NOK);
+
+							}
+
+							// Control for Interval
+							if (_Online_Interval != 0 or _Offline_Interval != 0) if (_CallBack_Interval_Update != nullptr) _CallBack_Interval_Update();
+
 						} else {
 
 							// Send Response
@@ -3241,6 +3301,12 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			_CallBack_FOTA = _CallBack;
 
 		}
+		void Set_Interval_Update_CallBack(CallBack_Interval_Update _CallBack) {
+			
+			// Set Callback Function
+			_CallBack_Interval_Update = _CallBack;
+
+		}
 
 		// Define Interrupt Structure
 		struct Interrupt_Structure {
@@ -3272,7 +3338,8 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			AT_Command_Set(_Serial), 
 			GSM_Hardware(), 
 			GSM_Terminal(&_Terminal), 
-			_CallBack_FOTA(nullptr) {
+			_CallBack_FOTA(nullptr),
+			_CallBack_Interval_Update(nullptr) {
 
 			// Control Terminal
 			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
@@ -3282,7 +3349,8 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			AT_Command_Set(_Serial), 
 			GSM_Hardware(), 
 			GSM_Terminal(nullptr), 
-			_CallBack_FOTA(nullptr) {
+			_CallBack_FOTA(nullptr),
+			_CallBack_Interval_Update(nullptr) {
 
 			// Control Terminal
 			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}

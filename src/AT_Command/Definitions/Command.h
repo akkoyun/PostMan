@@ -6,5 +6,6 @@
 #define Command_Update								262
 #define Command_Reset								999
 #define Command_Parameter							500
+#define Command_Paremeter_Interval                  501
 #define Command_FOTA_Download						900
 #define Command_FOTA_Burn							901
