@@ -56,10 +56,16 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		// Define Callback Function
 		typedef void (*CallBack_FOTA)(uint16_t);
 		typedef void (*CallBack_Interval_Update)();
+		typedef void (*CallBack_Energy_Update)();
+		typedef void (*CallBack_Pressure_Update)();
+		typedef void (*CallBack_Mask_Update)();
 
 		// Define Callback Function
 		CallBack_FOTA _CallBack_FOTA;
 		CallBack_Interval_Update _CallBack_Interval_Update;
+		CallBack_Energy_Update _CallBack_Energy_Update;
+		CallBack_Pressure_Update _CallBack_Pressure_Update;
+		CallBack_Mask_Update _CallBack_Mask_Update;
 
 		// Define IoT Structures
 		struct Struct_Status {
@@ -2862,7 +2868,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 							this->PostMan_Interrupt.Pack_Type = Pack_Alarm;
 
-						} else if (_Event == Command_Paremeter_Interval) {
+						} else if (_Event == Command_Parameter) {
 
 							// Print Message
 							#ifdef _DEBUG_
@@ -2872,43 +2878,519 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 									// Print Batch Description
 									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Send Interval Update..."));
+									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Parameter Update..."));
 
 								}
 
 							#endif
 
-							// Declare Variables
-							uint16_t _Online_Interval = 0;
-							uint16_t _Offline_Interval = 0;
+							// Parameter Update Pack
+							/*
+							
+							 {
+							 	"Request": {
+							 		"Event": 501,
+							 		"Parameter": {
+							 			"Dt1": 1,
+							 			"Dt2": 2,
+							 			"Vmin": 250,
+							 			"Vmax": 150,
+							 			"Imax": 5.10,
+							 			"FQmin": 49,
+							 			"FQmax": 51,
+							 			"VIMB": 9,
+							 			"IIMB": 9,
+							 			"Ratio": 20,
+							 			"Pmin": 1.20,
+							 			"Pmax": 9.90,
+							 			"Pslope": 3,
+							 			"MASK_Stop": 4294967295,
+							 			"MASK_Publish": 4294967295
+							 		}
+							 	}
+							 }
+							
+							 */
 
 							// Control for JSON (Request)
 							if (Incoming_JSON.containsKey("Request")) {
 
-								// Control for JSON (Online)
-								if (Incoming_JSON["Request"].containsKey("Online")) {
+								// Control for JSON (Parameter)
+								if (Incoming_JSON["Request"].containsKey("Parameter")) {
 
-									// Handle Online Interval
-									_Online_Interval = Incoming_JSON["Request"]["Online"];
+									// Declare Variables
+									bool _Limit_Error = false;
 
-									// Write EEPROM
-									if (_Online_Interval >= 1 and _Online_Interval <= 255) GSM_RTC.Write_EEPROM(__EEPROM_Online_Interval__, _Online_Interval);
+									// Declare Update Variables
+									bool _Interval_Update = false;
+									bool _Energy_Update = false;
+									bool _Pressure_Update = false;
+									bool _Mask_Update = false;
 
-								} 
+									// Control for JSON (Dt1)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("Dt1")) {
 
-								// Control for JSON (Offline)
-								if (Incoming_JSON["Request"].containsKey("Offline")) {
+										// EEPROM Online Interval Value is Minute Value (1 min - 255 min)
 
-									// Handle Offline Interval
-									_Offline_Interval = Incoming_JSON["Request"]["Offline"];
+										// Handle Online Interval
+										uint8_t _Online_Interval = Incoming_JSON["Request"]["Parameter"]["Dt1"];
 
-									// Write EEPROM
-									if (_Offline_Interval >= 1 and _Offline_Interval <= 255) GSM_RTC.Write_EEPROM(__EEPROM_Offline_Interval__, _Offline_Interval);
+										// Write EEPROM
+										if (_Online_Interval >= 1 and _Online_Interval <= 255) {
+											
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_Online_Interval__, _Online_Interval);
 
-								} 
+											// Set Update Variable
+											_Interval_Update = true;
 
-								// Send Response
-								this->Response(HTTP_Accepted, Command_OK);
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for JSON (Dt2)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("Dt2")) {
+
+										// EEPROM Offline Interval Value is Minute Value (1 min - 255 min)
+
+										// Handle Offline Interval
+										uint8_t _Offline_Interval = Incoming_JSON["Request"]["Parameter"]["Dt2"];
+
+										// Write EEPROM
+										if (_Offline_Interval >= 1 and _Offline_Interval <= 255) {
+											
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_Offline_Interval__, _Offline_Interval);
+
+											// Set Update Variable
+											_Interval_Update = true;
+
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for Variable Update
+									if (_Interval_Update) {
+
+										// Variable Update Callback
+										if (_CallBack_Interval_Update != nullptr) _CallBack_Interval_Update();
+
+									}
+
+									// Control for JSON (Vmin)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("Vmin")) {
+
+										// Handle Vmin
+										uint16_t _Vmin = Incoming_JSON["Request"]["Parameter"]["Vmin"];
+
+										// Write EEPROM
+										if (_Vmin >= 100 and _Vmin <= 300) {
+
+											// Handle MSB Value (Vmin)
+											uint8_t _Vmin_MSB = (_Vmin >> 8);
+
+											// Handle LSB Value (Vmin)
+											uint8_t _Vmin_LSB = (_Vmin & 0xFF);
+
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_V_Min_MSB__, _Vmin_MSB);
+											GSM_RTC.Write_EEPROM(__EEPROM_V_Min_LSB__, _Vmin_LSB);
+
+											// Set Update Variable
+											_Energy_Update = true;
+
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for JSON (Vmax)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("Vmax")) {
+
+										// Handle Vmax
+										uint16_t _Vmax = Incoming_JSON["Request"]["Parameter"]["Vmax"];
+
+										// Write EEPROM
+										if (_Vmax >= 100 and _Vmax <= 300) {
+
+											// Handle MSB Value (Vmax)
+											uint8_t _Vmax_MSB = (_Vmax >> 8);
+
+											// Handle LSB Value (Vmax)
+											uint8_t _Vmax_LSB = (_Vmax & 0xFF);
+
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_V_Max_MSB__, _Vmax_MSB);
+											GSM_RTC.Write_EEPROM(__EEPROM_V_Max_LSB__, _Vmax_LSB);
+
+											// Set Update Variable
+											_Energy_Update = true;
+
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for JSON (Imax)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("Imax")) {
+
+										// Handle Imax
+										float _Imax = Incoming_JSON["Request"]["Parameter"]["Imax"];
+
+										// Write EEPROM
+										if (_Imax >= 0.1 and _Imax <= 10.0) {
+
+											// Handle MSB Value (Imax)
+											uint8_t _Imax_MSB = (_Imax * 10);
+
+											// Handle LSB Value (Imax)
+											uint8_t _Imax_LSB = ((_Imax * 10) - _Imax_MSB) * 10;
+
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_I_Max_MSB__, _Imax_MSB);
+											GSM_RTC.Write_EEPROM(__EEPROM_I_Max_LSB__, _Imax_LSB);
+
+											// Set Update Variable
+											_Energy_Update = true;
+
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for JSON (FQmin)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("FQmin")) {
+
+										// Handle FQmin
+										uint8_t _FQmin = Incoming_JSON["Request"]["Parameter"]["FQmin"];
+
+										// Write EEPROM
+										if (_FQmin >= 40 and _FQmin <= 60) {
+
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_FQ_Min__, _FQmin);
+
+											// Set Update Variable
+											_Energy_Update = true;
+
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for JSON (FQmax)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("FQmax")) {
+
+										// Handle FQmax
+										uint8_t _FQmax = Incoming_JSON["Request"]["Parameter"]["FQmax"];
+
+										// Write EEPROM
+										if (_FQmax >= 40 and _FQmax <= 60) {
+
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_FQ_Max__, _FQmax);
+
+											// Set Update Variable
+											_Energy_Update = true;
+
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for JSON (VIMB)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("VIMB")) {
+
+										// Handle VIMB
+										uint8_t _VIMB = Incoming_JSON["Request"]["Parameter"]["VIMB"];
+
+										// Write EEPROM
+										if (_VIMB >= 1 and _VIMB <= 255) {
+
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_VIMB_Max__, _VIMB);
+
+											// Set Update Variable
+											_Energy_Update = true;
+
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for JSON (IIMB)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("IIMB")) {
+
+										// Handle IIMB
+										uint8_t _IIMB = Incoming_JSON["Request"]["Parameter"]["IIMB"];
+
+										// Write EEPROM
+										if (_IIMB >= 1 and _IIMB <= 255) {
+
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_IIMB_Max__, _IIMB);
+
+											// Set Update Variable
+											_Energy_Update = true;
+
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for Variable Update
+									if (_Energy_Update) {
+
+										// Variable Update Callback
+										if (_CallBack_Energy_Update != nullptr) _CallBack_Energy_Update();
+
+									}
+
+									// Control for JSON (Ratio)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("Ratio")) {
+
+										// Handle Ratio
+										uint8_t _Ratio = Incoming_JSON["Request"]["Parameter"]["Ratio"];
+
+										// Write EEPROM
+										if (_Ratio >= 1 and _Ratio <= 255) {
+
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_Current_Ratio__, _Ratio);
+
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for JSON (Pmin)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("Pmin")) {
+
+										// Handle Pmin
+										uint16_t _Pmin = Incoming_JSON["Request"]["Parameter"]["Pmin"];
+
+										// Write EEPROM
+										if (_Pmin * 100 >= 10 and _Pmin * 100 <= 999) {
+
+											// Handle MSB Value (Vmax)
+											uint8_t _Pmin_MSB = ((_Pmin * 100) >> 8);
+
+											// Handle LSB Value (Vmax)
+											uint8_t _Pmin_LSB = ((_Pmin * 100) & 0xFF);
+
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_PMIN_MSB__, _Pmin_MSB);
+											GSM_RTC.Write_EEPROM(__EEPROM_PMIN_LSB__, _Pmin_LSB);
+
+											// Set Update Variable
+											_Pressure_Update = true;
+
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for JSON (Pmax)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("Pmax")) {
+
+										// Handle Pmax
+										uint16_t _Pmax = Incoming_JSON["Request"]["Parameter"]["Pmax"];
+
+										// Write EEPROM
+										if (_Pmax * 100 >= 10 and _Pmax * 100 <= 999) {
+
+											// Handle MSB Value (Vmax)
+											uint8_t _Pmax_MSB = ((_Pmax * 100) >> 8);
+
+											// Handle LSB Value (Vmax)
+											uint8_t _Pmax_LSB = ((_Pmax * 100) & 0xFF);
+
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_PMAX_MSB__, _Pmax_MSB);
+											GSM_RTC.Write_EEPROM(__EEPROM_PMAX_LSB__, _Pmax_LSB);
+
+											// Set Update Variable
+											_Pressure_Update = true;
+
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for JSON (Pslope)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("Pslope")) {
+
+										// Handle Pslope
+										uint8_t _Pslope = Incoming_JSON["Request"]["Parameter"]["Pslope"];
+
+										// Write EEPROM
+										if (_Pslope >= 1 and _Pslope <= 255) {
+
+											// Write EEPROM
+											GSM_RTC.Write_EEPROM(__EEPROM_PSLOP_EMAX__, _Pslope);
+
+											// Set Update Variable
+											_Pressure_Update = true;
+
+										} else {
+
+											// Set Error
+											_Limit_Error = true;
+
+										}
+
+									}
+
+									// Control for Variable Update
+									if (_Pressure_Update) {
+
+										// Variable Update Callback
+										if (_CallBack_Pressure_Update != nullptr) _CallBack_Pressure_Update();
+
+									}
+
+									// Control for JSON (MASK_Stop)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("MASK_Stop")) {
+
+										// Handle MASK_Stop
+										uint32_t _MASK_Stop = Incoming_JSON["Request"]["Parameter"]["MASK_Stop"];
+
+										// Register Structure
+										// MSB2-MSB1-LSB2-LSB1
+
+										// Handle MSB2 Value (MASK_Stop)
+										uint8_t _MASK_Stop_MSB_2 = (uint8_t)(_MASK_Stop >> 24);
+
+										// Handle MSB1 Value (MASK_Stop)
+										uint8_t _MASK_Stop_MSB_1 = (uint8_t)((_MASK_Stop >> 16) & 0xFF);
+
+										// Handle LSB2 Value (MASK_Stop)
+										uint8_t _MASK_Stop_LSB_2 = (uint8_t)((_MASK_Stop >> 8) & 0xFF);
+
+										// Handle LSB1 Value (MASK_Stop)
+										uint8_t _MASK_Stop_LSB_1 = (uint8_t)(_MASK_Stop & 0xFF);
+
+										// Write EEPROM
+										GSM_RTC.Write_EEPROM(__EEPROM_STOP_MASK_MSB_2__, _MASK_Stop_MSB_2);
+										GSM_RTC.Write_EEPROM(__EEPROM_STOP_MASK_MSB_1__, _MASK_Stop_MSB_1);
+										GSM_RTC.Write_EEPROM(__EEPROM_STOP_MASK_LSB_2__, _MASK_Stop_LSB_2);
+										GSM_RTC.Write_EEPROM(__EEPROM_STOP_MASK_LSB_1__, _MASK_Stop_LSB_1);
+
+										// Set Update Variable
+										_Mask_Update = true;
+
+									}
+
+									// Control for JSON (MASK_Publish)
+									if (Incoming_JSON["Request"]["Parameter"].containsKey("MASK_Publish")) {
+
+										// Handle MASK_Publish
+										uint32_t _MASK_Publish = Incoming_JSON["Request"]["Parameter"]["MASK_Publish"];
+
+										// Register Structure
+										// MSB2-MSB1-LSB2-LSB1
+
+										// Handle MSB2 Value (MASK_Publish)
+										uint8_t _MASK_Publish_MSB_2 = (uint8_t)(_MASK_Publish >> 24);
+
+										// Handle MSB1 Value (MASK_Publish)
+										uint8_t _MASK_Publish_MSB_1 = (uint8_t)((_MASK_Publish >> 16) & 0xFF);
+
+										// Handle LSB2 Value (MASK_Publish)
+										uint8_t _MASK_Publish_LSB_2 = (uint8_t)((_MASK_Publish >> 8) & 0xFF);
+
+										// Handle LSB1 Value (MASK_Publish)
+										uint8_t _MASK_Publish_LSB_1 = (uint8_t)(_MASK_Publish & 0xFF);
+
+										// Write EEPROM
+										GSM_RTC.Write_EEPROM(__EEPROM_PUBLISH_MASK_MSB_2__, _MASK_Publish_MSB_2);
+										GSM_RTC.Write_EEPROM(__EEPROM_PUBLISH_MASK_MSB_1__, _MASK_Publish_MSB_1);
+										GSM_RTC.Write_EEPROM(__EEPROM_PUBLISH_MASK_LSB_2__, _MASK_Publish_LSB_2);
+										GSM_RTC.Write_EEPROM(__EEPROM_PUBLISH_MASK_LSB_1__, _MASK_Publish_LSB_1);
+
+										// Set Update Variable
+										_Mask_Update = true;
+
+									}
+
+									// Control for Variable Update
+									if (_Mask_Update) {
+
+										// Variable Update Callback
+										if (_CallBack_Mask_Update != nullptr) _CallBack_Mask_Update();
+
+									}
+
+									// Control for Limit Error
+									if (_Limit_Error) {
+
+										// Send Response
+										this->Response(HTTP_NotAcceptable, Command_NOK);
+
+									} else {
+
+										// Send Response
+										this->Response(HTTP_Accepted, Command_OK);
+
+									}
+
+								} else {
+
+									// Send Response
+									this->Response(HTTP_BadRequest, Command_NOK);
+
+								}
+
 
 							} else {
 
@@ -2916,9 +3398,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 								this->Response(HTTP_BadRequest, Command_NOK);
 
 							}
-
-							// Control for Interval
-							if (_Online_Interval != 0 or _Offline_Interval != 0) if (_CallBack_Interval_Update != nullptr) _CallBack_Interval_Update();
 
 						} else {
 
@@ -3307,6 +3786,24 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			_CallBack_Interval_Update = _CallBack;
 
 		}
+		void Set_Energy_Update_CallBack(CallBack_Energy_Update _CallBack) {
+			
+			// Set Callback Function
+			_CallBack_Energy_Update = _CallBack;
+
+		}
+		void Set_Pressure_Update_CallBack(CallBack_Pressure_Update _CallBack) {
+			
+			// Set Callback Function
+			_CallBack_Pressure_Update = _CallBack;
+
+		}
+		void Set_Mask_Update_CallBack(CallBack_Mask_Update _CallBack) {
+			
+			// Set Callback Function
+			_CallBack_Mask_Update = _CallBack;
+
+		}
 
 		// Define Interrupt Structure
 		struct Interrupt_Structure {
@@ -3339,7 +3836,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			GSM_Hardware(), 
 			GSM_Terminal(&_Terminal), 
 			_CallBack_FOTA(nullptr),
-			_CallBack_Interval_Update(nullptr) {
+			_CallBack_Interval_Update(nullptr),
+			_CallBack_Energy_Update(nullptr),
+			_CallBack_Pressure_Update(nullptr) {
 
 			// Control Terminal
 			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
@@ -3350,7 +3849,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			GSM_Hardware(), 
 			GSM_Terminal(nullptr), 
 			_CallBack_FOTA(nullptr),
-			_CallBack_Interval_Update(nullptr) {
+			_CallBack_Interval_Update(nullptr),
+			_CallBack_Energy_Update(nullptr),
+			_CallBack_Pressure_Update(nullptr) {
 
 			// Control Terminal
 			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
