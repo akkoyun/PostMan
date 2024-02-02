@@ -1910,7 +1910,7 @@ class AT_Command_Set_LE910C1_EUX {
 				uint8_t _Variable_Count = sscanf(Buffer_Variable, "\r\n+CCLK: \"%02hhu/%02hhu/%02hhu,%02hhu:%02hhu:%02hhu+%02hhu\"\r\n\r\nOK\r\n", &_Year, &_Month, &_Day, &_Hour, &_Minute, &_Second, &_Time_Zone);
 
 				// Control for Variables
-				if (_Year > 24 || _Year < 22 || _Month > 12 || _Month < 0 || _Day > 31 || _Day < 0 || _Hour > 24 || _Hour < 0 || _Minute > 59 || _Minute < 0 || _Second > 59 || _Second < 0) return false;
+				if (_Year > 99 || _Year < 22 || _Month > 12 || _Day > 31 || _Hour > 24 || _Minute > 59 || _Second > 59) return false;
 
 				// Control for Variable
 				if (_Variable_Count == 7) return true;
