@@ -4061,7 +4061,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 									char * _Content_Length = strtok(NULL, "\r\n");
 
 									// Handle Content Length
-									sscanf(_Content_Length, "Content-Length: %u", &FOTA.File_Size);
+									sscanf(_Content_Length, "Content-Length: %lu", &FOTA.File_Size);
 
 									// Print Message
 									#ifdef _DEBUG_
@@ -4073,7 +4073,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											char _File_Size_Buffer[8];
 
 											// Set Buffer
-											sprintf(_File_Size_Buffer, "%07u", this->FOTA.File_Size);
+											sprintf(_File_Size_Buffer, "%07lu", this->FOTA.File_Size);
 
 											// Print File Size
 											GSM_Terminal->Text(15, 112, _Console_CYAN_, String(_File_Size_Buffer));
@@ -4111,7 +4111,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											char _Download_Size_Buffer[8];
 
 											// Set Buffer
-											sprintf(_Download_Size_Buffer, "%07u", this->FOTA.Download_Size);
+											sprintf(_Download_Size_Buffer, "%07lu", this->FOTA.Download_Size);
 
 											// Print Download Time
 											GSM_Terminal->Text(18, 111, _Console_CYAN_, String((millis() - _Download_Start_Time) / 1000));
@@ -4229,7 +4229,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											char _Download_Size_Buffer[8];
 
 											// Set Buffer
-											sprintf(_Download_Size_Buffer, "%07u", this->FOTA.Download_Size);
+											sprintf(_Download_Size_Buffer, "%07lu", this->FOTA.Download_Size);
 
 											// Print SD File Size
 											GSM_Terminal->Text(16, 112, _Console_CYAN_, String(_Download_Size_Buffer));
@@ -4256,7 +4256,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											uint32_t _Time = (millis() - _Download_Start_Time) / 1000;
 
 											// Set Buffer
-											sprintf(_Download_Time_Buffer, "%04u", _Time);
+											sprintf(_Download_Time_Buffer, "%04lu", _Time);
 
 											// Print Download Time
 											GSM_Terminal->Text(18, 111, _Console_CYAN_, String(_Download_Time_Buffer));
