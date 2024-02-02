@@ -2935,6 +2935,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										// Handle Online Interval
 										uint8_t _Online_Interval = Incoming_JSON["Request"]["Parameter"]["Dt1"];
 
+										// Control for Default
+										if (_Online_Interval == 0) _Online_Interval = _SEND_INTERVAL_ONLINE_;
+
 										// Write EEPROM
 										if (_Online_Interval >= 1 and _Online_Interval <= 255) {
 											
@@ -2960,6 +2963,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 										// Handle Offline Interval
 										uint8_t _Offline_Interval = Incoming_JSON["Request"]["Parameter"]["Dt2"];
+
+										// Control for Default
+										if (_Offline_Interval == 0) _Offline_Interval = _SEND_INTERVAL_OFFLINE_;
 
 										// Write EEPROM
 										if (_Offline_Interval >= 1 and _Offline_Interval <= 255) {
@@ -2993,6 +2999,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										// Handle Vmin
 										uint16_t _Vmin = Incoming_JSON["Request"]["Parameter"]["Vmin"];
 
+										// Control for Default
+										if (_Vmin == 0) _Vmin = __MAX78630_Limit_Voltage_Min__;
+
 										// Write EEPROM
 										if (_Vmin >= 100 and _Vmin <= 300) {
 
@@ -3023,6 +3032,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 										// Handle Vmax
 										uint16_t _Vmax = Incoming_JSON["Request"]["Parameter"]["Vmax"];
+
+										// Control for Default
+										if (_Vmax == 0) _Vmax = __MAX78630_Limit_Voltage_Max__;
 
 										// Write EEPROM
 										if (_Vmax >= 100 and _Vmax <= 300) {
@@ -3055,6 +3067,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										// Handle Imax
 										float _Imax = Incoming_JSON["Request"]["Parameter"]["Imax"];
 
+										// Control for Default
+										if (_Imax == 0) _Imax = __MAX78630_Limit_Current_Max__;
+
 										// Write EEPROM
 										if (_Imax >= 0.1 and _Imax <= 10.0) {
 
@@ -3086,6 +3101,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										// Handle FQmin
 										uint8_t _FQmin = Incoming_JSON["Request"]["Parameter"]["FQmin"];
 
+										// Control for Default
+										if (_FQmin == 0) _FQmin = __MAX78630_Limit_Frequency_Min__;
+
 										// Write EEPROM
 										if (_FQmin >= 40 and _FQmin <= 60) {
 
@@ -3109,6 +3127,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 										// Handle FQmax
 										uint8_t _FQmax = Incoming_JSON["Request"]["Parameter"]["FQmax"];
+
+										// Control for Default
+										if (_FQmax == 0) _FQmax = __MAX78630_Limit_Frequency_Max__;
 
 										// Write EEPROM
 										if (_FQmax >= 40 and _FQmax <= 60) {
@@ -3134,6 +3155,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										// Handle VIMB
 										uint8_t _VIMB = Incoming_JSON["Request"]["Parameter"]["VIMB"];
 
+										// Control for Default
+										if (_VIMB == 0) _VIMB = __MAX78630_Limit_VImb_Max__ * 100;
+
 										// Write EEPROM
 										if (_VIMB >= 1 and _VIMB <= 255) {
 
@@ -3157,6 +3181,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 										// Handle IIMB
 										uint8_t _IIMB = Incoming_JSON["Request"]["Parameter"]["IIMB"];
+
+										// Control for Default
+										if (_IIMB == 0) _IIMB = __MAX78630_Limit_IImb_Max__ * 100;
 
 										// Write EEPROM
 										if (_IIMB >= 1 and _IIMB <= 255) {
@@ -3190,6 +3217,8 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										// Handle Ratio
 										uint8_t _Ratio = Incoming_JSON["Request"]["Parameter"]["Ratio"];
 
+										// Control for Default
+
 										// Write EEPROM
 										if (_Ratio >= 1 and _Ratio <= 255) {
 
@@ -3210,6 +3239,8 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 										// Handle Pmin
 										uint16_t _Pmin = Incoming_JSON["Request"]["Parameter"]["Pmin"];
+
+										// Control for Default
 
 										// Write EEPROM
 										if (_Pmin * 100 >= 10 and _Pmin * 100 <= 999) {
@@ -3242,6 +3273,8 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										// Handle Pmax
 										uint16_t _Pmax = Incoming_JSON["Request"]["Parameter"]["Pmax"];
 
+										// Control for Default
+
 										// Write EEPROM
 										if (_Pmax * 100 >= 10 and _Pmax * 100 <= 999) {
 
@@ -3272,6 +3305,8 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 										// Handle Pslope
 										uint8_t _Pslope = Incoming_JSON["Request"]["Parameter"]["Pslope"];
+
+										// Control for Default
 
 										// Write EEPROM
 										if (_Pslope >= 1 and _Pslope <= 255) {
@@ -3305,6 +3340,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										// Handle MASK_Stop
 										uint32_t _MASK_Stop = Incoming_JSON["Request"]["Parameter"]["MASK_Stop"];
 
+										// Control for Default
+										if (_MASK_Stop == 0) _MASK_Stop = __STOP_REGISTER_DEFAULT__;
+
 										// Register Structure
 										// MSB2-MSB1-LSB2-LSB1
 
@@ -3336,6 +3374,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 										// Handle MASK_Publish
 										uint32_t _MASK_Publish = Incoming_JSON["Request"]["Parameter"]["MASK_Publish"];
+
+										// Control for Default
+										if (_MASK_Publish == 0) _MASK_Publish = __PUBLISH_REGISTER_DEFAULT__;
 
 										// Register Structure
 										// MSB2-MSB1-LSB2-LSB1
