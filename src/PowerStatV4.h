@@ -2377,6 +2377,10 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							// Download Firmware
 							this->Download(_Firmware_ID);
 
+							// Add Variable to Payload
+							this->Variable("FOTA_ID", _Firmware_ID);
+							this->Variable("FOTA_Status", FOTA.Download_Status);
+
 							// Set Interrupt
 							this->PostMan_Interrupt.Pack_Type = Pack_FOTA_Download;
 
@@ -2463,6 +2467,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											// Write EEPROM
 											GSM_RTC.Write_EEPROM(__EEPROM_Online_Interval__, _Online_Interval);
 
+											// Add Variable to Payload
+											this->Variable("Dt1", _Online_Interval);
+
 											// Set Update Variable
 											_Interval_Update = true;
 
@@ -2491,6 +2498,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											
 											// Write EEPROM
 											GSM_RTC.Write_EEPROM(__EEPROM_Offline_Interval__, _Offline_Interval);
+
+											// Add Variable to Payload
+											this->Variable("Dt2", _Offline_Interval);
 
 											// Set Update Variable
 											_Interval_Update = true;
@@ -2534,6 +2544,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_V_Min_MSB__, _Vmin_MSB);
 											GSM_RTC.Write_EEPROM(__EEPROM_V_Min_LSB__, _Vmin_LSB);
 
+											// Add Variable to Payload
+											this->Variable("Vmin", _Vmin);
+
 											// Set Update Variable
 											_Energy_Update = true;
 
@@ -2567,6 +2580,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											// Write EEPROM
 											GSM_RTC.Write_EEPROM(__EEPROM_V_Max_MSB__, _Vmax_MSB);
 											GSM_RTC.Write_EEPROM(__EEPROM_V_Max_LSB__, _Vmax_LSB);
+
+											// Add Variable to Payload
+											this->Variable("Vmax", _Vmax);
 
 											// Set Update Variable
 											_Energy_Update = true;
@@ -2602,6 +2618,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_I_Max_MSB__, _Imax_MSB);
 											GSM_RTC.Write_EEPROM(__EEPROM_I_Max_LSB__, _Imax_LSB);
 
+											// Add Variable to Payload
+											this->Variable("Imax", _Imax);
+
 											// Set Update Variable
 											_Energy_Update = true;
 
@@ -2628,6 +2647,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 											// Write EEPROM
 											GSM_RTC.Write_EEPROM(__EEPROM_FQ_Min__, _FQmin);
+
+											// Add Variable to Payload
+											this->Variable("FQmin", _FQmin);
 
 											// Set Update Variable
 											_Energy_Update = true;
@@ -2656,6 +2678,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											// Write EEPROM
 											GSM_RTC.Write_EEPROM(__EEPROM_FQ_Max__, _FQmax);
 
+											// Add Variable to Payload
+											this->Variable("FQmax", _FQmax);
+
 											// Set Update Variable
 											_Energy_Update = true;
 
@@ -2683,6 +2708,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											// Write EEPROM
 											GSM_RTC.Write_EEPROM(__EEPROM_VIMB_Max__, _VIMB);
 
+											// Add Variable to Payload
+											this->Variable("VIMB", _VIMB);
+
 											// Set Update Variable
 											_Energy_Update = true;
 
@@ -2709,6 +2737,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 											// Write EEPROM
 											GSM_RTC.Write_EEPROM(__EEPROM_IIMB_Max__, _IIMB);
+
+											// Add Variable to Payload
+											this->Variable("IIMB", _IIMB);
 
 											// Set Update Variable
 											_Energy_Update = true;
@@ -2744,6 +2775,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											// Write EEPROM
 											GSM_RTC.Write_EEPROM(__EEPROM_Current_Ratio__, _Ratio);
 
+											// Add Variable to Payload
+											this->Variable("Ratio", _Ratio);
+
 										} else {
 
 											// Set Error
@@ -2773,6 +2807,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											// Write EEPROM
 											GSM_RTC.Write_EEPROM(__EEPROM_PMIN_MSB__, _Pmin_MSB);
 											GSM_RTC.Write_EEPROM(__EEPROM_PMIN_LSB__, _Pmin_LSB);
+
+											// Add Variable to Payload
+											this->Variable("Pmin", _Pmin / 100);
 
 											// Set Update Variable
 											_Pressure_Update = true;
@@ -2807,6 +2844,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_PMAX_MSB__, _Pmax_MSB);
 											GSM_RTC.Write_EEPROM(__EEPROM_PMAX_LSB__, _Pmax_LSB);
 
+											// Add Variable to Payload
+											this->Variable("Pmax", _Pmax / 100);
+
 											// Set Update Variable
 											_Pressure_Update = true;
 
@@ -2832,6 +2872,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 											// Write EEPROM
 											GSM_RTC.Write_EEPROM(__EEPROM_PSLOP_EMAX__, _Pslope);
+
+											// Add Variable to Payload
+											this->Variable("Pslope", _Pslope);
 
 											// Set Update Variable
 											_Pressure_Update = true;
@@ -2883,6 +2926,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										GSM_RTC.Write_EEPROM(__EEPROM_STOP_MASK_LSB_2__, _MASK_Stop_LSB_2);
 										GSM_RTC.Write_EEPROM(__EEPROM_STOP_MASK_LSB_1__, _MASK_Stop_LSB_1);
 
+										// Add Variable to Payload
+										this->Variable("MASK_Stop", _MASK_Stop);
+
 										// Set Update Variable
 										_Mask_Update = true;
 
@@ -2917,6 +2963,9 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										GSM_RTC.Write_EEPROM(__EEPROM_PUBLISH_MASK_MSB_1__, _MASK_Publish_MSB_1);
 										GSM_RTC.Write_EEPROM(__EEPROM_PUBLISH_MASK_LSB_2__, _MASK_Publish_LSB_2);
 										GSM_RTC.Write_EEPROM(__EEPROM_PUBLISH_MASK_LSB_1__, _MASK_Publish_LSB_1);
+
+										// Add Variable to Payload
+										this->Variable("MASK_Publish", _MASK_Publish);
 
 										// Set Update Variable
 										_Mask_Update = true;
@@ -3480,10 +3529,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 					// Set Download Duration
 					this->FOTA.Download_Time = (millis() - _Download_Start_Time) / 1000;
-
-					// Add Variable to Payload
-					this->Variable("FOTA_ID", _Firmware_ID);
-					this->Variable("FOTA_Status", FOTA.Download_Status);
 
 					// Disable SD Multiplexer
 					GSM_Hardware::SD_Multiplexer(false);
