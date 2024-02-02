@@ -54,14 +54,12 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		SdFat GSM_SD;
 
 		// Define Callback Function
-		typedef void (*CallBack_FOTA)(uint16_t);
 		typedef void (*CallBack_Interval_Update)();
 		typedef void (*CallBack_Energy_Update)();
 		typedef void (*CallBack_Pressure_Update)();
 		typedef void (*CallBack_Mask_Update)();
 
 		// Define Callback Function
-		CallBack_FOTA _CallBack_FOTA;
 		CallBack_Interval_Update _CallBack_Interval_Update;
 		CallBack_Energy_Update _CallBack_Energy_Update;
 		CallBack_Pressure_Update _CallBack_Pressure_Update;
@@ -2297,7 +2295,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 						#endif
 
 						// Handle Command
-						if (_Event == Command_Reset) {
+						if (_Event == Command_FOTA_Burn) {
 
 							// Print Message
 							#ifdef _DEBUG_
@@ -2344,17 +2342,43 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 							#endif
 
-							// Send Response
-							this->Response(HTTP_OK, Command_OK);
-
 							// Handle FW ID
-							uint16_t _Firmware_ID = Incoming_JSON["Request"]["FW_ID"];
+							uint16_t _Firmware_ID = 0;
+
+							// Control for JSON (Request)
+							if (Incoming_JSON.containsKey("Request")) {
+
+								// Control for JSON (FW_ID)
+								if (Incoming_JSON["Request"].containsKey("FW_ID")) {
+
+									// Handle FW ID
+									_Firmware_ID = Incoming_JSON["Request"]["FW_ID"];
+
+									// Send Response
+									this->Response(HTTP_OK, Command_OK);
+
+								} else {
+
+									// Send Response
+									this->Response(HTTP_NotAcceptable, Command_NOK);
+
+								}
+
+							} else {
+
+								// Send Response
+								this->Response(HTTP_BadRequest, Command_NOK);
+
+							}
 
 							// Stop RTC Timer
 							GSM_RTC.Timer(false);
 
-							// Call User Callback
-							if (_CallBack_FOTA != nullptr) _CallBack_FOTA(_Firmware_ID);
+							// Download Firmware
+							this->Download(_Firmware_ID);
+
+							// Set Interrupt
+							this->PostMan_Interrupt.Pack_Type = Pack_FOTA_Download;
 
 						} else if (_Event == Command_Update) {
 
@@ -2953,903 +2977,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 		}
 
-		// Update Signal Quality
-		void Signal_Update(void) {
-
-			// MONI Command (Network Status)
-			if (this->Status.Connection) {
-
-				// Clear Message Field
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Batch Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-
-						// Print Command Description
-						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#MONI"));
-
-					}
-
-				#endif
-
-				// Send Command
-				bool _MONI_Command = AT_Command_Set::MONI(this->Operator.TAC, this->Operator.Cell_ID, this->Operator.RSSI, this->Operator.Signal, this->Operator.PCell_ID);
-
-				// Print Command State
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Command State
-						GSM_Terminal->OK(_MONI_Command, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
-
-						// Print Batch Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-
-						// Print Command Description
-						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+WS46?"));
-
-					}
-
-				#endif
-
-				// Send Command
-				bool _WS46_Command = AT_Command_Set::WS46(GET, this->Operator.WDS);
-
-				// Print Command State
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Command State
-						GSM_Terminal->OK(_WS46_Command, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
-
-						// Print Signal Level Value
-						GSM_Terminal->Show_RSSI(14, 65, this->Operator.RSSI);
-
-						// Print Signal Level Bar
-						GSM_Terminal->Show_Signal_Quality(14, 74, this->Operator.Signal);
-
-						// Print Operator Value
-						char _Operator[6];
-						sprintf(_Operator, "%d%d", this->Operator.MCC, this->Operator.MNC);
-						GSM_Terminal->Text(15, 74, _Console_GRAY_, String(_Operator));
-
-						// Show Connection Type
-						GSM_Terminal->Show_Connection_Type(17, 70, this->Operator.WDS);
-
-						// Print Batch Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-
-					}
-
-				#endif
-
-			} 
-
-		}
-
-		// Parse JSON Pack
-		uint16_t Parse_JSON(const uint8_t _Pack_Type) {
-
-			// Clear Pack
-			memset(this->JSON_Pack, '\0', _PostMan_Send_JSON_Size_);
-
-			// Define JSON
-			StaticJsonDocument<_PostMan_Send_JSON_Size_> JSON;
-
-			// Define Info Section
-			JsonObject JSON_Info = JSON.createNestedObject(F("Info"));
-
-			// Set Device ID Variable
-			if (_Pack_Type == Pack_Online) JSON_Info[F("Command")] = F("Online");
-			else if (_Pack_Type == Pack_Update) JSON_Info[F("Command")] = F("Update");
-			else if (_Pack_Type == Pack_Timed) JSON_Info[F("Command")] = F("Timed");
-			else if (_Pack_Type == Pack_Interrupt) JSON_Info[F("Command")] = F("Interrupt");
-			else if (_Pack_Type == Pack_Alarm) JSON_Info[F("Command")] = F("Alarm");
-			else if (_Pack_Type == Pack_Offline) JSON_Info[F("Command")] = F("Offline");
-			else if (_Pack_Type == Pack_FOTA_Info) JSON_Info[F("Command")] = F("FOTA_Download");
-			else JSON_Info[F("Command")] = F("Unknown");
-
-			// Update RTC TimeStamp
-			GSM_RTC.Update_Time_Stamp();
-
-			// Set TimeStamp Variable
-			JSON_Info[F("TimeStamp")] = GSM_RTC.Time_Stamp;
-
-			// Set Device ID Variable
-			JSON_Info[F("ID")] = GSM_Serial_ID.SerialID;
-
-			// Set Firmware Version Variable
-			JSON_Info[F("Firmware")] = String(_FIRMWARE_);
-
-			// Define Device Section
-			JsonObject JSON_Device = JSON.createNestedObject(F("Device"));
-
-			// Define Power Section
-			JsonObject JSON_Power = JSON_Device.createNestedObject(F("Power"));
-
-			// Set Battery Variables
-			JSON_Power[F("B_IV")] = (float)GSM_Battery_Gauge.Instant_Voltage();
-			JSON_Power[F("B_AC")] = (float)GSM_Battery_Gauge.Average_Current();
-			JSON_Power[F("B_IC")] = (float)GSM_Battery_Gauge.Instant_Capacity();
-			JSON_Power[F("B_FC")] = (float)GSM_Battery_Gauge.Design_Capacity();
-			JSON_Power[F("B_SOC")] = (float)GSM_Battery_Gauge.State_Of_Charge();
-			JSON_Power[F("B_T")] = (float)GSM_Battery_Gauge.IC_Temperature();
-			JSON_Power[F("B_CS")] = GSM_Charger.Charge_Status();
-
-			// IoT Signal Quality Update
-			this->Signal_Update();
-
-			// Define Power Section
-			JsonObject JSON_IoT = JSON_Device.createNestedObject(F("IoT"));
-
-			// Set IoT Variables
-			JSON_IoT[F("Firmware")] = this->Module.Firmware;
-			JSON_IoT[F("IMEI")] = this->Module.IMEI;
-			JSON_IoT[F("ICCID")] = this->Operator.ICCID;
-			JSON_IoT[F("RSSI")] = this->Operator.RSSI;
-			JSON_IoT[F("WDS")] = this->Operator.WDS;
-			JSON_IoT[F("ConnTime")] = (float)this->Operator.Connection_Time / 1000;
-			JSON_IoT[F("TAC")] = this->Operator.TAC;
-			JSON_IoT[F("LAC")] = 0;
-			JSON_IoT[F("Cell_ID")] = this->Operator.Cell_ID;
-
-			// Define Payload Section
-			JsonObject JSON_Payload = JSON.createNestedObject(F("Payload"));
-
-			// Add TH Sensor Data
-			JSON_Payload[F("PCB_T")] = GSM_TH_Sensor.Temperature();
-			JSON_Payload[F("PCB_H")] = GSM_TH_Sensor.Humidity();
-
-			// Set Payload Variables
-			for (uint8_t i = 0; i < this->Data.Variable_Count; i++) {
-
-				// Set Payload Variables
-				JSON_Payload[this->Data.Variable[i].Name] = this->Data.Variable[i].Value;
-
-			}
-
-			// Clear Unused Data
-			JSON.garbageCollect();
-
-			// Clear Variables
-			this->Clear_Variable();
-
-			// Serialize JSON	
-			uint16_t _JSON_Size = serializeJson(JSON, this->JSON_Pack);
-
-			// Print JSON Pack
-			#ifdef _DEBUG_
-
-				// Control for Terminal State
-				if (this->Status.Terminal) {
-
-					// Print JSON
-					GSM_Terminal->Text(24, 4, _Console_WHITE_, String(this->JSON_Pack).substring(0, 75));
-					GSM_Terminal->Text(25, 4, _Console_WHITE_, String(this->JSON_Pack).substring(75, 150));
-					GSM_Terminal->Text(26, 4, _Console_WHITE_, String(this->JSON_Pack).substring(150, 225));
-					GSM_Terminal->Text(27, 4, _Console_WHITE_, String(this->JSON_Pack).substring(225, 300));
-					GSM_Terminal->Text(28, 4, _Console_WHITE_, String(this->JSON_Pack).substring(300, 375));
-					GSM_Terminal->Text(29, 4, _Console_WHITE_, String(this->JSON_Pack).substring(375, 450));
-					GSM_Terminal->Text(30, 4, _Console_WHITE_, String(this->JSON_Pack).substring(450, 525));
-
-
-				}
-
-			#endif
-
-			// End Function
-			return(_JSON_Size);
-
-		}
-
-		// uint64 to String Converter Function
-		String uint64ToString(uint64_t input) {
-			
-			String result = "";
-			uint8_t base = 16;
-
-			do {
-				
-				char c = input % base;
-				input /= base;
-
-				if (c < 10)
-					c +='0';
-				else
-					c += 'A' - 10;
-			
-				result = c + result;
-
-			} while (input);
-
-			return result;
-
-		}
-
-		// IP Address to String Converter Function
-		String IPAddress_to_String(const uint8_t _IP_Address[4]) {
-
-			// Define IP char Array
-			char _IP_Char[16];
-
-			// Set IP char Array
-			sprintf(_IP_Char, "%03d.%03d.%03d.%03d", _IP_Address[0], _IP_Address[1], _IP_Address[2], _IP_Address[3]);
-
-			// End Function
-			return(String(_IP_Char));
-
-		}
-
-		// Module PCIEx Mask Function [PCIE0]
-		inline void PCIEx_Mask(bool _PCIE0 = false, bool _PCIE1 = false, bool _PCIE2 = false) {
-
-			// Define PCICR Mask
-			uint8_t _PCICR_Mask = PCICR;
-
-			// Set PCICR Mask
-			if (_PCIE0) _PCICR_Mask |= (1 << PCIE0);	// Set PCIE0
-			if (_PCIE1) _PCICR_Mask |= (1 << PCIE1);	// Set PCIE1
-			if (_PCIE2) _PCICR_Mask |= (1 << PCIE2);	// Set PCIE2
-
-			// Set PCICR with the calculated mask
-			PCICR = _PCICR_Mask;
-
-		}
-
-		// Interrupt Function
-		inline void PCINTxx_Interrupt(uint8_t _PCINT, bool _Status = false) {
-
-			// Set PCINTxx Interrupt
-			if (_PCINT >= 0 && _PCINT <= 7) {
-
-				// Control for Status
-				if (_Status) {
-
-					// Set PCINTxx [0 - 7]
-					PCMSK0 |= (1 << _PCINT);
-
-				} else {
-
-					// Clear PCINTxx [0 - 7]
-					PCMSK0 &= ~(1 << _PCINT);
-
-				}
-
-			} else if (_PCINT >= 8 && _PCINT <= 15) {
-
-				// Control for Status
-				if (_Status) {
-
-					// Set PCINTxx [8 - 15]
-					PCMSK1 |= (1 << (_PCINT - 8));
-
-				} else {
-
-					// Clear PCINTxx [8 - 15]
-					PCMSK1 &= ~(1 << (_PCINT - 8));
-
-				}
-
-			} else if (_PCINT >= 16 && _PCINT <= 23) {
-
-				// Control for Status
-				if (_Status) {
-
-					// Set PCINTxx [16 - 23]
-					PCMSK2 |= (1 << (_PCINT - 16));
-
-				} else {
-
-					// Clear PCINTxx [16 - 23]
-					PCMSK2 &= ~(1 << (_PCINT - 16));
-
-				}
-
-			}
-
-		}
-
-	// Public Functions
-	public:
-
-		// Set Callback Function
-		void Set_FOTA_CallBack(CallBack_FOTA _CallBack) {
-			
-			// Set Callback Function
-			_CallBack_FOTA = _CallBack;
-
-		}
-		void Set_Interval_Update_CallBack(CallBack_Interval_Update _CallBack) {
-			
-			// Set Callback Function
-			_CallBack_Interval_Update = _CallBack;
-
-		}
-		void Set_Energy_Update_CallBack(CallBack_Energy_Update _CallBack) {
-			
-			// Set Callback Function
-			_CallBack_Energy_Update = _CallBack;
-
-		}
-		void Set_Pressure_Update_CallBack(CallBack_Pressure_Update _CallBack) {
-			
-			// Set Callback Function
-			_CallBack_Pressure_Update = _CallBack;
-
-		}
-		void Set_Mask_Update_CallBack(CallBack_Mask_Update _CallBack) {
-			
-			// Set Callback Function
-			_CallBack_Mask_Update = _CallBack;
-
-		}
-
-		// Define Interrupt Structure
-		struct Interrupt_Structure {
-
-			// Ring Interrupt
-			bool Ring = false;
-
-			// FOTA Download Interrupt
-			bool FOTA_Download = false;
-
-			// Pack Type Interrupt
-			uint8_t Pack_Type = Pack_None;
-
-		};
-
-		// Define Interrupt Variables
-		static Interrupt_Structure PostMan_Interrupt;
-
-		// PCMSK1 Mask Handler Function
-		static void PCMSK1_Handler(void) {
-
-			// Set Interrupt State
-			PostMan_Interrupt.Ring = true;
-
-		}
-
-		// PostMan Constructor
-		Postman_PowerStatV4(Stream &_Serial, PowerStat_Console& _Terminal) : AT_Command_Set(_Serial), GSM_Hardware(), GSM_Terminal(&_Terminal), _CallBack_FOTA(nullptr), _CallBack_Interval_Update(nullptr), _CallBack_Energy_Update(nullptr), _CallBack_Pressure_Update(nullptr), _CallBack_Mask_Update(nullptr) {
-
-			// Control Terminal
-			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
-
-			// Initialize Modem Variables
-			this->Module.Manufacturer = 0;
-			this->Module.Model = 0;
-			memset(this->Module.IMEI, '\0', 17);
-			memset(this->Module.Firmware, '\0', 15);
-
-			// Initialize Operator Variables
-			memset(this->Operator.ICCID, '\0', 21);
-			this->Operator.MCC = 0;
-			this->Operator.MNC = 0;
-			this->Operator.WDS = 0;
-			this->Operator.RSSI = 0;
-			this->Operator.Signal = 0;
-			this->Operator.TAC = 0;
-			this->Operator.Cell_ID = 0;
-			this->Operator.PCell_ID = 0;
-			memset(this->Operator.IP_Address, 0, 4);
-			this->Operator.Connection_Time = 0;	
-
-			// Initialize JSON_Pack Variable
-			memset(this->JSON_Pack, '\0', _PostMan_Send_JSON_Size_);
-
-		}
-		Postman_PowerStatV4(Stream &_Serial) : AT_Command_Set(_Serial), GSM_Hardware(), GSM_Terminal(nullptr), _CallBack_FOTA(nullptr), _CallBack_Interval_Update(nullptr), _CallBack_Energy_Update(nullptr), _CallBack_Pressure_Update(nullptr), _CallBack_Mask_Update(nullptr) {
-
-			// Control Terminal
-			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
-
-			// Initialize Modem Variables
-			this->Module.Manufacturer = 0;
-			this->Module.Model = 0;
-			memset(this->Module.IMEI, '\0', 17);
-			memset(this->Module.Firmware, '\0', 15);
-
-			// Initialize Operator Variables
-			memset(this->Operator.ICCID, '\0', 21);
-			this->Operator.MCC = 0;
-			this->Operator.MNC = 0;
-			this->Operator.WDS = 0;
-			this->Operator.RSSI = 0;
-			this->Operator.Signal = 0;
-			this->Operator.TAC = 0;
-			this->Operator.Cell_ID = 0;
-			this->Operator.PCell_ID = 0;
-			memset(this->Operator.IP_Address, 0, 4);
-			this->Operator.Connection_Time = 0;	
-
-			// Initialize JSON_Pack Variable
-			memset(this->JSON_Pack, '\0', _PostMan_Send_JSON_Size_);
-
-		}
-
-		// Begin Function
-		void Begin(void) {
-
-			// Enable SD Multiplexer
-			GSM_Hardware::SD_Multiplexer(true);
-
-			// Start SD Card
-			GSM_SD.begin(53);
-
-			// Set Device_ID Variable
-			GSM_Serial_ID.Begin();
-
-			// Start RTC
-			GSM_RTC.Begin();
-
-			// Start TH Sensor
-			GSM_TH_Sensor.Begin();
-
-			// Start Battery Gauge
-			GSM_Battery_Gauge.Begin();
-
-			// Start Charger
-			GSM_Charger.Begin();
-
-		}
-
-		// Print GSM Variables
-		void Print_GSM_Variables(void) {
-
-			// Print Batch Description
-			#ifdef _DEBUG_
-
-				// Control for Terminal State
-				if (this->Status.Terminal) {
-
-					// Print GSM Detail Variables
-					GSM_Terminal->Text(13, 37, _Console_GRAY_, String(this->Module.Manufacturer));
-					GSM_Terminal->Text(14, 37, _Console_GRAY_, String(this->Module.Model));
-					GSM_Terminal->Text(15, 30, _Console_GRAY_, String(this->Module.Firmware));
-					GSM_Terminal->Text(16, 24, _Console_GRAY_, String(this->Module.IMEI));
-					GSM_Terminal->Text(18, 20, _Console_GRAY_, String(this->Operator.ICCID));
-
-					// Print GSM Connection Variables
-					GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
-
-					// Print Signal Level Value
-					GSM_Terminal->Show_RSSI(14, 65, this->Operator.RSSI);
-
-					// Print Signal Level Bar
-					GSM_Terminal->Show_Signal_Quality(14, 74, this->Operator.Signal);
-
-					// Print Operator Value
-					char _Operator[6];
-					sprintf(_Operator, "%d%d", this->Operator.MCC, this->Operator.MNC);
-					GSM_Terminal->Text(15, 74, _Console_GRAY_, String(_Operator));
-
-					// Print IP
-					GSM_Terminal->Text(16, 64, _Console_GRAY_, this->IPAddress_to_String(this->Operator.IP_Address));
-
-					// Show Connection Type
-					GSM_Terminal->Show_Connection_Type(17, 70, this->Operator.WDS);
-
-
-				}
-
-			#endif
-
-		}
-
-		// Cloud Connect Function
-		void Cloud_Connect(void) {
-
-			// Begin Function
-			this->Begin();
-
-			// Power On Modem
-			GSM_Hardware::ON();
-
-			// Set Connection Time
-			this->Buffer.Connection_Time_Buffer = millis();
-
-			// Initialize Modem
-			this->Initialize();
-			
-			// Connect Modem
-			this->Connect();
-
-			// Set Firewall
-			this->Firewall();
-			
-			// Update Clock
-			this->Syncronize_Time();
-
-			// Open Socket
-			this->Listen(true);
-
-			// Disable Interrupts
-			cli();
-
-			// Set PCICR Mask
-			this->PCIEx_Mask(false, true, false);
-
-			// Enable Ring Interrupt
-			this->PCINTxx_Interrupt(11, true);
-
-			// Enable Interrupts
-			sei();
-
-		}
-
-		// Set Clock Configuration
-		bool Syncronize_Time(void) {
-
-			// Control for Connection
-			if (this->Status.Connection) {
-
-				// Print Batch Description
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Batch Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_ + 30, _Console_WHITE_, F("[    ]"));
-
-						// Print Command Description
-						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+CCLK"));
-
-					}
-
-				#endif
-
-				// CCLK Command (Real Time Clock Configuration)
-				bool _Clock_State = AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second, this->Time.Time_Zone);
-
-				// Print Command State
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Command State
-						GSM_Terminal->OK(_Clock_State, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
-
-						// Print Command Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Updating RTC Clock..."));
-
-					}
-
-				#endif
-
-				// Set RTC Clock
-				GSM_RTC.Set_Time(this->Time.Second, this->Time.Minute, this->Time.Hour, this->Time.Day, this->Time.Month, this->Time.Year);
-
-				// Clear Message Field
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Batch Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-
-					}
-
-				#endif
-
-				// Connection Success
-				return(true);
-
-			}
-
-			// Time Configuration Failed
-			return(false);
-
-		}
-
-		// Set Variables Function
-		bool Variable(const char* _Name, float _Value) {
-
-			// Control for Existing Variable
-			for (uint8_t i = 0; i < this->Data.Variable_Count; i++) {
-
-				// Check for Existing Variable
-				if (strcmp(Data.Variable[i].Name, _Name) == 0) {
-
-					// Update Value
-					Data.Variable[i].Value = _Value;
-
-					// End Function
-					return true;
-
-				}
-
-			}
-
-			// Control for Max Variable Count
-			if (this->Data.Variable_Count < MAX_VARIABLE_COUNT) {
-
-				//	Set Variable Name
-				strncpy(Data.Variable[this->Data.Variable_Count].Name, _Name, sizeof(Data.Variable[this->Data.Variable_Count].Name) - 1);
-
-				//	Set Variable Name Terminator
-				Data.Variable[this->Data.Variable_Count].Name[sizeof(Data.Variable[this->Data.Variable_Count].Name) - 1] = '\0';
-
-				// Set Variable Value
-				Data.Variable[this->Data.Variable_Count].Value = _Value;
-
-				// Increase Variable Count
-				this->Data.Variable_Count++;
-
-				// End Function
-				return true;
-
-			}
-
-			// Failed to add variable (likely due to reaching max count)
-			return false;
-
-		}
-		void Clear_Variable(void) {
-
-			// Loop through all variables
-			for (uint8_t i = 0; i < MAX_VARIABLE_COUNT; i++) {
-
-				// Clear the name of the variable
-				memset(Data.Variable[i].Name, '\0', sizeof(Data.Variable[i].Name));
-
-			}
-
-			// Clear the variable count
-			this->Data.Variable_Count = 0;
-
-		}
-
-		// Send Data Batch Function
-		bool Publish(const uint8_t _Pack_Type) {
-
-			// Control for Connection
-			if (this->Status.Connection) {
-
-				// Stop Socket Listen
-				this->Listen(false);
-
-				// Clear Message Field
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Batch Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-
-					}
-
-				#endif
-
-				// Set Send Time Start
-				uint32_t _Send_Time_Start = millis();
-
-				// Print Message
-				#ifdef _DEBUG_
-
-					// Control for Terminal State
-					if (this->Status.Terminal) {
-
-						// Print Batch Description
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Connecting to Server...              "));
-
-					}
-
-				#endif
-
-				// Open Connection
-				if (AT_Command_Set::ATSD(_PostMan_Outgoing_Socket_, 0, 80, 255, 88, 1, _PostMan_Server_)) {
-
-					// Print Message
-					#ifdef _DEBUG_
-
-						// Control for Terminal State
-						if (this->Status.Terminal) {
-
-							// Print Batch Description
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Parsing JSON Pack...                 "));
-
-						}
-
-					#endif
-
-					// Parse JSON
-					this->Parse_JSON(_Pack_Type);
-
-					// Print Message
-					#ifdef _DEBUG_
-
-						// Control for Terminal State
-						if (this->Status.Terminal) {
-
-							// Print Batch Description
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Sending Pack...                      "));
-
-						}
-
-					#endif
-
-					// Sending Data
-					if (AT_Command_Set::SSEND(_PostMan_Outgoing_Socket_, HTTP_POST, 0, _PostMan_EndPoint_, this->JSON_Pack)) {
-
-						// Print Message
-						#ifdef _DEBUG_
-
-							// Control for Terminal State
-							if (this->Status.Terminal) {
-
-								// Print Batch Description
-								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Waiting Response...                  "));
-
-							}
-
-						#endif
-
-						// Declare Ring Length
-						uint16_t _Length;
-
-						// Get Ring Port
-						if (AT_Command_Set::SRING(_Length)) {
-
-							// Declare Response Variable
-							char _Response[_PostMan_Response_JSON_Size_];
-
-							// Clear Response
-							memset(_Response, '\0', _PostMan_Response_JSON_Size_);
-
-							// Command Delay
-							delay(10);
-
-							// Print Message
-							#ifdef _DEBUG_
-
-								// Control for Terminal State
-								if (this->Status.Terminal) {
-
-									// Print Batch Description
-									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Getting Response...                  "));
-
-								}
-
-							#endif
-
-							// Handle Length
-							if (_Length > _PostMan_Response_JSON_Size_) _Length = _PostMan_Response_JSON_Size_;
-
-							// Get Request Data
-							if (AT_Command_Set::SRECV(_PostMan_Outgoing_Socket_, _Length, _Response)) {
-
-								// Declare Response Variable
-								char _JSON_Pack[_PostMan_Response_JSON_Size_];
-
-								// Clear Response
-								memset(_JSON_Pack, '\0', _PostMan_Response_JSON_Size_);
-
-								// Define JSON Object
-								StaticJsonDocument<_PostMan_Response_JSON_Size_> Incoming_JSON;
-
-								// Deserialize the JSON document
-								deserializeJson(Incoming_JSON, _JSON_Pack);
-								
-								// Get Response Command
-								uint16_t _Response_Command = Incoming_JSON["Event"];
-
-								// Print Message
-								#ifdef _DEBUG_
-
-									// Control for Terminal State
-									if (this->Status.Terminal) {
-
-										// Print Batch Description
-										GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-										GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Response --> [   ]                   "));
-										GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_ + 14, _Console_CYAN_, String(_Response_Command));
-
-									}
-
-								#endif
-
-								// Calculate Send Time
-								uint32_t _Send_Duration = millis() - _Send_Time_Start;
-
-								// Print Message
-								#ifdef _DEBUG_
-
-									// Control for Terminal State
-									if (this->Status.Terminal) {
-
-										// Print Batch Description
-										GSM_Terminal->Text(2, 116, _Console_CYAN_, F("     "));
-										GSM_Terminal->Text(2, 116, _Console_CYAN_, String(_Send_Duration));
-
-									}
-
-								#endif
-
-								// Command Delay
-								delay(50);
-
-								// Print Message
-								#ifdef _DEBUG_
-
-									// Control for Terminal State
-									if (this->Status.Terminal) {
-
-										// Print Batch Description
-										GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
-										GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Closing Socket...                    "));
-
-									}
-
-								#endif
-
-								// Closing Socket
-								if (AT_Command_Set::SH(_PostMan_Outgoing_Socket_)) {
-
-									// Control for Incoming Call
-									this->Listen(true);
-
-									// Print Message
-									#ifdef _DEBUG_
-
-										// Control for Terminal State
-										if (this->Status.Terminal) {
-
-											// Print Batch Description
-											GSM_Terminal->Beep();
-
-										}
-
-									#endif
-
-									// Clear Variables
-									if (_Response_Command == 200) {
-
-										// End Function
-										return(true);
-
-									}
-
-									// End Function
-									return(false);
-
-								}
-
-							}
-
-						}
-
-					}
-
-				}
-
-				// Port Control
-				this->Listen(true);
-
-			}
-
-			// End Function
-			return(false);
-
-		}
-
 		// Download Firmware
 		bool Download(const uint16_t _Firmware_ID) {
 
@@ -4352,7 +3479,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 					}
 
 					// Set Download Duration
-					FOTA.Download_Time = (millis() - _Download_Start_Time) / 1000;
+					this->FOTA.Download_Time = (millis() - _Download_Start_Time) / 1000;
 
 					// Add Variable to Payload
 					this->Variable("FOTA_ID", _Firmware_ID);
@@ -4395,6 +3522,901 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 			// Disable SD Multiplexer
 			GSM_Hardware::SD_Multiplexer(false);
+
+			// End Function
+			return(false);
+
+		}
+
+		// Update Signal Quality
+		void Signal_Update(void) {
+
+			// MONI Command (Network Status)
+			if (this->Status.Connection) {
+
+				// Clear Message Field
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+
+						// Print Command Description
+						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT#MONI"));
+
+					}
+
+				#endif
+
+				// Send Command
+				bool _MONI_Command = AT_Command_Set::MONI(this->Operator.TAC, this->Operator.Cell_ID, this->Operator.RSSI, this->Operator.Signal, this->Operator.PCell_ID);
+
+				// Print Command State
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Command State
+						GSM_Terminal->OK(_MONI_Command, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+
+						// Print Command Description
+						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+WS46?"));
+
+					}
+
+				#endif
+
+				// Send Command
+				bool _WS46_Command = AT_Command_Set::WS46(GET, this->Operator.WDS);
+
+				// Print Command State
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Command State
+						GSM_Terminal->OK(_WS46_Command, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+
+						// Print Signal Level Value
+						GSM_Terminal->Show_RSSI(14, 65, this->Operator.RSSI);
+
+						// Print Signal Level Bar
+						GSM_Terminal->Show_Signal_Quality(14, 74, this->Operator.Signal);
+
+						// Print Operator Value
+						char _Operator[6];
+						sprintf(_Operator, "%d%d", this->Operator.MCC, this->Operator.MNC);
+						GSM_Terminal->Text(15, 74, _Console_GRAY_, String(_Operator));
+
+						// Show Connection Type
+						GSM_Terminal->Show_Connection_Type(17, 70, this->Operator.WDS);
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+
+					}
+
+				#endif
+
+			} 
+
+		}
+
+		// Clear Variable
+		void Clear_Variable(void) {
+
+			// Loop through all variables
+			for (uint8_t i = 0; i < MAX_VARIABLE_COUNT; i++) {
+
+				// Clear the name of the variable
+				memset(Data.Variable[i].Name, '\0', sizeof(Data.Variable[i].Name));
+
+			}
+
+			// Clear the variable count
+			this->Data.Variable_Count = 0;
+
+		}
+
+		// Parse JSON Pack
+		uint16_t Parse_JSON(const uint8_t _Pack_Type) {
+
+			// Clear Pack
+			memset(this->JSON_Pack, '\0', _PostMan_Send_JSON_Size_);
+
+			// Define JSON
+			StaticJsonDocument<_PostMan_Send_JSON_Size_> JSON;
+
+			// Define Info Section
+			JsonObject JSON_Info = JSON.createNestedObject(F("Info"));
+
+			// Set Device ID Variable
+			if (_Pack_Type == Pack_Online) JSON_Info[F("Command")] = F("Online");
+			else if (_Pack_Type == Pack_Update) JSON_Info[F("Command")] = F("Update");
+			else if (_Pack_Type == Pack_Timed) JSON_Info[F("Command")] = F("Timed");
+			else if (_Pack_Type == Pack_Interrupt) JSON_Info[F("Command")] = F("Interrupt");
+			else if (_Pack_Type == Pack_Alarm) JSON_Info[F("Command")] = F("Alarm");
+			else if (_Pack_Type == Pack_Offline) JSON_Info[F("Command")] = F("Offline");
+			else if (_Pack_Type == Pack_FOTA_Info) JSON_Info[F("Command")] = F("Pack_FOTA_Info");
+			else if (_Pack_Type == Pack_FOTA_Download) JSON_Info[F("Command")] = F("FOTA_Download");
+			else if (_Pack_Type == Pack_FOTA_Burn) JSON_Info[F("Command")] = F("FOTA_Burn");
+			else JSON_Info[F("Command")] = F("Unknown");
+
+			// Update RTC TimeStamp
+			GSM_RTC.Update_Time_Stamp();
+
+			// Set TimeStamp Variable
+			JSON_Info[F("TimeStamp")] = GSM_RTC.Time_Stamp;
+
+			// Set Device ID Variable
+			JSON_Info[F("ID")] = GSM_Serial_ID.SerialID;
+
+			// Set Firmware Version Variable
+			JSON_Info[F("Firmware")] = String(_FIRMWARE_);
+
+			// Define Device Section
+			JsonObject JSON_Device = JSON.createNestedObject(F("Device"));
+
+			// Define Power Section
+			JsonObject JSON_Power = JSON_Device.createNestedObject(F("Power"));
+
+			// Set Battery Variables
+			JSON_Power[F("B_IV")] = (float)GSM_Battery_Gauge.Instant_Voltage();
+			JSON_Power[F("B_AC")] = (float)GSM_Battery_Gauge.Average_Current();
+			JSON_Power[F("B_IC")] = (float)GSM_Battery_Gauge.Instant_Capacity();
+			JSON_Power[F("B_FC")] = (float)GSM_Battery_Gauge.Design_Capacity();
+			JSON_Power[F("B_SOC")] = (float)GSM_Battery_Gauge.State_Of_Charge();
+			JSON_Power[F("B_T")] = (float)GSM_Battery_Gauge.IC_Temperature();
+			JSON_Power[F("B_CS")] = GSM_Charger.Charge_Status();
+
+			// IoT Signal Quality Update
+			this->Signal_Update();
+
+			// Define Power Section
+			JsonObject JSON_IoT = JSON_Device.createNestedObject(F("IoT"));
+
+			// Set IoT Variables
+			JSON_IoT[F("Firmware")] = this->Module.Firmware;
+			JSON_IoT[F("IMEI")] = this->Module.IMEI;
+			JSON_IoT[F("ICCID")] = this->Operator.ICCID;
+			JSON_IoT[F("RSSI")] = this->Operator.RSSI;
+			JSON_IoT[F("WDS")] = this->Operator.WDS;
+			JSON_IoT[F("ConnTime")] = (float)this->Operator.Connection_Time / 1000;
+			JSON_IoT[F("TAC")] = this->Operator.TAC;
+			JSON_IoT[F("LAC")] = 0;
+			JSON_IoT[F("Cell_ID")] = this->Operator.Cell_ID;
+
+			// Define Payload Section
+			JsonObject JSON_Payload = JSON.createNestedObject(F("Payload"));
+
+			// Add TH Sensor Data
+			JSON_Payload[F("PCB_T")] = GSM_TH_Sensor.Temperature();
+			JSON_Payload[F("PCB_H")] = GSM_TH_Sensor.Humidity();
+
+			// Set Payload Variables
+			for (uint8_t i = 0; i < this->Data.Variable_Count; i++) {
+
+				// Set Payload Variables
+				JSON_Payload[this->Data.Variable[i].Name] = this->Data.Variable[i].Value;
+
+			}
+
+			// Clear Unused Data
+			JSON.garbageCollect();
+
+			// Clear Variables
+			this->Clear_Variable();
+
+			// Serialize JSON	
+			uint16_t _JSON_Size = serializeJson(JSON, this->JSON_Pack);
+
+			// Print JSON Pack
+			#ifdef _DEBUG_
+
+				// Control for Terminal State
+				if (this->Status.Terminal) {
+
+					// Print JSON
+					GSM_Terminal->Text(24, 4, _Console_WHITE_, String(this->JSON_Pack).substring(0, 75));
+					GSM_Terminal->Text(25, 4, _Console_WHITE_, String(this->JSON_Pack).substring(75, 150));
+					GSM_Terminal->Text(26, 4, _Console_WHITE_, String(this->JSON_Pack).substring(150, 225));
+					GSM_Terminal->Text(27, 4, _Console_WHITE_, String(this->JSON_Pack).substring(225, 300));
+					GSM_Terminal->Text(28, 4, _Console_WHITE_, String(this->JSON_Pack).substring(300, 375));
+					GSM_Terminal->Text(29, 4, _Console_WHITE_, String(this->JSON_Pack).substring(375, 450));
+					GSM_Terminal->Text(30, 4, _Console_WHITE_, String(this->JSON_Pack).substring(450, 525));
+
+
+				}
+
+			#endif
+
+			// End Function
+			return(_JSON_Size);
+
+		}
+
+		// uint64 to String Converter Function
+		String uint64ToString(uint64_t input) {
+			
+			String result = "";
+			uint8_t base = 16;
+
+			do {
+				
+				char c = input % base;
+				input /= base;
+
+				if (c < 10)
+					c +='0';
+				else
+					c += 'A' - 10;
+			
+				result = c + result;
+
+			} while (input);
+
+			return result;
+
+		}
+
+		// IP Address to String Converter Function
+		String IPAddress_to_String(const uint8_t _IP_Address[4]) {
+
+			// Define IP char Array
+			char _IP_Char[16];
+
+			// Set IP char Array
+			sprintf(_IP_Char, "%03d.%03d.%03d.%03d", _IP_Address[0], _IP_Address[1], _IP_Address[2], _IP_Address[3]);
+
+			// End Function
+			return(String(_IP_Char));
+
+		}
+
+		// Module PCIEx Mask Function [PCIE0]
+		inline void PCIEx_Mask(bool _PCIE0 = false, bool _PCIE1 = false, bool _PCIE2 = false) {
+
+			// Define PCICR Mask
+			uint8_t _PCICR_Mask = PCICR;
+
+			// Set PCICR Mask
+			if (_PCIE0) _PCICR_Mask |= (1 << PCIE0);	// Set PCIE0
+			if (_PCIE1) _PCICR_Mask |= (1 << PCIE1);	// Set PCIE1
+			if (_PCIE2) _PCICR_Mask |= (1 << PCIE2);	// Set PCIE2
+
+			// Set PCICR with the calculated mask
+			PCICR = _PCICR_Mask;
+
+		}
+
+		// Interrupt Function
+		inline void PCINTxx_Interrupt(uint8_t _PCINT, bool _Status = false) {
+
+			// Set PCINTxx Interrupt
+			if (_PCINT >= 0 && _PCINT <= 7) {
+
+				// Control for Status
+				if (_Status) {
+
+					// Set PCINTxx [0 - 7]
+					PCMSK0 |= (1 << _PCINT);
+
+				} else {
+
+					// Clear PCINTxx [0 - 7]
+					PCMSK0 &= ~(1 << _PCINT);
+
+				}
+
+			} else if (_PCINT >= 8 && _PCINT <= 15) {
+
+				// Control for Status
+				if (_Status) {
+
+					// Set PCINTxx [8 - 15]
+					PCMSK1 |= (1 << (_PCINT - 8));
+
+				} else {
+
+					// Clear PCINTxx [8 - 15]
+					PCMSK1 &= ~(1 << (_PCINT - 8));
+
+				}
+
+			} else if (_PCINT >= 16 && _PCINT <= 23) {
+
+				// Control for Status
+				if (_Status) {
+
+					// Set PCINTxx [16 - 23]
+					PCMSK2 |= (1 << (_PCINT - 16));
+
+				} else {
+
+					// Clear PCINTxx [16 - 23]
+					PCMSK2 &= ~(1 << (_PCINT - 16));
+
+				}
+
+			}
+
+		}
+
+	// Public Functions
+	public:
+
+		// Set Callback Function
+		void Set_Interval_Update_CallBack(CallBack_Interval_Update _CallBack) {
+			
+			// Set Callback Function
+			_CallBack_Interval_Update = _CallBack;
+
+		}
+		void Set_Energy_Update_CallBack(CallBack_Energy_Update _CallBack) {
+			
+			// Set Callback Function
+			_CallBack_Energy_Update = _CallBack;
+
+		}
+		void Set_Pressure_Update_CallBack(CallBack_Pressure_Update _CallBack) {
+			
+			// Set Callback Function
+			_CallBack_Pressure_Update = _CallBack;
+
+		}
+		void Set_Mask_Update_CallBack(CallBack_Mask_Update _CallBack) {
+			
+			// Set Callback Function
+			_CallBack_Mask_Update = _CallBack;
+
+		}
+
+		// Define Interrupt Structure
+		struct Interrupt_Structure {
+
+			// Ring Interrupt
+			bool Ring = false;
+
+			// FOTA Download Interrupt
+			bool FOTA_Download = false;
+
+			// Pack Type Interrupt
+			uint8_t Pack_Type = Pack_None;
+
+		};
+
+		// Define Interrupt Variables
+		static Interrupt_Structure PostMan_Interrupt;
+
+		// PCMSK1 Mask Handler Function
+		static void PCMSK1_Handler(void) {
+
+			// Set Interrupt State
+			PostMan_Interrupt.Ring = true;
+
+		}
+
+		// PostMan Constructor
+		Postman_PowerStatV4(Stream &_Serial, PowerStat_Console& _Terminal) : AT_Command_Set(_Serial), GSM_Hardware(), GSM_Terminal(&_Terminal), _CallBack_Interval_Update(nullptr), _CallBack_Energy_Update(nullptr), _CallBack_Pressure_Update(nullptr), _CallBack_Mask_Update(nullptr) {
+
+			// Control Terminal
+			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
+
+			// Initialize Modem Variables
+			this->Module.Manufacturer = 0;
+			this->Module.Model = 0;
+			memset(this->Module.IMEI, '\0', 17);
+			memset(this->Module.Firmware, '\0', 15);
+
+			// Initialize Operator Variables
+			memset(this->Operator.ICCID, '\0', 21);
+			this->Operator.MCC = 0;
+			this->Operator.MNC = 0;
+			this->Operator.WDS = 0;
+			this->Operator.RSSI = 0;
+			this->Operator.Signal = 0;
+			this->Operator.TAC = 0;
+			this->Operator.Cell_ID = 0;
+			this->Operator.PCell_ID = 0;
+			memset(this->Operator.IP_Address, 0, 4);
+			this->Operator.Connection_Time = 0;	
+
+			// Initialize JSON_Pack Variable
+			memset(this->JSON_Pack, '\0', _PostMan_Send_JSON_Size_);
+
+		}
+		Postman_PowerStatV4(Stream &_Serial) : AT_Command_Set(_Serial), GSM_Hardware(), GSM_Terminal(nullptr), _CallBack_Interval_Update(nullptr), _CallBack_Energy_Update(nullptr), _CallBack_Pressure_Update(nullptr), _CallBack_Mask_Update(nullptr) {
+
+			// Control Terminal
+			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
+
+			// Initialize Modem Variables
+			this->Module.Manufacturer = 0;
+			this->Module.Model = 0;
+			memset(this->Module.IMEI, '\0', 17);
+			memset(this->Module.Firmware, '\0', 15);
+
+			// Initialize Operator Variables
+			memset(this->Operator.ICCID, '\0', 21);
+			this->Operator.MCC = 0;
+			this->Operator.MNC = 0;
+			this->Operator.WDS = 0;
+			this->Operator.RSSI = 0;
+			this->Operator.Signal = 0;
+			this->Operator.TAC = 0;
+			this->Operator.Cell_ID = 0;
+			this->Operator.PCell_ID = 0;
+			memset(this->Operator.IP_Address, 0, 4);
+			this->Operator.Connection_Time = 0;	
+
+			// Initialize JSON_Pack Variable
+			memset(this->JSON_Pack, '\0', _PostMan_Send_JSON_Size_);
+
+		}
+
+		// Begin Function
+		void Begin(void) {
+
+			// Enable SD Multiplexer
+			GSM_Hardware::SD_Multiplexer(true);
+
+			// Start SD Card
+			GSM_SD.begin(53);
+
+			// Set Device_ID Variable
+			GSM_Serial_ID.Begin();
+
+			// Start RTC
+			GSM_RTC.Begin();
+
+			// Start TH Sensor
+			GSM_TH_Sensor.Begin();
+
+			// Start Battery Gauge
+			GSM_Battery_Gauge.Begin();
+
+			// Start Charger
+			GSM_Charger.Begin();
+
+		}
+
+		// Print GSM Variables
+		void Print_GSM_Variables(void) {
+
+			// Print Batch Description
+			#ifdef _DEBUG_
+
+				// Control for Terminal State
+				if (this->Status.Terminal) {
+
+					// Print GSM Detail Variables
+					GSM_Terminal->Text(13, 37, _Console_GRAY_, String(this->Module.Manufacturer));
+					GSM_Terminal->Text(14, 37, _Console_GRAY_, String(this->Module.Model));
+					GSM_Terminal->Text(15, 30, _Console_GRAY_, String(this->Module.Firmware));
+					GSM_Terminal->Text(16, 24, _Console_GRAY_, String(this->Module.IMEI));
+					GSM_Terminal->Text(18, 20, _Console_GRAY_, String(this->Operator.ICCID));
+
+					// Print GSM Connection Variables
+					GSM_Terminal->Text(13, 74, _Console_GRAY_, String(this->Operator.Connection_Time));
+
+					// Print Signal Level Value
+					GSM_Terminal->Show_RSSI(14, 65, this->Operator.RSSI);
+
+					// Print Signal Level Bar
+					GSM_Terminal->Show_Signal_Quality(14, 74, this->Operator.Signal);
+
+					// Print Operator Value
+					char _Operator[6];
+					sprintf(_Operator, "%d%d", this->Operator.MCC, this->Operator.MNC);
+					GSM_Terminal->Text(15, 74, _Console_GRAY_, String(_Operator));
+
+					// Print IP
+					GSM_Terminal->Text(16, 64, _Console_GRAY_, this->IPAddress_to_String(this->Operator.IP_Address));
+
+					// Show Connection Type
+					GSM_Terminal->Show_Connection_Type(17, 70, this->Operator.WDS);
+
+
+				}
+
+			#endif
+
+		}
+
+		// Cloud Connect Function
+		void Cloud_Connect(void) {
+
+			// Begin Function
+			this->Begin();
+
+			// Power On Modem
+			GSM_Hardware::ON();
+
+			// Set Connection Time
+			this->Buffer.Connection_Time_Buffer = millis();
+
+			// Initialize Modem
+			this->Initialize();
+			
+			// Connect Modem
+			this->Connect();
+
+			// Set Firewall
+			this->Firewall();
+			
+			// Update Clock
+			this->Syncronize_Time();
+
+			// Open Socket
+			this->Listen(true);
+
+			// Disable Interrupts
+			cli();
+
+			// Set PCICR Mask
+			this->PCIEx_Mask(false, true, false);
+
+			// Enable Ring Interrupt
+			this->PCINTxx_Interrupt(11, true);
+
+			// Enable Interrupts
+			sei();
+
+		}
+
+		// Set Clock Configuration
+		bool Syncronize_Time(void) {
+
+			// Control for Connection
+			if (this->Status.Connection) {
+
+				// Print Batch Description
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_ + 30, _Console_WHITE_, F("[    ]"));
+
+						// Print Command Description
+						GSM_Terminal->AT_Command(_Terminal_Message_X_, _Terminal_Message_Y_, F("AT+CCLK"));
+
+					}
+
+				#endif
+
+				// CCLK Command (Real Time Clock Configuration)
+				bool _Clock_State = AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second, this->Time.Time_Zone);
+
+				// Print Command State
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Command State
+						GSM_Terminal->OK(_Clock_State, _Terminal_Message_X_, _Terminal_Message_Y_ + 31);
+
+						// Print Command Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Updating RTC Clock..."));
+
+					}
+
+				#endif
+
+				// Set RTC Clock
+				GSM_RTC.Set_Time(this->Time.Second, this->Time.Minute, this->Time.Hour, this->Time.Day, this->Time.Month, this->Time.Year);
+
+				// Clear Message Field
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+
+					}
+
+				#endif
+
+				// Connection Success
+				return(true);
+
+			}
+
+			// Time Configuration Failed
+			return(false);
+
+		}
+
+		// Set Variables Function
+		bool Variable(const char* _Name, float _Value) {
+
+			// Control for Existing Variable
+			for (uint8_t i = 0; i < this->Data.Variable_Count; i++) {
+
+				// Check for Existing Variable
+				if (strcmp(Data.Variable[i].Name, _Name) == 0) {
+
+					// Update Value
+					Data.Variable[i].Value = _Value;
+
+					// End Function
+					return true;
+
+				}
+
+			}
+
+			// Control for Max Variable Count
+			if (this->Data.Variable_Count < MAX_VARIABLE_COUNT) {
+
+				//	Set Variable Name
+				strncpy(Data.Variable[this->Data.Variable_Count].Name, _Name, sizeof(Data.Variable[this->Data.Variable_Count].Name) - 1);
+
+				//	Set Variable Name Terminator
+				Data.Variable[this->Data.Variable_Count].Name[sizeof(Data.Variable[this->Data.Variable_Count].Name) - 1] = '\0';
+
+				// Set Variable Value
+				Data.Variable[this->Data.Variable_Count].Value = _Value;
+
+				// Increase Variable Count
+				this->Data.Variable_Count++;
+
+				// End Function
+				return true;
+
+			}
+
+			// Failed to add variable (likely due to reaching max count)
+			return false;
+
+		}
+
+		// Send Data Batch Function
+		bool Publish(const uint8_t _Pack_Type) {
+
+			// Control for Connection
+			if (this->Status.Connection) {
+
+				// Stop Socket Listen
+				this->Listen(false);
+
+				// Clear Message Field
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+
+					}
+
+				#endif
+
+				// Set Send Time Start
+				uint32_t _Send_Time_Start = millis();
+
+				// Print Message
+				#ifdef _DEBUG_
+
+					// Control for Terminal State
+					if (this->Status.Terminal) {
+
+						// Print Batch Description
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+						GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Connecting to Server...              "));
+
+					}
+
+				#endif
+
+				// Open Connection
+				if (AT_Command_Set::ATSD(_PostMan_Outgoing_Socket_, 0, 80, 255, 88, 1, _PostMan_Server_)) {
+
+					// Print Message
+					#ifdef _DEBUG_
+
+						// Control for Terminal State
+						if (this->Status.Terminal) {
+
+							// Print Batch Description
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Parsing JSON Pack...                 "));
+
+						}
+
+					#endif
+
+					// Parse JSON
+					this->Parse_JSON(_Pack_Type);
+
+					// Print Message
+					#ifdef _DEBUG_
+
+						// Control for Terminal State
+						if (this->Status.Terminal) {
+
+							// Print Batch Description
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+							GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Sending Pack...                      "));
+
+						}
+
+					#endif
+
+					// Sending Data
+					if (AT_Command_Set::SSEND(_PostMan_Outgoing_Socket_, HTTP_POST, 0, _PostMan_EndPoint_, this->JSON_Pack)) {
+
+						// Print Message
+						#ifdef _DEBUG_
+
+							// Control for Terminal State
+							if (this->Status.Terminal) {
+
+								// Print Batch Description
+								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+								GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Waiting Response...                  "));
+
+							}
+
+						#endif
+
+						// Declare Ring Length
+						uint16_t _Length;
+
+						// Get Ring Port
+						if (AT_Command_Set::SRING(_Length)) {
+
+							// Declare Response Variable
+							char _Response[_PostMan_Response_JSON_Size_];
+
+							// Clear Response
+							memset(_Response, '\0', _PostMan_Response_JSON_Size_);
+
+							// Command Delay
+							delay(10);
+
+							// Print Message
+							#ifdef _DEBUG_
+
+								// Control for Terminal State
+								if (this->Status.Terminal) {
+
+									// Print Batch Description
+									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+									GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Getting Response...                  "));
+
+								}
+
+							#endif
+
+							// Handle Length
+							if (_Length > _PostMan_Response_JSON_Size_) _Length = _PostMan_Response_JSON_Size_;
+
+							// Get Request Data
+							if (AT_Command_Set::SRECV(_PostMan_Outgoing_Socket_, _Length, _Response)) {
+
+								// Declare Response Variable
+								char _JSON_Pack[_PostMan_Response_JSON_Size_];
+
+								// Clear Response
+								memset(_JSON_Pack, '\0', _PostMan_Response_JSON_Size_);
+
+								// Define JSON Object
+								StaticJsonDocument<_PostMan_Response_JSON_Size_> Incoming_JSON;
+
+								// Deserialize the JSON document
+								deserializeJson(Incoming_JSON, _JSON_Pack);
+								
+								// Get Response Command
+								uint16_t _Response_Command = Incoming_JSON["Event"];
+
+								// Print Message
+								#ifdef _DEBUG_
+
+									// Control for Terminal State
+									if (this->Status.Terminal) {
+
+										// Print Batch Description
+										GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+										GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Response --> [   ]                   "));
+										GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_ + 14, _Console_CYAN_, String(_Response_Command));
+
+									}
+
+								#endif
+
+								// Calculate Send Time
+								uint32_t _Send_Duration = millis() - _Send_Time_Start;
+
+								// Print Message
+								#ifdef _DEBUG_
+
+									// Control for Terminal State
+									if (this->Status.Terminal) {
+
+										// Print Batch Description
+										GSM_Terminal->Text(2, 116, _Console_CYAN_, F("     "));
+										GSM_Terminal->Text(2, 116, _Console_CYAN_, String(_Send_Duration));
+
+									}
+
+								#endif
+
+								// Command Delay
+								delay(50);
+
+								// Print Message
+								#ifdef _DEBUG_
+
+									// Control for Terminal State
+									if (this->Status.Terminal) {
+
+										// Print Batch Description
+										GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("                                     "));
+										GSM_Terminal->Text(_Terminal_Message_X_, _Terminal_Message_Y_, _Console_CYAN_, F("Closing Socket...                    "));
+
+									}
+
+								#endif
+
+								// Closing Socket
+								if (AT_Command_Set::SH(_PostMan_Outgoing_Socket_)) {
+
+									// Control for Incoming Call
+									this->Listen(true);
+
+									// Print Message
+									#ifdef _DEBUG_
+
+										// Control for Terminal State
+										if (this->Status.Terminal) {
+
+											// Print Batch Description
+											GSM_Terminal->Beep();
+
+										}
+
+									#endif
+
+									// Clear Variables
+									if (_Response_Command == 200) {
+
+										// End Function
+										return(true);
+
+									}
+
+									// End Function
+									return(false);
+
+								}
+
+							}
+
+						}
+
+					}
+
+				}
+
+				// Port Control
+				this->Listen(true);
+
+			}
 
 			// End Function
 			return(false);
