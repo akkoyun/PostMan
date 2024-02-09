@@ -1,6 +1,6 @@
 {
 	"name": "PostMan",
-	"version": "1.4.11",
+	"version": "1.4.12",
 	"keywords": "GSM, Modem, GPRS, 2G, IoT, Telit, GE910, LE910, Backend, Cloud, PostOffice, API",
 	"description": "GSM Based IoT, Cloud Server Integration Library.",
 	"authors":
@@ -53,6 +53,11 @@
 			"owner": "akkoyun",
 			"name": "DS28C",
 			"version": "^1.1.1"
+		},
+		{
+			"owner": "akkoyun",
+			"name": "Variable",
+			"version": "^1.0.0"
 		}
 	],
 	"examples": [

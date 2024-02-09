@@ -31,6 +31,7 @@
 #include <Environment.h>
 #include <MAX17055.h>
 #include <BQ24298.h>
+#include <Variable.h>
 #include <SPI.h>
 #include "SdFat.h"
 
@@ -39,7 +40,7 @@
 #include "AT_Command/Definitions/Pack.h"
 
 // Cloud Functions
-class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
+class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, public Variable {
 
 	// Private Context
 	private:
@@ -122,7 +123,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			struct Struct_Variable {
 				
 				// Define Variable Name
-				char Name[10];
+				char * Name;
 
 				// Define Variable Value
 				float Value;
@@ -2378,8 +2379,8 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 							this->Download(_Firmware_ID);
 
 							// Add Variable to Payload
-							this->Variable("FOTA_ID", _Firmware_ID);
-							this->Variable("FOTA_Status", FOTA.Download_Status);
+							Variable::Add("FOTA_ID", _Firmware_ID);
+							Variable::Add("FOTA_Status", FOTA.Download_Status);
 
 							// Set Interrupt
 							this->PostMan_Interrupt.Pack_Type = Pack_FOTA_Download;
@@ -2468,7 +2469,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_Online_Interval__, _Online_Interval);
 
 											// Add Variable to Payload
-											this->Variable("Dt1", _Online_Interval);
+											Variable::Add("Dt1", _Online_Interval);
 
 											// Set Update Variable
 											_Interval_Update = true;
@@ -2500,7 +2501,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_Offline_Interval__, _Offline_Interval);
 
 											// Add Variable to Payload
-											this->Variable("Dt2", _Offline_Interval);
+											Variable::Add("Dt2", _Offline_Interval);
 
 											// Set Update Variable
 											_Interval_Update = true;
@@ -2545,7 +2546,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_V_Min_LSB__, _Vmin_LSB);
 
 											// Add Variable to Payload
-											this->Variable("Vmin", _Vmin);
+											Variable::Add("Vmin", _Vmin);
 
 											// Set Update Variable
 											_Energy_Update = true;
@@ -2582,7 +2583,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_V_Max_LSB__, _Vmax_LSB);
 
 											// Add Variable to Payload
-											this->Variable("Vmax", _Vmax);
+											Variable::Add("Vmax", _Vmax);
 
 											// Set Update Variable
 											_Energy_Update = true;
@@ -2619,7 +2620,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_I_Max_LSB__, _Imax_LSB);
 
 											// Add Variable to Payload
-											this->Variable("Imax", _Imax);
+											Variable::Add("Imax", _Imax);
 
 											// Set Update Variable
 											_Energy_Update = true;
@@ -2649,7 +2650,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_FQ_Min__, _FQmin);
 
 											// Add Variable to Payload
-											this->Variable("FQmin", _FQmin);
+											Variable::Add("FQmin", _FQmin);
 
 											// Set Update Variable
 											_Energy_Update = true;
@@ -2679,7 +2680,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_FQ_Max__, _FQmax);
 
 											// Add Variable to Payload
-											this->Variable("FQmax", _FQmax);
+											Variable::Add("FQmax", _FQmax);
 
 											// Set Update Variable
 											_Energy_Update = true;
@@ -2709,7 +2710,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_VIMB_Max__, _VIMB);
 
 											// Add Variable to Payload
-											this->Variable("VIMB", _VIMB);
+											Variable::Add("VIMB", _VIMB);
 
 											// Set Update Variable
 											_Energy_Update = true;
@@ -2739,7 +2740,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_IIMB_Max__, _IIMB);
 
 											// Add Variable to Payload
-											this->Variable("IIMB", _IIMB);
+											Variable::Add("IIMB", _IIMB);
 
 											// Set Update Variable
 											_Energy_Update = true;
@@ -2776,7 +2777,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_Current_Ratio__, _Ratio);
 
 											// Add Variable to Payload
-											this->Variable("Ratio", _Ratio);
+											Variable::Add("Ratio", _Ratio);
 
 										} else {
 
@@ -2809,7 +2810,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_PMIN_LSB__, _Pmin_LSB);
 
 											// Add Variable to Payload
-											this->Variable("Pmin", _Pmin / 100);
+											Variable::Add("Pmin", _Pmin / 100);
 
 											// Set Update Variable
 											_Pressure_Update = true;
@@ -2845,7 +2846,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_PMAX_LSB__, _Pmax_LSB);
 
 											// Add Variable to Payload
-											this->Variable("Pmax", _Pmax / 100);
+											Variable::Add("Pmax", _Pmax / 100);
 
 											// Set Update Variable
 											_Pressure_Update = true;
@@ -2874,7 +2875,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 											GSM_RTC.Write_EEPROM(__EEPROM_PSLOP_EMAX__, _Pslope);
 
 											// Add Variable to Payload
-											this->Variable("Pslope", _Pslope);
+											Variable::Add("Pslope", _Pslope);
 
 											// Set Update Variable
 											_Pressure_Update = true;
@@ -2927,7 +2928,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										GSM_RTC.Write_EEPROM(__EEPROM_STOP_MASK_LSB_1__, _MASK_Stop_LSB_1);
 
 										// Add Variable to Payload
-										this->Variable("MASK_Stop", _MASK_Stop);
+										Variable::Add("MASK_Stop", _MASK_Stop);
 
 										// Set Update Variable
 										_Mask_Update = true;
@@ -2965,7 +2966,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 										GSM_RTC.Write_EEPROM(__EEPROM_PUBLISH_MASK_LSB_1__, _MASK_Publish_LSB_1);
 
 										// Add Variable to Payload
-										this->Variable("MASK_Publish", _MASK_Publish);
+										Variable::Add("MASK_Publish", _MASK_Publish);
 
 										// Set Update Variable
 										_Mask_Update = true;
@@ -3654,22 +3655,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 		}
 
-		// Clear Variable
-		void Clear_Variable(void) {
-
-			// Loop through all variables
-			for (uint8_t i = 0; i < MAX_VARIABLE_COUNT; i++) {
-
-				// Clear the name of the variable
-				memset(Data.Variable[i].Name, '\0', sizeof(Data.Variable[i].Name));
-
-			}
-
-			// Clear the variable count
-			this->Data.Variable_Count = 0;
-
-		}
-
 		// Parse JSON Pack
 		uint16_t Parse_JSON(const uint8_t _Pack_Type) {
 
@@ -3757,7 +3742,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			JSON.garbageCollect();
 
 			// Clear Variables
-			this->Clear_Variable();
+			Variable::Clear();
 
 			// Serialize JSON	
 			uint16_t _JSON_Size = serializeJson(JSON, this->JSON_Pack);
@@ -3949,7 +3934,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 		}
 
 		// PostMan Constructor
-		Postman_PowerStatV4(Stream &_Serial, PowerStat_Console& _Terminal) : AT_Command_Set(_Serial), GSM_Hardware(), GSM_Terminal(&_Terminal), _CallBack_Interval_Update(nullptr), _CallBack_Energy_Update(nullptr), _CallBack_Pressure_Update(nullptr), _CallBack_Mask_Update(nullptr) {
+		Postman_PowerStatV4(Stream &_Serial, PowerStat_Console& _Terminal) : AT_Command_Set(_Serial), GSM_Hardware(), Variable(), GSM_Terminal(&_Terminal), _CallBack_Interval_Update(nullptr), _CallBack_Energy_Update(nullptr), _CallBack_Pressure_Update(nullptr), _CallBack_Mask_Update(nullptr) {
 
 			// Control Terminal
 			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
@@ -3977,7 +3962,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 			memset(this->JSON_Pack, '\0', _PostMan_Send_JSON_Size_);
 
 		}
-		Postman_PowerStatV4(Stream &_Serial) : AT_Command_Set(_Serial), GSM_Hardware(), GSM_Terminal(nullptr), _CallBack_Interval_Update(nullptr), _CallBack_Energy_Update(nullptr), _CallBack_Pressure_Update(nullptr), _CallBack_Mask_Update(nullptr) {
+		Postman_PowerStatV4(Stream &_Serial) : AT_Command_Set(_Serial), GSM_Hardware(), Variable(), GSM_Terminal(nullptr), _CallBack_Interval_Update(nullptr), _CallBack_Energy_Update(nullptr), _CallBack_Pressure_Update(nullptr), _CallBack_Mask_Update(nullptr) {
 
 			// Control Terminal
 			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
@@ -4185,47 +4170,11 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware {
 
 		}
 
-		// Set Variables Function
-		bool Variable(const char* _Name, float _Value) {
+		// Add Variable Function
+		void Add_Variable(const char* _Name, float _Value) {
 
-			// Control for Existing Variable
-			for (uint8_t i = 0; i < this->Data.Variable_Count; i++) {
-
-				// Check for Existing Variable
-				if (strcmp(Data.Variable[i].Name, _Name) == 0) {
-
-					// Update Value
-					Data.Variable[i].Value = _Value;
-
-					// End Function
-					return true;
-
-				}
-
-			}
-
-			// Control for Max Variable Count
-			if (this->Data.Variable_Count < MAX_VARIABLE_COUNT) {
-
-				//	Set Variable Name
-				strncpy(Data.Variable[this->Data.Variable_Count].Name, _Name, sizeof(Data.Variable[this->Data.Variable_Count].Name) - 1);
-
-				//	Set Variable Name Terminator
-				Data.Variable[this->Data.Variable_Count].Name[sizeof(Data.Variable[this->Data.Variable_Count].Name) - 1] = '\0';
-
-				// Set Variable Value
-				Data.Variable[this->Data.Variable_Count].Value = _Value;
-
-				// Increase Variable Count
-				this->Data.Variable_Count++;
-
-				// End Function
-				return true;
-
-			}
-
-			// Failed to add variable (likely due to reaching max count)
-			return false;
+			// Add Variable
+			Variable::Add(_Name, _Value);
 
 		}
 
