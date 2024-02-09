@@ -40,7 +40,7 @@
 #include "AT_Command/Definitions/Pack.h"
 
 // Cloud Functions
-class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, public Variable {
+class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, private Variable {
 
 	// Private Context
 	private:
@@ -3731,13 +3731,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, public
 			JSON_Payload[F("PCB_H")] = GSM_TH_Sensor.Humidity();
 
 			// Set Payload Variables
-			for (uint8_t i = 0; i < this->Data.Variable_Count; i++) {
+			for (uint8_t i = 0; i < Variable::Data.Variable_Count; i++) {
 
 				// Set Payload Variables
-				JSON_Payload[this->Data.Variable[i].Name] = this->Data.Variable[i].Value;
+				JSON_Payload[Variable::Data.Variable[i].Name] = Variable::Data.Variable[i].Value;
 
 			}
-
+			
 			// Clear Unused Data
 			JSON.garbageCollect();
 
