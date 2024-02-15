@@ -58,6 +58,9 @@
 #ifndef _PostMan_EndPoint_
 	#define _PostMan_EndPoint_ 						"/"
 #endif
+#ifndef _PostMan_Port_
+	#define _PostMan_Port_ 							(uint8_t)80
+#endif
 
 // Firewall Parameters
 #ifndef _PostMan_Firewall_1_

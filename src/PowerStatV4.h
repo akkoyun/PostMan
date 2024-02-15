@@ -6,6 +6,7 @@
 // Include Configurations
 #include "Config/Config.h"
 #include "Config/PinOut.h"
+#include "Config/Definitions.h"
 
 // Include AT Commands
 #ifndef __AT_Command__
@@ -21,6 +22,7 @@
 #include <Variable.h>
 #include <SPI.h>
 #include "SdFat.h"
+#include <ArduinoJson.h>
 
 // Hardware Functions
 class GSM_Hardware {
@@ -1756,7 +1758,7 @@ class Postman_PowerStatV4 : private LE910C1_EUX, private GSM_Hardware, private V
 						#endif
 
 						// Send Command
-						if (!LE910C1_EUX::SCFGEXT2(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0)) this->Status.Connection = false;
+						if (!LE910C1_EUX::SCFGEXT2(_PostMan_Outgoing_Socket_, 1, 0, 0)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -2341,7 +2343,7 @@ class Postman_PowerStatV4 : private LE910C1_EUX, private GSM_Hardware, private V
 			serializeJson(Response_JSON, Buffer_Variable);
 
 			// Send Socket Answer
-			if (LE910C1_EUX::SSEND(_PostMan_Incomming_Socket_, HTTP_RESPONSE, _Response_Code, "", Buffer_Variable)) {
+			if (LE910C1_EUX::SSEND(_PostMan_Incomming_Socket_, HTTP_RESPONSE, _PostMan_Server_, _PostMan_EndPoint_, Buffer_Variable)) {
 
 				// Print Message
 				#ifdef _DEBUG_
@@ -2453,6 +2455,9 @@ class Postman_PowerStatV4 : private LE910C1_EUX, private GSM_Hardware, private V
 
 						// Answer Socket
 						LE910C1_EUX::SA(_PostMan_Incomming_Socket_, 1, _Length);
+
+						// Handle Min Length
+						if (_Length == 0) _Length = _PostMan_Recieve_JSON_Size_;
 
 						// Handle Max Length
 						if (_Length > _PostMan_Recieve_JSON_Size_) _Length = _PostMan_Recieve_JSON_Size_;
@@ -3360,7 +3365,7 @@ class Postman_PowerStatV4 : private LE910C1_EUX, private GSM_Hardware, private V
 					LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 0, 0, 0, 0, 0);
 
 					// Open Connection
-					if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, 0, 80, 255, 88, 1, _PostMan_Server_)) {
+					if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, TCP, _PostMan_Server_, _PostMan_Port_, _CONNECTION_MANUAL_CLOSE_, 88, _CONNECTION_COMMAND_)) {
 
 						// Print Message
 						#ifdef _DEBUG_
@@ -3381,7 +3386,7 @@ class Postman_PowerStatV4 : private LE910C1_EUX, private GSM_Hardware, private V
 						sprintf(_Download_Path, "/Firmware/%d", _Firmware_ID);
 
 						// Sending Data
-						if (LE910C1_EUX::SSEND(_PostMan_Outgoing_Socket_, HTTP_GET, 0, _Download_Path, "")) {
+						if (LE910C1_EUX::SSEND(_PostMan_Outgoing_Socket_, HTTP_GET, _PostMan_Server_, _Download_Path, "")) {
 
 							// Get Ring Port
 							if (LE910C1_EUX::SRING()) {
@@ -4425,7 +4430,7 @@ class Postman_PowerStatV4 : private LE910C1_EUX, private GSM_Hardware, private V
 				#endif
 
 				// Open Connection
-				if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, 0, 80, 255, 88, 1, _PostMan_Server_)) {
+				if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, TCP, _PostMan_Server_, _PostMan_Port_, _CONNECTION_MANUAL_CLOSE_, 88, _CONNECTION_COMMAND_)) {
 
 					// Print Message
 					#ifdef _DEBUG_
@@ -4459,7 +4464,7 @@ class Postman_PowerStatV4 : private LE910C1_EUX, private GSM_Hardware, private V
 					#endif
 
 					// Sending Data
-					if (LE910C1_EUX::SSEND(_PostMan_Outgoing_Socket_, HTTP_POST, 0, _PostMan_EndPoint_, this->JSON_Pack)) {
+					if (LE910C1_EUX::SSEND(_PostMan_Outgoing_Socket_, HTTP_POST, _PostMan_Server_, _PostMan_EndPoint_, this->JSON_Pack)) {
 
 						// Print Message
 						#ifdef _DEBUG_
