@@ -2,7 +2,7 @@
 #define __PostMan__
 
 	// Include Arduino Library
-	#ifndef __Arduino__
+	#ifndef Arduino_h
 		#include <Arduino.h>
 	#endif
 
@@ -25,11 +25,6 @@
 
 		// Define Library Name
 		typedef Postman_WeatherStatV3 PostMan;
-
-	#else
-
-		// Error
-		#error "No Project Selected"
 
 	#endif
 

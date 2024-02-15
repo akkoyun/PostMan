@@ -1,6 +1,6 @@
 {
 	"name": "PostMan",
-	"version": "1.4.15",
+	"version": "1.5.0",
 	"keywords": "GSM, Modem, GPRS, 2G, IoT, Telit, GE910, LE910, Backend, Cloud, PostOffice, API",
 	"description": "GSM Based IoT, Cloud Server Integration Library.",
 	"authors":
@@ -24,6 +24,11 @@
 	},
 	"dependencies":
 	[
+		{
+			"owner": "akkoyun",
+			"name": "AT_Command",
+			"version": "^1.0.0"
+		},
 		{
 			"owner": "bblanchon",
 			"name": "ArduinoJson",

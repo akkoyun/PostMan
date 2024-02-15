@@ -1,28 +1,15 @@
 // Include Arduino Library
-#ifndef __Arduino__
+#ifndef Arduino_h
 	#include <Arduino.h>
 #endif
 
-// Include Hardware Functions
-#include "GSM_Hardware.h"
+// Include Configurations
+#include "Config/Config.h"
+#include "Config/PinOut.h"
 
 // Include AT Commands
-#if defined(_LE910C1_EUX_)
-    
-    // Include AT Command Set
-    #include "AT_Command/LE910C1_EUX.h"
-    
-    // Define AT Command Set
-    typedef AT_Command_Set_LE910C1_EUX AT_Command_Set;
-
-#elif defined(_LE910S1_EAG_)
-    
-    // Include AT Command Set
-    #include "AT_Command/LE910S1_EAG.h"
-
-    // Define AT Command Set
-    typedef AT_Command_Set_LE910S1_EAG AT_Command_Set;
-    
+#ifndef __AT_Command__
+	#include <AT_Command.h>
 #endif
 
 // Include Libraries
@@ -35,12 +22,275 @@
 #include <SPI.h>
 #include "SdFat.h"
 
-// Include Definitions
-#include "AT_Command/Definitions/Command.h"
-#include "AT_Command/Definitions/Pack.h"
+// Hardware Functions
+class GSM_Hardware {
+
+    // Public Context
+	public:
+
+		// Constractor
+		GSM_Hardware(void) {
+
+
+		}
+
+		// SD Multiplexer Function
+		void SD_Multiplexer(const bool _State) {
+
+			// Control for SD Sense
+			if (_State) {
+
+				// Set SD_EN
+				PORT_SD_EN |= (1 << PIN_SD_EN);
+
+			} else {
+
+				// Clear SD_EN
+				PORT_SD_EN &= ~(1 << PIN_SD_EN);
+
+			}
+
+			// SD Wait Delay
+			delay(300);
+
+		}
+
+		// Power Switch
+		void Power_Switch(const bool _State = false) {
+
+			// Control for _State
+			if (_State) {
+
+				// Set PIN_EN_3V8 pin HIGH
+				PORT_EN_3V8 |= (1 << PIN_EN_3V8);
+
+
+			} else {
+
+				// Set PIN_EN_3V8 pin LOW
+				PORT_EN_3V8 &= ~(1 << PIN_EN_3V8);
+
+			}
+
+		}
+
+		// Enable Communication Buffer.
+		void Communication(const bool _State = false) {
+
+			// Control for _State
+			if (_State) {
+
+				// Set GSM_COMM_EN pin LOW
+				PORT_GSM_COMM_EN &= ~(1 << PIN_GSM_COMM_EN);
+
+			} else {
+
+				// Set GSM_COMM_EN pin HIGH
+				PORT_GSM_COMM_EN |= (1 << PIN_GSM_COMM_EN);
+
+			}
+
+		}
+
+		// On or Off Modem.
+		void OnOff(const uint16_t _Time) {
+
+			// Set PIN_GSM_ONOFF Signal HIGH
+			PORT_GSM_ONOFF |= (1 << PIN_GSM_ONOFF);
+
+			// Command Delay
+			for (uint8_t i = 0; i < 36; i++) {
+
+				// Calculate Delay (2000)
+				uint8_t _Delay = _Time / 37;
+
+				// Wait
+				delay(_Delay); 
+
+			}
+
+			// Set PIN_GSM_ONOFF Signal LOW
+			PORT_GSM_ONOFF &= ~(1 << PIN_GSM_ONOFF);
+
+		}
+
+		// ShutDown Modem
+		void ShutDown(const uint16_t _Time) {
+
+			// Set PIN_GSM_SDOWN Signal HIGH
+			PORT_GSM_SDOWN |= (1 << PIN_GSM_SDOWN);
+
+			// Command Delay
+			delay(_Time);
+
+			// Set PIN_GSM_SDOWN Signal LOW
+			PORT_GSM_SDOWN &= ~(1 << PIN_GSM_SDOWN);
+
+		}
+
+		// Get Power Monitor
+		bool PowerMonitor(void) {
+
+			// Control for PIN_GSM_PMON pin
+			if ((PIN_REGISTER_GSM_PMON & (1 << PIN_GSM_PMON)) == (1 << PIN_GSM_PMON)) {
+
+				// End Function
+				return (true);
+
+			} else {
+
+				// End Function
+				return(false);
+
+			}
+
+		}
+
+		// Get Software Ready
+		bool SWReady(void) {
+
+			// Control for PIN_GSM_SWREADY pin
+			if ((PIN_REGISTER_GSM_SWREADY & (1 << PIN_GSM_SWREADY)) == (1 << PIN_GSM_SWREADY)) {
+
+				// End Function
+				return (true);
+
+			} else {
+
+				// End Function
+				return(false);
+
+			}
+
+		}
+
+		// Power ON Sequence of Modem
+		bool ON(void) {
+
+			// Get Start Time
+			uint32_t _Start_Time = millis();
+
+			// Enable GSM Modem Power Switch
+			this->Power_Switch(true);  
+
+			// Power On Delay
+			delay(10);
+
+			// Set Communication Signal LOW
+			this->Communication(true);
+
+			// Communication Delay
+			delay(10);
+
+			// Turn On Modem
+			if (this->PowerMonitor()) {
+
+				// End Function
+				return (true);
+
+			} else {
+
+				// Send On Off Signal
+				this->OnOff(1500);
+
+				// Wait for Power Monitor
+				while (millis() - _Start_Time < 15000) {
+
+					// Control for PWMon (PJ3)
+					if (this->PowerMonitor()) {
+
+						// Wait for Software Ready
+						while (millis() - _Start_Time < 30000) {
+
+							// Control for SWReady (PJ4)
+							if (this->SWReady()) return (true);
+
+							// Wait Delay
+							delay(10);
+
+						}
+
+					}
+
+					// Wait Delay
+					delay(10);
+
+				}
+
+			}
+
+			// End Function
+			return (false);
+
+		}
+
+		// Power OFF Sequence of Modem
+		bool OFF(void) {
+
+			// Turn Off Modem
+			if (this->PowerMonitor()) {
+
+				// Turn Off Modem
+				this->OnOff(2750);
+
+				// Set Variable
+				bool _Power = true;
+
+				// Read Current Time
+				const uint32_t _Current_Time = millis();
+
+				// Control for Power Monitor
+				while (_Power) {
+
+					// Control for PowerMonitor
+					if (!this->PowerMonitor()) {
+
+						// Set Variable
+						_Power = false;
+
+						// Disable GSM Modem Voltage Translator
+						this->Communication(false);
+
+						// Disable GSM Modem Main Power Switch
+						this->Power_Switch(false);  
+
+					}
+
+					// Handle for timeout
+					if (millis() - _Current_Time >= 15000) break;;
+
+				}
+				
+			} else {
+
+				// Disable GSM Modem Voltage Translator
+				this->Communication(false);
+
+				// Disable GSM Modem Main Power Switch
+				this->Power_Switch(false);  
+
+			}
+
+			// End Function
+			return (true);
+
+		}
+
+		// Heartbeat Function
+		void WD_Heartbeat(void) {
+
+			// Turn ON HeartBeat
+			PORT_HEARTBEAT |= (1 << PIN_HEARTBEAT);
+
+			// Turn OFF HeartBeat
+			PORT_HEARTBEAT &= ~(1 << PIN_HEARTBEAT);
+
+		}
+
+};
 
 // Cloud Functions
-class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, private Variable {
+class Postman_PowerStatV4 : private LE910C1_EUX, private GSM_Hardware, private Variable {
 
 	// Private Context
 	private:
@@ -181,7 +431,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 					#endif
 
 					// Send Command
-					if (!AT_Command_Set::AT()) this->Status.Initialize = false;
+					if (!LE910C1_EUX::AT()) this->Status.Initialize = false;
 
 					// Print Command State
 					#ifdef _DEBUG_
@@ -219,7 +469,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::ATE(false)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::ATE(false)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -259,7 +509,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SIMDET(GET, 0, this->Status.SIM_Inserted)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::SIMDET(GET, 0, this->Status.SIM_Inserted)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -312,7 +562,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CFUN(1)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::CFUN(1)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -352,7 +602,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CMEE(1)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::CMEE(1)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -392,7 +642,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::FCLASS(0)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::FCLASS(0)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -432,7 +682,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::K(0)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::K(0)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -472,7 +722,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CPIN(this->Status.SIM_PIN)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::CPIN(this->Status.SIM_PIN)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -532,7 +782,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CGSN(this->Module.IMEI)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::CGSN(this->Module.IMEI)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -575,7 +825,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CCID(this->Operator.ICCID)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::CCID(this->Operator.ICCID)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -618,7 +868,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CGMI(this->Module.Manufacturer)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::CGMI(this->Module.Manufacturer)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -661,7 +911,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CGMM(this->Module.Model)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::CGMM(this->Module.Model)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -704,7 +954,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SWPKGV(this->Module.Firmware)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::SWPKGV(this->Module.Firmware)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -747,7 +997,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::E2SLRI(50)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::E2SLRI(50)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -787,7 +1037,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						AT_Command_Set::GPIO(SET, 1, 0, 2);
+						LE910C1_EUX::GPIO(SET, 1, 0, 2);
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -827,7 +1077,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SLED(2)) this->Status.Initialize = false;
+						if (!LE910C1_EUX::SLED(2)) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -867,7 +1117,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SLEDSAV()) this->Status.Initialize = false;
+						if (!LE910C1_EUX::SLEDSAV()) this->Status.Initialize = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -1024,7 +1274,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 							uint8_t _CREG_Connection_Stat = 99;
 
 							// Get CREG Status
-							AT_Command_Set::CREG(GET, _CREG_Connection_Mode, _CREG_Connection_Stat);
+							LE910C1_EUX::CREG(GET, _CREG_Connection_Mode, _CREG_Connection_Stat);
 
 							// Print Command Description
 							#ifdef _DEBUG_
@@ -1187,11 +1437,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 
 							}
 
-							// Print Command State
-							#ifdef DEBUG
-								Console::Text(19, 75, CYAN, String(_CREG_Connection_Stat));
-							#endif
-
 							// Print Connection Time
 							#ifdef _DEBUG_
 
@@ -1254,7 +1499,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::CGDCONT(1, "IP", _PostMan_APN_)) this->Status.Connection = false;
+						if (!LE910C1_EUX::CGDCONT(1, "IP", _PostMan_APN_)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -1294,7 +1539,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SGACT(1, 1, this->Operator.IP_Address)) this->Status.Connection = false;
+						if (!LE910C1_EUX::SGACT(1, 1, this->Operator.IP_Address)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -1337,7 +1582,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::WS46(GET, this->Operator.WDS)) this->Status.Connection = false;
+						if (!LE910C1_EUX::WS46(GET, this->Operator.WDS)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -1380,7 +1625,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						AT_Command_Set::RFSTS(this->Operator.MCC, this->Operator.MNC, this->Operator.RSSI, this->Operator.Signal, this->Operator.Cell_ID, this->Operator.TAC);
+						LE910C1_EUX::RFSTS(this->Operator.MCC, this->Operator.MNC, this->Operator.RSSI, this->Operator.Signal, this->Operator.Cell_ID, this->Operator.TAC);
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -1431,7 +1676,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFG(_PostMan_Outgoing_Socket_, 1, 1500, 90, 1200, 0)) this->Status.Connection = false;
+						if (!LE910C1_EUX::SCFG(_PostMan_Outgoing_Socket_, 1, 1500, 90, 1200, 0)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -1471,7 +1716,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0)) this->Status.Connection = false;
+						if (!LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -1511,7 +1756,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFGEXT2(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0)) this->Status.Connection = false;
+						if (!LE910C1_EUX::SCFGEXT2(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -1551,7 +1796,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFG(_PostMan_Incomming_Socket_, 1, 1500, 90, 1200, 50)) this->Status.Connection = false;
+						if (!LE910C1_EUX::SCFG(_PostMan_Incomming_Socket_, 1, 1500, 90, 1200, 50)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -1591,7 +1836,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						#endif
 
 						// Send Command
-						if (!AT_Command_Set::SCFGEXT(_PostMan_Incomming_Socket_, 1, 0, 1, 0, 0)) this->Status.Connection = false;
+						if (!LE910C1_EUX::SCFGEXT(_PostMan_Incomming_Socket_, 1, 0, 1, 0, 0)) this->Status.Connection = false;
 
 						// Print Command State
 						#ifdef _DEBUG_
@@ -1632,13 +1877,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 
 				} else {
 
-					// TODO: modem hazır değiş yazısı ekrana yazdırılacak
-					// Print Command State
-					#ifdef DEBUG
-						Console::Text(14, 4, CYAN, F("                                    "));
-						Console::Text(14, 4, CYAN, F("Modem Not Ready"));
-					#endif
-
 					// Initialize Modem
 					this->Initialize();
 
@@ -1646,13 +1884,6 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 
 				// Handle WatchDog
 				if (_WD > 4) {
-
-					// TODO: bağlantı kurulamadı hatası yazdırılacak
-					// Print Command State
-					#ifdef DEBUG
-						Console::Text(14, 4, CYAN, F("                                    "));
-						Console::Text(14, 4, RED, F("Connection Failed"));
-					#endif
 
 					// Clear States
 					this->Status.SIM_Inserted = false;
@@ -1705,7 +1936,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 				#endif
 
 				// FRWL Clear (Firewall Configuration)
-				bool _FireWall_Clear_State = AT_Command_Set::FRWL(SET, 2, _PostMan_Firewall_1_);
+				bool _FireWall_Clear_State = LE910C1_EUX::FRWL(SET, 2, _PostMan_Firewall_1_);
 
 				// Print Command State
 				#ifdef _DEBUG_
@@ -1730,7 +1961,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 				#endif
 
 				// FRWL Command 1 (Firewall Configuration)
-				bool _FireWall_State_1 = AT_Command_Set::FRWL(SET, 1, _PostMan_Firewall_1_);
+				bool _FireWall_State_1 = LE910C1_EUX::FRWL(SET, 1, _PostMan_Firewall_1_);
 
 				// Print Command State
 				#ifdef _DEBUG_
@@ -1755,7 +1986,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 				#endif
 
 				// FRWL Command 2 (Firewall Configuration)
-				bool _FireWall_State_2 = AT_Command_Set::FRWL(SET, 1, _PostMan_Firewall_2_);
+				bool _FireWall_State_2 = LE910C1_EUX::FRWL(SET, 1, _PostMan_Firewall_2_);
 
 				// Print Command State
 				#ifdef _DEBUG_
@@ -1780,7 +2011,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 				#endif
 
 				// FRWL Command 3 (Firewall Configuration)
-				bool _FireWall_State_3 = AT_Command_Set::FRWL(SET, 1, _PostMan_Firewall_3_);
+				bool _FireWall_State_3 = LE910C1_EUX::FRWL(SET, 1, _PostMan_Firewall_3_);
 
 				// Print Command State
 				#ifdef _DEBUG_
@@ -1805,7 +2036,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 				#endif
 
 				// ICMP Command (Ping Configuration)
-				bool _ICMP_State = AT_Command_Set::ICMP(1);
+				bool _ICMP_State = LE910C1_EUX::ICMP(1);
 
 				// Print Command State
 				#ifdef _DEBUG_
@@ -1866,7 +2097,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 				#endif
 
 				// Send Command
-				bool _Socket_State = AT_Command_Set::SS(_PostMan_Incomming_Socket_, this->Status.Socket_State);
+				bool _Socket_State = LE910C1_EUX::SS(_PostMan_Incomming_Socket_, this->Status.Socket_State);
 
 				// Print Command State
 				#ifdef _DEBUG_
@@ -1898,7 +2129,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 					#endif
 
 					// Activate Socket for Listen
-					bool _SL_Command = AT_Command_Set::SL(_PostMan_Incomming_Socket_, 1, 80, 255);
+					bool _SL_Command = LE910C1_EUX::SL(_PostMan_Incomming_Socket_, 1, 80, 255);
 
 					// Print Command State
 					#ifdef _DEBUG_
@@ -1930,7 +2161,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 					#endif
 
 					// Get Socket Status
-					bool _SS_Command = AT_Command_Set::SS(_PostMan_Incomming_Socket_, this->Status.Socket_State);
+					bool _SS_Command = LE910C1_EUX::SS(_PostMan_Incomming_Socket_, this->Status.Socket_State);
 
 					// Print Command State
 					#ifdef _DEBUG_
@@ -1980,7 +2211,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 					#endif
 
 					// DeActivate Socket for Listen
-					bool _SL_Command = AT_Command_Set::SL(_PostMan_Incomming_Socket_, 0, 80, 255);
+					bool _SL_Command = LE910C1_EUX::SL(_PostMan_Incomming_Socket_, 0, 80, 255);
 
 					// Print Command State
 					#ifdef _DEBUG_
@@ -2012,7 +2243,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 					#endif
 
 					// Get Socket Status
-					bool _SS_Command = AT_Command_Set::SS(_PostMan_Incomming_Socket_, this->Status.Socket_State);
+					bool _SS_Command = LE910C1_EUX::SS(_PostMan_Incomming_Socket_, this->Status.Socket_State);
 
 					// Print Command State
 					#ifdef _DEBUG_
@@ -2110,7 +2341,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 			serializeJson(Response_JSON, Buffer_Variable);
 
 			// Send Socket Answer
-			if (AT_Command_Set::SSEND(_PostMan_Incomming_Socket_, HTTP_RESPONSE, _Response_Code, "", Buffer_Variable)) {
+			if (LE910C1_EUX::SSEND(_PostMan_Incomming_Socket_, HTTP_RESPONSE, _Response_Code, "", Buffer_Variable)) {
 
 				// Print Message
 				#ifdef _DEBUG_
@@ -2130,7 +2361,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 				delay(20);
 
 				// Closing Socket
-				if (AT_Command_Set::SH(_PostMan_Incomming_Socket_)) {
+				if (LE910C1_EUX::SH(_PostMan_Incomming_Socket_)) {
 
 					// Command Delay
 					delay(20);
@@ -2195,7 +2426,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 					#endif
 
 					// Wait for Sring
-					if (AT_Command_Set::SRING()) {
+					if (LE910C1_EUX::SRING()) {
 
 						// Declare JSON Variable
 						char _JSON_Data[_PostMan_Recieve_JSON_Size_];
@@ -2221,13 +2452,13 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						uint16_t _Length = 0;
 
 						// Answer Socket
-						AT_Command_Set::SA(_PostMan_Incomming_Socket_, 1, _Length);
+						LE910C1_EUX::SA(_PostMan_Incomming_Socket_, 1, _Length);
 
 						// Handle Max Length
 						if (_Length > _PostMan_Recieve_JSON_Size_) _Length = _PostMan_Recieve_JSON_Size_;
 
 						// Get Request Data
-						AT_Command_Set::SRECV(_PostMan_Incomming_Socket_, _Length, _JSON_Data);
+						LE910C1_EUX::SRECV(_PostMan_Incomming_Socket_, _Length, _JSON_Data);
 
 						// Declare Handle Variable
 						bool Data_Handle = false;
@@ -3126,10 +3357,10 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 					uint32_t _Download_Start_Time = millis();
 
 					// Set Socket Configuration
-					AT_Command_Set::SCFGEXT(_PostMan_Outgoing_Socket_, 0, 0, 0, 0, 0);
+					LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 0, 0, 0, 0, 0);
 
 					// Open Connection
-					if (AT_Command_Set::ATSD(_PostMan_Outgoing_Socket_, 0, 80, 255, 88, 1, _PostMan_Server_)) {
+					if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, 0, 80, 255, 88, 1, _PostMan_Server_)) {
 
 						// Print Message
 						#ifdef _DEBUG_
@@ -3150,10 +3381,10 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						sprintf(_Download_Path, "/Firmware/%d", _Firmware_ID);
 
 						// Sending Data
-						if (AT_Command_Set::SSEND(_PostMan_Outgoing_Socket_, HTTP_GET, 0, _Download_Path, "")) {
+						if (LE910C1_EUX::SSEND(_PostMan_Outgoing_Socket_, HTTP_GET, 0, _Download_Path, "")) {
 
 							// Get Ring Port
-							if (AT_Command_Set::SRING()) {
+							if (LE910C1_EUX::SRING()) {
 
 								// Define Response Buffer Size
 								uint16_t _Response_Buffer_Size = 500;
@@ -3167,7 +3398,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 								memset(Data_Variable, '\0', _Response_Buffer_Size);
 
 								// Get Request Data Head
-								bool _SRECV = AT_Command_Set::SRECV(_PostMan_Outgoing_Socket_, (_Response_Buffer_Size - 100), Buffer_Variable);
+								bool _SRECV = LE910C1_EUX::SRECV(_PostMan_Outgoing_Socket_, (_Response_Buffer_Size - 100), Buffer_Variable);
 
 								// Handle Response
 								if (_SRECV) {
@@ -3310,7 +3541,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 									memset(Data_Variable, '\0', _Response_Buffer_Size);
 
 									// Handle Response
-									if (AT_Command_Set::SRECV(_PostMan_Outgoing_Socket_, (_Response_Buffer_Size - 100), Buffer_Variable)) {
+									if (LE910C1_EUX::SRECV(_PostMan_Outgoing_Socket_, (_Response_Buffer_Size - 100), Buffer_Variable)) {
 
 										// \r\n#SRECV: 2,400\r\n
 										// \n
@@ -3455,7 +3686,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						}
 
 						// Closing Socket
-						if (AT_Command_Set::SH(_PostMan_Outgoing_Socket_)) {
+						if (LE910C1_EUX::SH(_PostMan_Outgoing_Socket_)) {
 
 							// Control for Incoming Call
 							this->Listen(true);
@@ -3465,7 +3696,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 					}
 
 					// Set Socket Configuration
-					AT_Command_Set::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0);
+					LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0);
 
 					//Work Delay
 					delay(8);
@@ -3597,7 +3828,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 				#endif
 
 				// Send Command
-				bool _MONI_Command = AT_Command_Set::MONI(this->Operator.TAC, this->Operator.Cell_ID, this->Operator.RSSI, this->Operator.Signal, this->Operator.PCell_ID);
+				bool _MONI_Command = LE910C1_EUX::MONI(this->Operator.TAC, this->Operator.Cell_ID, this->Operator.RSSI, this->Operator.Signal, this->Operator.PCell_ID);
 
 				// Print Command State
 				#ifdef _DEBUG_
@@ -3619,7 +3850,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 				#endif
 
 				// Send Command
-				bool _WS46_Command = AT_Command_Set::WS46(GET, this->Operator.WDS);
+				bool _WS46_Command = LE910C1_EUX::WS46(GET, this->Operator.WDS);
 
 				// Print Command State
 				#ifdef _DEBUG_
@@ -3910,7 +4141,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 		}
 
 		// PostMan Constructor
-		Postman_PowerStatV4(Stream &_Serial, PowerStat_Console& _Terminal) : AT_Command_Set(_Serial), GSM_Hardware(), Variable(), GSM_Terminal(&_Terminal), _CallBack_Interval_Update(nullptr), _CallBack_Energy_Update(nullptr), _CallBack_Pressure_Update(nullptr), _CallBack_Mask_Update(nullptr) {
+		Postman_PowerStatV4(Stream &_Serial, PowerStat_Console& _Terminal) : LE910C1_EUX(_Serial), GSM_Hardware(), Variable(), GSM_Terminal(&_Terminal), _CallBack_Interval_Update(nullptr), _CallBack_Energy_Update(nullptr), _CallBack_Pressure_Update(nullptr), _CallBack_Mask_Update(nullptr) {
 
 			// Control Terminal
 			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
@@ -3938,7 +4169,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 			memset(this->JSON_Pack, '\0', _PostMan_Send_JSON_Size_);
 
 		}
-		Postman_PowerStatV4(Stream &_Serial) : AT_Command_Set(_Serial), GSM_Hardware(), Variable(), GSM_Terminal(nullptr), _CallBack_Interval_Update(nullptr), _CallBack_Energy_Update(nullptr), _CallBack_Pressure_Update(nullptr), _CallBack_Mask_Update(nullptr) {
+		Postman_PowerStatV4(Stream &_Serial) : LE910C1_EUX(_Serial), GSM_Hardware(), Variable(), GSM_Terminal(nullptr), _CallBack_Interval_Update(nullptr), _CallBack_Energy_Update(nullptr), _CallBack_Pressure_Update(nullptr), _CallBack_Mask_Update(nullptr) {
 
 			// Control Terminal
 			if (GSM_Terminal != nullptr) {this->Status.Terminal = true;} else {this->Status.Terminal = false;}
@@ -4101,7 +4332,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 				#endif
 
 				// CCLK Command (Real Time Clock Configuration)
-				bool _Clock_State = AT_Command_Set::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second, this->Time.Time_Zone);
+				bool _Clock_State = LE910C1_EUX::CCLK(this->Time.Year, this->Time.Month, this->Time.Day, this->Time.Hour, this->Time.Minute, this->Time.Second, this->Time.Time_Zone);
 
 				// Print Command State
 				#ifdef _DEBUG_
@@ -4194,7 +4425,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 				#endif
 
 				// Open Connection
-				if (AT_Command_Set::ATSD(_PostMan_Outgoing_Socket_, 0, 80, 255, 88, 1, _PostMan_Server_)) {
+				if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, 0, 80, 255, 88, 1, _PostMan_Server_)) {
 
 					// Print Message
 					#ifdef _DEBUG_
@@ -4228,7 +4459,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 					#endif
 
 					// Sending Data
-					if (AT_Command_Set::SSEND(_PostMan_Outgoing_Socket_, HTTP_POST, 0, _PostMan_EndPoint_, this->JSON_Pack)) {
+					if (LE910C1_EUX::SSEND(_PostMan_Outgoing_Socket_, HTTP_POST, 0, _PostMan_EndPoint_, this->JSON_Pack)) {
 
 						// Print Message
 						#ifdef _DEBUG_
@@ -4248,7 +4479,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 						uint16_t _Length;
 
 						// Get Ring Port
-						if (AT_Command_Set::SRING(_Length)) {
+						if (LE910C1_EUX::SRING(_Length)) {
 
 							// Declare Response Variable
 							char _Response[_PostMan_Response_JSON_Size_];
@@ -4277,7 +4508,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 							if (_Length > _PostMan_Response_JSON_Size_) _Length = _PostMan_Response_JSON_Size_;
 
 							// Get Request Data
-							if (AT_Command_Set::SRECV(_PostMan_Outgoing_Socket_, _Length, _Response)) {
+							if (LE910C1_EUX::SRECV(_PostMan_Outgoing_Socket_, _Length, _Response)) {
 
 								// Declare Response Variable
 								char _JSON_Pack[_PostMan_Response_JSON_Size_];
@@ -4344,7 +4575,7 @@ class Postman_PowerStatV4 : private AT_Command_Set, private GSM_Hardware, privat
 								#endif
 
 								// Closing Socket
-								if (AT_Command_Set::SH(_PostMan_Outgoing_Socket_)) {
+								if (LE910C1_EUX::SH(_PostMan_Outgoing_Socket_)) {
 
 									// Control for Incoming Call
 									this->Listen(true);
