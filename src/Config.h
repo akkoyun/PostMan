@@ -75,5 +75,5 @@
 
 // Firmware Update Parameters
 #ifndef _PostMan_Firmware_Name_
-	#define _PostMan_Firmware_Name_					"FW.HEX"
+	#define _PostMan_Firmware_Name_					"Firmware.HEX"
 #endif

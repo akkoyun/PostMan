@@ -1,3 +1,11 @@
+// Define Status Definitions
+#define PostMan_Status_Terminal						(uint8_t)0
+#define PostMan_Status_Initialize					(uint8_t)1
+#define PostMan_Status_SIM_Inserted					(uint8_t)2
+#define PostMan_Status_Connection					(uint8_t)3
+#define PostMan_Status_Firewall						(uint8_t)4
+#define PostMan_Status_Ring							(uint8_t)5
+
 // Define PowerStat Commands
 #define Command_OK									200
 #define Command_NOK									201
