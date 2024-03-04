@@ -19,7 +19,12 @@
 
 	// Include MD5 Hashing
 	#ifndef _MD5_
-		#include <md5.h>
+		#include <MD5.h>
+	#endif
+
+	// Include JSON Library
+	#ifndef __JSON__
+		#include <JSON.h>
 	#endif
 
 	// Cloud Functions
@@ -100,6 +105,77 @@
 
 			}
 
+			// Calculate SD File MD5 Hash
+			bool Calculate_MD5(char * _MD5) {
+
+				// Enable SD Multiplexer
+				Hardware->SD_Multiplexer(true);
+
+				// Declare MD5 Object
+				MD5 _Hash;
+
+				// Declare File Object
+				File _SD_File;
+
+				// Open File for Open
+				_SD_File = Hardware->open(_PostMan_Firmware_Name_, O_READ);
+
+				// Control for File Open
+				if (_SD_File) {
+
+					// Print Message
+					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Calculating MD5 Hash..."));
+
+					// Read File
+					while (_SD_File.available() > 0) {
+
+						// Declare Data Buffer
+						char _Data[10];
+
+						// Read 10 Byte Data
+						_SD_File.readBytes(_Data, 9);
+
+						// MD5 Checksum
+						_Hash.Update(_Data, 9);
+
+						// Heart Beat
+						Hardware->Heartbeat(true, LED_YELLOW);
+
+					}
+
+				} else {
+
+					// Print Message
+					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Firmware File Open Failed!!"));
+
+					// End Function
+					return(false);
+
+				}
+
+				// Declare MD5 Buffer
+				uint8_t _File_Hash[16];
+
+				// Calculate MD5
+				_Hash.Finalize(_File_Hash);
+
+				// MD5 to Char Array
+				_Hash.Digest(_File_Hash, _MD5);
+
+				// Close SD File
+				_SD_File.close();
+
+				// Print Hash
+				if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(47, 4, _Console_GRAY_, _MD5);
+
+				// Disable SD Multiplexer
+				Hardware->SD_Multiplexer(false);
+
+				// End Function
+				return(true);
+
+			}
+
 		// Protected Context
 		protected:
 
@@ -173,7 +249,7 @@
 							bool _SIMDET = false;
 
 							// Send Command
-							if (!LE910C1_EUX::SIMDET(GET, 0, _SIMDET)) bitClear(this->Status, PostMan_Status_Initialize);
+							if (!LE910C1_EUX::SIMDET(_AT_GET_, 0, _SIMDET)) bitClear(this->Status, PostMan_Status_Initialize);
 
 							// Handle Variable
 							if (_SIMDET) {bitSet(this->Status, PostMan_Status_SIM_Inserted);} else {bitClear(this->Status, PostMan_Status_SIM_Inserted);}
@@ -531,7 +607,7 @@
 							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#GPIO=1,0,2"));
 
 							// Send Command
-							if (!LE910C1_EUX::GPIO(SET, 1, 0, 2)) bitClear(this->Status, PostMan_Status_Initialize);
+							if (!LE910C1_EUX::GPIO(_AT_SET_, 1, 0, 2)) bitClear(this->Status, PostMan_Status_Initialize);
 
 							// Calculate Connection Time
 							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
@@ -676,7 +752,7 @@
 								uint8_t _CREG_Connection_Stat = 99;
 
 								// Get CREG Status
-								LE910C1_EUX::CREG(GET, _CREG_Connection_Mode, _CREG_Connection_Stat);
+								LE910C1_EUX::CREG(_AT_GET_, _CREG_Connection_Mode, _CREG_Connection_Stat);
 
 								// Control for Connection
 								if (_CREG_Connection_Stat == 0) {
@@ -903,7 +979,7 @@
 							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT+WS46?"));
 
 							// Send Command
-							if (!LE910C1_EUX::WS46(GET, this->Operator.WDS)) bitClear(this->Status, PostMan_Status_Connection);
+							if (!LE910C1_EUX::WS46(_AT_GET_, this->Operator.WDS)) bitClear(this->Status, PostMan_Status_Connection);
 
 							// Calculate Connection Time
 							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
@@ -1142,7 +1218,7 @@
 					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#FRWL=2"));
 
 					// FRWL Clear (Firewall Configuration)
-					_Firewall = LE910C1_EUX::FRWL(SET, 2, _PostMan_Firewall_1_);
+					_Firewall = LE910C1_EUX::FRWL(_AT_SET_, 2, _PostMan_Firewall_1_);
 
 					// Calculate Connection Time
 					this->Operator.Connection_Time = (float)(millis() - this->Operator.Connection_Start) / 1000;
@@ -1162,7 +1238,7 @@
 					}
 
 					// FRWL Command 1 (Firewall Configuration)
-					_Firewall = LE910C1_EUX::FRWL(SET, 1, _PostMan_Firewall_1_);
+					_Firewall = LE910C1_EUX::FRWL(_AT_SET_, 1, _PostMan_Firewall_1_);
 
 					// Calculate Connection Time
 					this->Operator.Connection_Time = (float)(millis() - this->Operator.Connection_Start) / 1000;
@@ -1182,7 +1258,7 @@
 					}
 
 					// FRWL Command 2 (Firewall Configuration)
-					_Firewall = LE910C1_EUX::FRWL(SET, 1, _PostMan_Firewall_2_);
+					_Firewall = LE910C1_EUX::FRWL(_AT_SET_, 1, _PostMan_Firewall_2_);
 
 					// Calculate Connection Time
 					this->Operator.Connection_Time = (float)(millis() - this->Operator.Connection_Start) / 1000;
@@ -1202,7 +1278,7 @@
 					}
 
 					// FRWL Command 3 (Firewall Configuration)
-					_Firewall = LE910C1_EUX::FRWL(SET, 1, _PostMan_Firewall_3_);
+					_Firewall = LE910C1_EUX::FRWL(_AT_SET_, 1, _PostMan_Firewall_3_);
 
 					// Calculate Connection Time
 					this->Operator.Connection_Time = (float)(millis() - this->Operator.Connection_Start) / 1000;
@@ -1414,7 +1490,7 @@
 				}
 
 				// Send Answer
-				if (LE910C1_EUX::SSEND(_PostMan_Incomming_Socket_, HTTP_RESPONSE, _PostMan_Server_, _PostMan_EndPoint_, _Buffer)) {
+				if (LE910C1_EUX::SSEND(_PostMan_Incomming_Socket_, _HTTP_RESPONSE_, _PostMan_Server_, _PostMan_EndPoint_, _Buffer)) {
 
 					// Command Delay
 					delay(10);
@@ -1476,9 +1552,6 @@
 					// Declare SD File
 					File FOTA_File;
 
-					// Declare MD5 Object
-					MD5 MD5_Hash;
-
 					// Delay
 					delay(100);
 
@@ -1517,7 +1590,7 @@
 						LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 0, 0, 0, 0, 0);
 
 						// Open Socket for Download
-						if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, TCP, _PostMan_Server_, _PostMan_Port_, _CONNECTION_MANUAL_CLOSE_, 88, _CONNECTION_COMMAND_)) {
+						if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, _AT_TCP_, _PostMan_Server_, _PostMan_Port_, _CONNECTION_MANUAL_CLOSE_, 88, _CONNECTION_COMMAND_)) {
 
 							// Print Message
 							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Firmware Downloading..."));
@@ -1527,13 +1600,13 @@
 							sprintf(_Download_Path, "/Firmware/%d", _Firmware_ID);
 
 							// Send Download Request
-							if (LE910C1_EUX::SSEND(_PostMan_Outgoing_Socket_, HTTP_GET, _PostMan_Server_, _Download_Path, "")) {
+							if (LE910C1_EUX::SSEND(_PostMan_Outgoing_Socket_, _HTTP_GET_, _PostMan_Server_, _Download_Path, "")) {
 
 								// Get Ring
 								if (LE910C1_EUX::SRING()) {
 
 									// Define Response Buffer Size
-									const uint16_t _Response_Buffer_Size = 550;
+									const uint16_t _Response_Buffer_Size = 1024;
 
 									// Declare Buffer Variable
 									char Buffer_Variable[_Response_Buffer_Size];
@@ -1625,7 +1698,7 @@
 										}
 
 										// Declare Variables
-										uint16_t _FOTA_GET_Status = HTTP_Unknown;
+										uint16_t _FOTA_GET_Status = _HTTP_Unknown_;
 
 										// Get First Line
 										char* _Response_Line = strtok(Buffer_Variable, "\r\n");
@@ -1676,7 +1749,7 @@
 										}
 
 										// Control for GET Status
-										if (_FOTA_GET_Status == HTTP_OK) {
+										if (_FOTA_GET_Status == _HTTP_OK_) {
 
 											// Print Message
 											if (bitRead(this->Status, PostMan_Status_Terminal)) {
@@ -1694,9 +1767,6 @@
 
 											// Write Data
 											if (_End_Position - _Start_Position > 0) FOTA_File.write(Data_Variable, (_End_Position - _Start_Position));
-
-											// MD5 Checksum
-											MD5_Hash.Update(Data_Variable, (_End_Position - _Start_Position));
 
 											// SD Print Delay
 											delay(100);
@@ -1834,9 +1904,6 @@
 											// Write Data
 											if (_End_Position - _Start_Position > 0) FOTA_File.write(Data_Variable, (_End_Position - _Start_Position));
 
-											// MD5 Checksum
-											MD5_Hash.Update(Data_Variable, (_End_Position - _Start_Position));
-
 										} 
 
 										// Control for CME ERROR 4
@@ -1961,58 +2028,6 @@
 						// Close SD File
 						FOTA_File.close();
 
-						// Disable LED Blue
-						PORT_MCU_LED_BLUE &= ~(1 << PIN_MCU_LED_BLUE);
-
-						// Disable SD Multiplexer
-						Hardware->SD_Multiplexer(false);
-
-						// Calculate MD5
-						uint8_t _Hash[16];
-						MD5_Hash.Finalize(_Hash);
-
-						// MD5 to Char Array
-						char _Etag[33];
-						MD5::Digest(_Hash, _Etag);
-
-						// Compare MD5 With ETag
-						if (strcmp(_Etag, _FOTA_Server_ETag) == 0) {
-
-							// Set Status
-							_FOTA_Download_Status = FOTA_Download_OK;
-
-							// Add Variable
-							this->Payload->Add(1, _Firmware_ID);
-							this->Payload->Add(2, _FOTA_Download_Status);
-
-							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Firmware Download Success!!"));
-
-							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(46, 4, _Console_GRAY_, _Etag);
-
-							// End Function
-							return(true);
-
-						} else {
-
-							// Set Status
-							_FOTA_Download_Status = FOTA_Download_MD5_Error;
-
-							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Firmware MD5 Error!!"));
-
-							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(46, 4, _Console_GRAY_, _Etag);
-
-							// End Function
-							return(false);
-
-						}
-
-						// End Function
-						return(false);
-
 					} else {
 
 						// Set Status
@@ -2029,102 +2044,54 @@
 
 					}
 
-				}
-
-				// Disable SD Multiplexer
-				Hardware->SD_Multiplexer(false);
-
-				// End Function
-				return(false);
-
-			}
-
-			// Control Firmware File Function
-			bool Calculate_MD5_Hash(char * _Hash, const char * _FileName) {
-
-				// Set LED Blue
-				PORT_MCU_LED_BLUE |= (1 << PIN_MCU_LED_BLUE);
-
-				// Enable SD Multiplexer
-				Hardware->SD_Multiplexer(true);
-
-				// Declare MD5 Object
-				MD5 MD5_Hash;
-
-				// Declare SD File
-				File Hash_File;
-
-				// Control for Existing File
-				if (Hardware->exists(_FileName)) {
+					// Clear LED Blue
+					PORT_MCU_LED_BLUE &= ~(1 << PIN_MCU_LED_BLUE);
 
 					// Print Message
-					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Opening Firmware File..."));
+					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(46, 4, _Console_GRAY_, _FOTA_Server_ETag);
 
-					// Open File for Read
-					Hash_File = Hardware->open(_PostMan_Firmware_Name_, O_READ);
+					// Declare MD5_Hash Variable
+					char _File_MD5_Hash[33];
 
-					// Command Delay
-					delay(100);
+					// Calculate MD5 Hash
+					this->Calculate_MD5(_File_MD5_Hash);
 
-					// Control for File Open
-					if (Hash_File) {
+					// Compare MD5 With ETag
+					if (strcmp(_File_MD5_Hash, _FOTA_Server_ETag) == 0) {
 
-						// Print Message
-						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Calculating MD5 Hash..."));
+						// Set Status
+						_FOTA_Download_Status = FOTA_Download_OK;
 
-						// Read File
-						while (Hash_File.available() > 0) {
-
-
-							Terminal->Beep();
-
-							// Read 10 Byte Data
-							char _Data[10];
-							Hash_File.readBytes(_Data, 9);
-
-							// MD5 Checksum
-							MD5_Hash.Update(_Data, 9);
-
-						}
-
-						// Close File
-						Hash_File.close();
-
-						// Calculate MD5
-						uint8_t _Calculated_Hash[16];
-						MD5_Hash.Finalize(_Calculated_Hash);
-
-						// MD5 to Char Array
-						MD5_Hash.Digest(_Calculated_Hash, _Hash);
+						// Add Variable
+						this->Payload->Add(1, _Firmware_ID);
+						this->Payload->Add(2, _FOTA_Download_Status);
 
 						// Print Message
-						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, _Hash);
-
-						// Set LED Off
-						PORT_MCU_LED_BLUE &= ~(1 << PIN_MCU_LED_BLUE);
-
-						// Disable SD Multiplexer
-						Hardware->SD_Multiplexer(false);
+						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Firmware Download Success!!"));
 
 						// End Function
 						return(true);
 
 					} else {
 
+						// Set Status
+						_FOTA_Download_Status = FOTA_Download_MD5_Error;
+
 						// Print Message
-						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Can not Open Firmware File..."));
+						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Firmware MD5 Error!!"));
+
+						// End Function
+						return(false);
 
 					}
 
-				} else {
+					// Close SD File
+					FOTA_File.close();
 
-					// Print Message
-					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Firmware File Not Found..."));
+					// Disable SD Multiplexer
+					Hardware->SD_Multiplexer(false);
 
 				}
-
-				// Set LED Off
-				PORT_MCU_LED_BLUE &= ~(1 << PIN_MCU_LED_BLUE);
 
 				// Disable SD Multiplexer
 				Hardware->SD_Multiplexer(false);
@@ -2154,6 +2121,21 @@
 
 				// Set Interrupt Handler
 				bitSet(this->Status, PostMan_Status_Ring);
+
+			}
+
+			// JSON Parser Handler Function
+			static void JSON_Parser_Static(void) {
+
+				// Set Interrupt Handler
+				if (Instance) Instance->JSON_Parser();
+
+			}
+			void JSON_Parser(void) {
+
+				SERIAL_GSM.print("{\"Data\" : 12}");
+
+				Terminal->Text(27, 10, _Console_WHITE_, F("JSON Parser..."));
 
 			}
 
@@ -2275,13 +2257,16 @@
 			}
 
 			// Get Server Command Function
-			void Get(void) {
+			uint16_t Get(void) {
 
 				// Control for Modem Connection
 				if (bitRead(this->Status, PostMan_Status_Connection)) {
 
 					// Control for RING
 					if (bitRead(this->Status, PostMan_Status_Ring)) {
+
+						// Declare Event Variable
+						uint16_t _Event = Command_None;
 
 						// Clear Ring Status
 						bitClear(this->Status, PostMan_Status_Ring);
@@ -2290,10 +2275,10 @@
 						if (LE910C1_EUX::SRING()) {
 
 							// Declare JSON Variable
-							char _JSON_Data[_PostMan_Recieve_JSON_Size_];
+							char _Buffer[_PostMan_Recieve_JSON_Size_];
 
 							// Clear JSON Data
-							memset(_JSON_Data, '\0', _PostMan_Recieve_JSON_Size_);
+							memset(_Buffer, '\0', _PostMan_Recieve_JSON_Size_);
 
 							// Print Message
 							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Recieving Message..."));
@@ -2308,77 +2293,171 @@
 							if (_Length == 0 or _Length > _PostMan_Recieve_JSON_Size_) _Length = _PostMan_Recieve_JSON_Size_;
 
 							// Get Request Data
-							LE910C1_EUX::SRECV(_PostMan_Incomming_Socket_, _Length, _JSON_Data);
+							LE910C1_EUX::SRECV(_PostMan_Incomming_Socket_, _Length, _Buffer);
 
-							// Declare Handle Variable
-							bool Data_Handle = false;
+								// Declare JSON Object
+								JSON _JSON_Data(_Buffer);
 
-							// Declare JSON Variable
-							char _Data[_Length];
+								// Control for JSON Data
+								if (_JSON_Data.isValid()) {
 
-							// Clear JSON Data
-							memset(_Data, '\0', _Length);
+									// Print Message
+									if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_CYAN_, _JSON_Data.Buffer());
 
-							// Declare Data Order
-							uint16_t _Data_Order = 0;
+									// Get Event
+									_Event = _JSON_Data[F("Event")];
 
-							// Control for Buffer
-							for (uint16_t i = 2; i < _PostMan_Recieve_JSON_Size_; i++) {
+									// Control for Event Type
+									if (_Event == Command_FOTA_Download) {
 
-								// Handle JSON Data
-								if (_JSON_Data[i] == '{') Data_Handle = true;
+										// Get Firmware ID
+										uint16_t _FW_ID = _JSON_Data[F("FW_ID")];
 
-								// Get Data
-								if (Data_Handle) {
+										// Send Response
+										if (_FW_ID != 0) this->Response(_HTTP_OK_); else this->Response(_HTTP_BadRequest_);
 
-									// Handle for Space
-									if (_JSON_Data[i] != ' ' and _JSON_Data[i] != '\n' and _JSON_Data[i] != '\r') {
+										// Download Firmware
+										this->Download(_FW_ID);
 
-										// Set Data
-										_Data[_Data_Order] = _JSON_Data[i];
-										
-										// Increase Data Order
-										_Data_Order += 1;
+									} else if (_Event == Command_FOTA_Burn) {
+
+										// Send Response
+										this->Response(_HTTP_OK_);
+
+										// Print Message
+										if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_RED_, F("Starting Firmware Burn..."));
+
+										// Burn Firmware
+										Hardware->Burn_Firmware();
+
+									} else if (_Event == Command_Start) {
+
+										// Send Response
+										this->Response(_HTTP_OK_);
+
+									} else if (_Event == Command_Stop) {
+
+										// Send Response
+										this->Response(_HTTP_OK_);
+
+									} else {
+
+										// Send Response
+										this->Response(_HTTP_NotAcceptable_);
 
 									}
 
+								} else {
+
+									// Send Response
+									this->Response(_HTTP_BadRequest_);
+
 								}
-
-								// Handle JSON Data
-								if (_JSON_Data[i-2] == '}' and _JSON_Data[i-1] == '\r' and _JSON_Data[i] == '\n') Data_Handle = false;
-
-							}
-
-							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_CYAN_, _Data);
-
-
-
-
-							// TODO: Düzenlenecek
-
-
-
-
-							// Send Response
-							this->Response(HTTP_OK);
-
-
-							this->Download(1);
-							//this->Calculate_MD5_Hash(_Data, _PostMan_Firmware_Name_);
-
-
-
 
 							// Port Control
 							this->Listen(true);
 
+						}
+
+						// End Function
+						return(_Event);
+
+					}
+
+					// End Function
+					return(Command_None);
+
+				}
+
+				// End Function
+				return(Command_None);
+
+			}
+
+			// Send Data Batch Function
+			bool Publish(const uint8_t _Pack_Type) {
+
+				// Control for Modem Connection
+				if (bitRead(this->Status, PostMan_Status_Connection)) {
+
+					// Print Message
+					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Closing Listen Socket..."));
+
+					// Stop Socket Listen
+					this->Listen(false);
+
+					// Print Message
+					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Connecting to Server..."));
+
+					// Open Connection
+					if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, _AT_TCP_, _PostMan_Server_, _PostMan_Port_, _CONNECTION_MANUAL_CLOSE_, 88, _CONNECTION_COMMAND_)) {
+
+						// Sending Data
+						if (LE910C1_EUX::SSEND(this->JSON_Parser_Static)) {
+
+							// Print Message
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Waiting for Response..."));
+
+							// Declare Ring Length
+							uint16_t _Length;
+
+							// Get Ring Port
+							if (LE910C1_EUX::SRING(_Length)) {
+
+								// Declare Response Variable
+								char _Response[_PostMan_Response_JSON_Size_];
+
+								// Clear Response
+								memset(_Response, '\0', _PostMan_Response_JSON_Size_);
+
+								// Command Delay
+								delay(10);
+
+								// Print Message
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Getting Response..."));
+
+								// Handle Length
+								if (_Length > _PostMan_Response_JSON_Size_) _Length = _PostMan_Response_JSON_Size_;
+
+								// Get Request Data
+								if (LE910C1_EUX::SRECV(_PostMan_Outgoing_Socket_, _Length, _Response)) {
+
+
+
+
+
+
+									// Command Delay
+									delay(50);
+
+									// Print Message
+									if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Closing Connection..."));
+
+									// Closing Socket
+									if (LE910C1_EUX::SH(_PostMan_Outgoing_Socket_)) {
+
+										// Control for Incoming Call
+										this->Listen(true);
+
+										// End Function
+										return(true);
+
+									}
+								}
+
+							}
 
 						}
 
 					}
 
+					// Port Control
+					this->Listen(true);
+
 				}
+
+				// End Function
+				return(false);
 
 			}
 

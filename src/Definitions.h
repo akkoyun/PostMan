@@ -6,7 +6,13 @@
 #define PostMan_Status_Firewall						(uint8_t)4
 #define PostMan_Status_Ring							(uint8_t)5
 
+
+
+
+
+
 // Define PowerStat Commands
+#define Command_None								0
 #define Command_OK									200
 #define Command_NOK									201
 #define Command_Start								256
