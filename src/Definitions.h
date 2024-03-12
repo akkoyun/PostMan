@@ -13,11 +13,15 @@
 
 // Define PowerStat Commands
 #define Command_None								0
+#define Command_Version 							100
 #define Command_OK									200
 #define Command_NOK									201
 #define Command_Start								256
 #define Command_Stop								257
 #define Command_Update								262
+#define Command_Environment							501
+#define Command_Power                               502
+#define Command_GSM	    							503
 #define Command_Reset								999
 #define Command_Parameter							500
 #define Command_FOTA_Download						900

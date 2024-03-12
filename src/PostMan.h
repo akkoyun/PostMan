@@ -41,6 +41,9 @@
 			// Define Variables
 			uint8_t Socket_Status = _SOCKET_CLOSED_;
 
+			// Define Pack Type Variable
+			uint8_t Pack_Type = Pack_None;
+
 			// Define Operator Structure
 			struct Struct_Operator {
 				uint8_t 	SIM_PIN = _SIM_UNKNOWN_;
@@ -126,20 +129,30 @@
 					// Print Message
 					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Calculating MD5 Hash..."));
 
+					// Declare MD5 Buffer Size
+					uint8_t _MD5_Buffer_Size = 10;
+
+					// Declare Buffer Size
+					uint32_t _Buffer_File_Size = 0;
+
 					// Read File
 					while (_SD_File.available() > 0) {
 
 						// Declare Data Buffer
-						char _Data[10];
+						char _Data[_MD5_Buffer_Size];
+
+						// Clear Buffer
+						memset(_Data, 0, sizeof(_Data));
 
 						// Read 10 Byte Data
-						_SD_File.readBytes(_Data, 9);
+						_Buffer_File_Size += _SD_File.readBytes(_Data, _MD5_Buffer_Size - 1);
 
 						// MD5 Checksum
-						_Hash.Update(_Data, 9);
+						_Hash.Update(_Data, _MD5_Buffer_Size - 1);
 
-						// Heart Beat
-						Hardware->Heartbeat(true, LED_YELLOW);
+						// Turn ON HeartBeat
+						PORT_HEARTBEAT |= (1 << PIN_HEARTBEAT);
+						PORT_HEARTBEAT &= ~(1 << PIN_HEARTBEAT);
 
 					}
 
@@ -173,6 +186,312 @@
 
 				// End Function
 				return(true);
+
+			}
+
+			// Calculate Length of Char Array
+			uint16_t Length(char * _Array) {
+
+				// Declare Length Variable
+				uint16_t _Length = 0;
+
+				// Calculate Length
+				while (_Array[_Length] != '\0') _Length++;
+
+				// Return Length
+				return(_Length);
+
+			}
+
+			// Remove Spaces from Char Array
+			void Remove_Spaces(char *str) {
+
+				char *src = str;
+				char *dst = str;
+				while (*src) {
+					if (*src != ' ') {
+						*dst++ = *src;
+					}
+					src++;
+				}
+				*dst = '\0';
+
+			}
+
+			// JSON Info Segment Parser
+			uint16_t JSON_Info_Segment(char * _Buffer) {
+
+				// Info Segment
+				// ----------------
+
+				// 	"Info": {
+				// 		"Command": "Interrupt",
+				// 		"TimeStamp": "2024-02-13 17:11:15",
+				// 		"ID": "C50000011D05A970",
+				// 		"Firmware": "04.00.15"
+				// 	},
+
+				// Declare Pack Type Variable
+				char _Pack_Type[17];
+				memset(_Pack_Type, '\0', sizeof(_Pack_Type));
+
+				// Command Type
+				switch (this->Pack_Type) {
+
+					// Case Pack_Online
+					case Pack_Online : {
+
+						// Set Pack Type
+						strcpy(_Pack_Type, "Online");
+
+						// End Case
+						break;
+
+					}
+
+					// Case Pack_Update
+					case Pack_Update : {
+
+						// Set Pack Type
+						strcpy(_Pack_Type, "Update");
+
+						// End Case
+						break;
+
+					}
+
+					// Case Pack_Timed
+					case Pack_Timed : {
+
+						// Set Pack Type
+						strcpy(_Pack_Type, "Timed");
+
+						// End Case
+						break;
+
+					}
+
+					// Case Pack_Interrupt
+					case Pack_Interrupt : {
+
+						// Set Pack Type
+						strcpy(_Pack_Type, "Interrupt");
+
+						// End Case
+						break;
+
+					}
+
+					// Case Pack_Alarm
+					case Pack_Alarm : {
+
+						// Set Pack Type
+						strcpy(_Pack_Type, "Alarm");
+
+						// End Case
+						break;
+
+					}
+
+					// Case Pack_Offline
+					case Pack_Offline : {
+
+						// Set Pack Type
+						strcpy(_Pack_Type, "Offline");
+
+						// End Case
+						break;
+
+					}
+
+					// Case Pack_FOTA_Info
+					case Pack_FOTA_Info : {
+
+						// Set Pack Type
+						strcpy(_Pack_Type, "FOTA_Info");
+
+						// End Case
+						break;
+
+					}
+
+					// Case Pack_FOTA_Download
+					case Pack_FOTA_Download : {
+
+						// Set Pack Type
+						strcpy(_Pack_Type, "FOTA_Download");
+
+						// End Case
+						break;
+
+					}
+
+					// Case Pack_FOTA_Burn
+					case Pack_FOTA_Burn : {
+
+						// Set Pack Type
+						strcpy(_Pack_Type, "FOTA_Burn");
+
+						// End Case
+						break;
+
+					}
+
+					// Case Pack Unknown
+					default: {
+
+						// Set Pack Type
+						strcpy(_Pack_Type, "Unknown");
+
+						// End Case
+						break;
+
+					}
+
+				}
+
+				// Declare TimeStamp Buffer
+				char _TimeStamp_Buffer[20];
+				memset(_TimeStamp_Buffer, '\0', sizeof(_TimeStamp_Buffer));
+
+				// Update TimeStamp
+				Hardware->Time_Stamp(_TimeStamp_Buffer);
+
+				// Set Block
+				sprintf(_Buffer, "\"Info\":{\"Command\":\"%s\",\"TimeStamp\":\"%s\",\"ID\":\"%s\",\"Firmware\":\"%s\"}", _Pack_Type, _TimeStamp_Buffer, Hardware->SerialID, _FIRMWARE_);
+
+				// Return Length
+				return(this->Length(_Buffer));
+
+			}
+
+			// JSON Post Segment Parser
+			uint16_t JSON_Power_Segment(char * _Buffer) {
+
+				//	"Power": {
+				// 		"B_IV": 4.137187,
+				// 		"B_AC": 0.46875,
+				// 		"B_IC": 2100,
+				// 		"B_FC": 2000,
+				// 		"B_SOC": 99,
+				// 		"B_T": 24.95313,
+				// 		"B_CS": 3
+				// 	},
+
+				// Declare IV Buffer
+				char _IV_Buffer[10];
+				memset(_IV_Buffer, '\0', sizeof(_IV_Buffer));
+				dtostrf(Hardware->Instant_Voltage(), 3, 2, _IV_Buffer);
+
+				// Declare AC Buffer
+				char _AC_Buffer[10];
+				memset(_AC_Buffer, '\0', sizeof(_AC_Buffer));
+				dtostrf(Hardware->Average_Current(), 5, 2, _AC_Buffer);
+
+				// Declare SOC Buffer
+				char _SOC_Buffer[10];
+				memset(_SOC_Buffer, '\0', sizeof(_SOC_Buffer));
+				dtostrf(Hardware->State_Of_Charge(), 5, 2, _SOC_Buffer);
+
+				// Declare B_T Buffer
+				char _B_T_Buffer[10];
+				memset(_B_T_Buffer, '\0', sizeof(_B_T_Buffer));
+				dtostrf(Hardware->IC_Temperature(), 4, 2, _B_T_Buffer);
+
+				// Set Power Block
+				sprintf(_Buffer, "\"Power\":{\"B_IV\":%s,\"B_AC\":%s,\"B_IC\":%u,\"B_FC\":%u,\"B_SOC\":%s,\"B_T\":%s,\"B_CS\":%u}", _IV_Buffer, _AC_Buffer, Hardware->Instant_Capacity(), Hardware->Full_Capacity(), _SOC_Buffer, _B_T_Buffer, Hardware->Charge_Status());
+
+				// Return Length
+				return(this->Length(_Buffer));
+
+			}
+
+			// JSON IoT Segment Parser
+			uint16_t JSON_IoT_Segment(char * _Buffer) {
+
+				//	"IoT": {
+				//		"Firmware": "25.30.226",
+				//		"IMEI": "354485417649444",
+				//		"ICCID": "8990011936290169339",
+				//		"RSSI": 69,
+				//		"WDS": 25,
+				//		"ConnTime": 1.978,
+				//		"TAC": 2242,
+				//		"LAC": 0,
+				//		"Cell_ID": 11915553
+				//	}
+
+				// Declare ConnTime Buffer
+				char _ConnTime_Buffer[10];
+				memset(_ConnTime_Buffer, '\0', sizeof(_ConnTime_Buffer));
+				dtostrf(this->Operator.Connection_Time, 5, 3, _ConnTime_Buffer);
+
+				// Set IoT Block
+				sprintf(_Buffer, "\"IoT\":{\"Firmware\":\"%s\",\"IMEI\":\"%s\",\"ICCID\":\"%s\",\"RSSI\":%u,\"WDS\":%u,\"ConnTime\":%s,\"MCC\":%u,\"MNC\":%u}", this->Module.Firmware, this->Module.IMEI, this->Operator.ICCID, this->Operator.RSSI, this->Operator.WDS, _ConnTime_Buffer, this->Operator.MCC, this->Operator.MNC);
+
+				// Return Length
+				return(this->Length(_Buffer));
+
+			}
+
+			// JSON Payload Segment Parser
+			uint16_t JSON_Payload_Segment(char * _Buffer) {
+
+				//	"Payload": {
+				//		"PCB_T": 25.82779,
+				//		"PCB_H": 27.48261,
+				//		"STATUS": 15
+				//	}
+
+				// Declare Payload Buffer Start
+				char _Buffer_Start[12] = "\"Payload\":{";
+
+				// Copy Buffer Start
+				strcpy(_Buffer, _Buffer_Start);
+
+				// Get some data
+				const uint16_t _Keys[] = {_Data_PCB_T_, _Data_PCB_H_, _Data_STATUS_, _Data_PUBLISH_, _Data_STOP_};
+
+				// Declare Comma Status
+				bool _Comma = false;
+
+				// Print the data
+				for (uint16_t _Key : _Keys) {
+
+					// Get the value
+					const float* _Value = Payload->Get(_Key);
+
+					// Control for Value
+					if (_Value != nullptr) {
+
+						// Add Comma
+						if (_Comma) strcat(_Buffer, ",");
+
+						// Add Key
+						if (_Key == _Data_PCB_T_) strcat(_Buffer, "\"PCB_T\":");
+						else if (_Key == _Data_PCB_H_) strcat(_Buffer, "\"PCB_H\":");
+
+						// Add Value
+						char _Value_Buffer[20];
+						memset(_Value_Buffer, '\0', sizeof(_Value_Buffer));
+						dtostrf(*_Value, 10, 2, _Value_Buffer);
+						strcat(_Buffer, _Value_Buffer);
+
+						// Set Comma
+						_Comma = true;
+
+					}
+
+				}
+
+				// Close Payload Buffer
+				strcat(_Buffer, "}");
+
+				// Remove Spaces from Buffer
+				this->Remove_Spaces(_Buffer);
+
+				// Return Length
+				return(this->Length(_Buffer));
 
 			}
 
@@ -1161,6 +1480,31 @@
 
 						} else break;
 
+						// TCPMAXWIN Command (Set TCP Window Size)
+						if (bitRead(this->Status, PostMan_Status_Connection)) {
+
+							// Print Message
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#TCPMAXWIN=65535,3"));
+
+							// Send Command
+							if (!LE910C1_EUX::TCPMAXWIN(0, 0)) bitClear(this->Status, PostMan_Status_Connection);
+
+							// Calculate Connection Time
+							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
+
+							// Control for Terminal State
+							if (bitRead(this->Status, PostMan_Status_Terminal)) {
+
+								// Print Message
+								Terminal->OK(bitRead(this->Status, PostMan_Status_Connection));
+
+								// Print Connection Time
+								Terminal->Text(13,74, _Console_GRAY_, this->Operator.Connection_Time);
+
+							} else break;
+
+						} else break;
+
 						// Print Message
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(21, 84, _Console_WHITE_, F("                                    "));
 
@@ -1465,15 +1809,7 @@
 			}
 
 			// Send Request Response Function
-			bool Response(const uint16_t _Response_Code) {
-
-				// Declare Buffer Array
-				char _Buffer[17];
-
-				// {"Response":200}
-
-				// Generate Response
-				sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+			bool Response(const char * _Buffer) {
 
 				// Print Message
 				if (bitRead(this->Status, PostMan_Status_Terminal)) {
@@ -1481,11 +1817,8 @@
 					// Print Message
 					Terminal->Show_Message(_Console_BLUE_, F("Sending Response..."));
 
-					// Clear Line
-					Terminal->Space(_Console_AT_Status_X_, _Console_AT_Status_Y_, sizeof(_Buffer));
-
 					// Print Command
-					Terminal->Text(_Console_AT_Status_X_, _Console_AT_Status_Y_, _Console_WHITE_, _Buffer);
+					Terminal->Show_Message(_Console_WHITE_, _Buffer);
 
 				}
 
@@ -2062,15 +2395,8 @@
 						// Set Status
 						_FOTA_Download_Status = FOTA_Download_OK;
 
-						// Add Variable
-						this->Payload->Add(1, _Firmware_ID);
-						this->Payload->Add(2, _FOTA_Download_Status);
-
 						// Print Message
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Firmware Download Success!!"));
-
-						// End Function
-						return(true);
 
 					} else {
 
@@ -2080,9 +2406,6 @@
 						// Print Message
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Firmware MD5 Error!!"));
 
-						// End Function
-						return(false);
-
 					}
 
 					// Close SD File
@@ -2090,6 +2413,13 @@
 
 					// Disable SD Multiplexer
 					Hardware->SD_Multiplexer(false);
+
+					// Add Variable
+					this->Payload->Add(1, _Firmware_ID);
+					this->Payload->Add(2, _FOTA_Download_Status);
+
+					// End Function
+					if (_FOTA_Download_Status == FOTA_Download_OK) return(true); else return(false);
 
 				}
 
@@ -2133,9 +2463,74 @@
 			}
 			void JSON_Parser(void) {
 
-				SERIAL_GSM.print("{\"Data\" : 12}");
+				// Declare JSON Size
+				uint16_t _JSON_Size = 16;
 
-				Terminal->Text(27, 10, _Console_WHITE_, F("JSON Parser..."));
+				// Info Segment
+				// ----------------
+
+				// Declare Info Buffer
+				char _Info_Buffer[128];
+				memset(_Info_Buffer, '\0', sizeof(_Info_Buffer));
+
+				// Parse Info
+				_JSON_Size += this->JSON_Info_Segment(_Info_Buffer);
+
+				// Power Segment
+				// ----------------
+
+				// Declare Power Buffer
+				char _Power_Buffer[100];
+				memset(_Power_Buffer, '\0', sizeof(_Power_Buffer));
+
+				// Parse Power
+				_JSON_Size += this->JSON_Power_Segment(_Power_Buffer);
+
+				// IoT Segment
+				// ----------------
+
+				// Declare IoT Buffer
+				char _IoT_Buffer[150];
+				memset(_IoT_Buffer, '\0', sizeof(_IoT_Buffer));
+
+				// Parse IoT
+				_JSON_Size += this->JSON_IoT_Segment(_IoT_Buffer);
+
+				// Payload Segment
+				// ----------------
+
+				// Declare Payload Buffer
+				char _Payload_Buffer[400];
+				memset(_Payload_Buffer, '\0', sizeof(_Payload_Buffer));
+
+				// Parse Payload
+				_JSON_Size += this->JSON_Payload_Segment(_Payload_Buffer);
+
+				// Print Header
+				// ----------------
+
+				SERIAL_GSM.print(F("POST ")); SERIAL_GSM.print(_PostMan_EndPoint_); SERIAL_GSM.print(F(" HTTP/1.1\r\n"));
+				SERIAL_GSM.print(F("Host: ")); SERIAL_GSM.print(_PostMan_Server_); SERIAL_GSM.print(F("\r\n"));
+				SERIAL_GSM.print(F("Content-Length: ")); SERIAL_GSM.print(_JSON_Size); SERIAL_GSM.print(F("\r\n"));
+				SERIAL_GSM.print(F("Content-Type: application/json\r\n"));
+				SERIAL_GSM.print(F("User-Agent: PostOffice\r\n"));
+				SERIAL_GSM.print(F("\r\n"));
+
+				// Print Body
+				// ----------------
+
+				SERIAL_GSM.print(F("{"));
+				SERIAL_GSM.print(_Info_Buffer);
+				SERIAL_GSM.print(F(",\"Device\":{"));
+				SERIAL_GSM.print(_Power_Buffer);
+				SERIAL_GSM.print(F(","));
+				SERIAL_GSM.print(_IoT_Buffer);
+				SERIAL_GSM.print(F("},"));
+				SERIAL_GSM.print(_Payload_Buffer);
+				SERIAL_GSM.print(F("}"));
+
+				// Clear Pack Type
+				this->Pack_Type = Pack_None;
 
 			}
 
@@ -2175,47 +2570,47 @@
 				this->Operator.Connection_Start = millis();
 
 				// Print Message
-				if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Initializing GSM Module..."));
+				if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_CYAN_, F("Initializing GSM Module..."));
 
 				// Initialize GSM Module
 				if (this->Initialize()) {
 
 					// Print Message
-					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Connecting GSM Module..."));
+					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_CYAN_, F("Connecting GSM Module..."));
 
 					// Connect GSM Module
 					if (this->Connect()) {
 
 						// Print Message
-						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Connection Success!!"));
+						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_CYAN_, F("Connection Success!!"));
 
 						// Set Firewall Configuration
 						if (this->Firewall()) {
 
 							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Firewall Configuration Success!!"));
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_CYAN_, F("Firewall Configuration Success!!"));
 
 						}
 
 						// Print Message
-						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Syncronizing Time..."));
+						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_CYAN_, F("Syncronizing Time..."));
 
 						// Update Time
 						if (this->Syncronize_Time()) {
 
 							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Time Syncronized!!"));
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_CYAN_, F("Time Syncronized!!"));
 
 						}
 
 						// Print Message
-						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Socket Listen..."));
+						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_CYAN_, F("Socket Listen..."));
 
 						// Set Listen Configuration
 						if (this->Listen(true)) {
 
 							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Socket Listen Success!!"));
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_CYAN_, F("Socket Listen Success!!"));
 
 						}
 
@@ -2230,6 +2625,9 @@
 
 						// Enable Interrupts
 						sei();
+
+						// Print Message
+						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_CYAN_, F("PostMan Ready!!"));
 
 						// End Function
 						return(true);
@@ -2313,16 +2711,41 @@
 										// Get Firmware ID
 										uint16_t _FW_ID = _JSON_Data[F("FW_ID")];
 
+										// {"Response":200}
+
+										// Declare Buffer Array
+										char _Buffer[17];
+
+										// Declare Response Code
+										uint16_t _Response_Code = _HTTP_OK_;
+
+										// Decide Response Code
+										if (_FW_ID != 0) _Response_Code = _HTTP_OK_; else _Response_Code = _HTTP_BadRequest_;
+
+										// Generate Response
+										sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+
 										// Send Response
-										if (_FW_ID != 0) this->Response(_HTTP_OK_); else this->Response(_HTTP_BadRequest_);
+										this->Response(_Buffer);
 
 										// Download Firmware
 										this->Download(_FW_ID);
 
 									} else if (_Event == Command_FOTA_Burn) {
 
+										// {"Response":200}
+
+										// Declare Buffer Array
+										char _Buffer[17];
+
+										// Declare Response Code
+										uint16_t _Response_Code = _HTTP_OK_;
+
+										// Generate Response
+										sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+
 										// Send Response
-										this->Response(_HTTP_OK_);
+										this->Response(_Buffer);
 
 										// Print Message
 										if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_RED_, F("Starting Firmware Burn..."));
@@ -2332,25 +2755,156 @@
 
 									} else if (_Event == Command_Start) {
 
+										// {"Response":200}
+
+										// Declare Buffer Array
+										char _Buffer[17];
+
+										// Declare Response Code
+										uint16_t _Response_Code = _HTTP_OK_;
+
+										// Generate Response
+										sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+
 										// Send Response
-										this->Response(_HTTP_OK_);
+										this->Response(_Buffer);
+
+										// Start Relay
+										Hardware->Relay(RELAY_START, RELAY_UNLOCK, 500);
 
 									} else if (_Event == Command_Stop) {
 
+										// {"Response":200}
+
+										// Declare Buffer Array
+										char _Buffer[17];
+
+										// Declare Response Code
+										uint16_t _Response_Code = _HTTP_OK_;
+
+										// Generate Response
+										sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+
 										// Send Response
-										this->Response(_HTTP_OK_);
+										this->Response(_Buffer);
+
+										// Stop Relay
+										Hardware->Relay(RELAY_STOP, RELAY_UNLOCK, 500);
+
+									} else if (_Event == Command_Environment) {
+
+										// {"Response":200,"Environment":{"T":10.00,"H":22.22}}
+
+										// Declare Buffer Array
+										char _Buffer[60];
+
+										// Set Variables
+										Payload->Add(_Data_PCB_T_, Hardware->Temperature());
+										Payload->Add(_Data_PCB_H_, Hardware->Humidity());
+
+										// Clear Buffer
+										memset(_Buffer, '\0', 60);
+
+										// Generate Temperature Buffer
+										char _Buffer_T[6];
+										memset(_Buffer_T, '\0', sizeof(_Buffer_T));
+										Payload->Get(_Data_PCB_T_, _Buffer_T);
+
+										// Generate Humidity Buffer
+										char _Buffer_H[6];
+										memset(_Buffer_H, '\0', sizeof(_Buffer_H));
+										Payload->Get(_Data_PCB_H_, _Buffer_H);
+
+										// Clear Variables
+										Payload->Clear();
+
+										// Declare Response Code
+										uint16_t _Response_Code = _HTTP_OK_;
+
+										// Generate Response
+										sprintf(_Buffer, "{\"Response\":%03u,\"Environment\":{\"T\":%s,\"H\":%s}}", _Response_Code, _Buffer_T, _Buffer_H);
+
+										// Send Response
+										this->Response(_Buffer);
+
+									} else if (_Event == Command_Power) {
+
+										// Declare Power Buffer
+										char _Power_Buffer[100];
+										memset(_Power_Buffer, '\0', sizeof(_Power_Buffer));
+
+										// Parse Power
+										this->JSON_Power_Segment(_Power_Buffer);
+
+										// Send Response
+										this->Response(_Power_Buffer);
+
+									} else if (_Event == Command_GSM) {
+
+										// Declare IoT Buffer
+										char _IoT_Buffer[150];
+										memset(_IoT_Buffer, '\0', sizeof(_IoT_Buffer));
+
+										// Parse IoT
+										this->JSON_IoT_Segment(_IoT_Buffer);
+
+										// Send Response
+										this->Response(_IoT_Buffer);
+
+									} else if (_Event == Command_Version) {
+
+										// {"Response":200,"Version":"01.00.00"}
+
+										// Declare Buffer Array
+										char _Buffer[38];
+
+										// Clear Buffer
+										memset(_Buffer, '\0', 38);
+
+										// Generate Response
+										sprintf(_Buffer, "{\"Response\":200,\"Version\":\"%s\"}", _FIRMWARE_);
+
+										// Send Response
+										this->Response(_Buffer);
 
 									} else {
 
+										// {"Response":200}
+
+										// Declare Buffer Array
+										char _Buffer[17];
+
+										// Declare Response Code
+										uint16_t _Response_Code = _HTTP_NotAcceptable_;
+
+										// Generate Response
+										sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+
 										// Send Response
-										this->Response(_HTTP_NotAcceptable_);
+										this->Response(_Buffer);
+
+	Payload->Add(_Data_PCB_T_, 1.0);
+	Payload->Add(_Data_PCB_H_, 2.0);
+
+	this->Publish(Pack_Interrupt);
 
 									}
 
 								} else {
 
+									// {"Response":200}
+
+									// Declare Buffer Array
+									char _Buffer[17];
+
+									// Declare Response Code
+									uint16_t _Response_Code = _HTTP_BadRequest_;
+
+									// Generate Response
+									sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+
 									// Send Response
-									this->Response(_HTTP_BadRequest_);
+									this->Response(_Buffer);
 
 								}
 
@@ -2422,11 +2976,6 @@
 								// Get Request Data
 								if (LE910C1_EUX::SRECV(_PostMan_Outgoing_Socket_, _Length, _Response)) {
 
-
-
-
-
-
 									// Command Delay
 									delay(50);
 
@@ -2439,8 +2988,33 @@
 										// Control for Incoming Call
 										this->Listen(true);
 
-										// End Function
-										return(true);
+										// Declare JSON Object
+										JSON _JSON_Data(_Response);
+
+										// Get Event
+										uint16_t _Event = _JSON_Data[F("Event")];
+
+										// Control for Response
+										if (_Event == Command_OK) {
+
+											// Print Message
+											if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Message Sent Success!!"));
+
+											// Clear Variables
+											Payload->Clear();
+
+											// End Function
+											return(true);
+
+										} else {
+
+											// Print Message
+											if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_RED_, F("Message Sent Failed!!"));
+
+											// End Function
+											return(false);
+
+										}
 
 									}
 								}
