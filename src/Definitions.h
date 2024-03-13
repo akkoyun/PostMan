@@ -1,3 +1,8 @@
+// Define Modem Power Function Definitions
+#define _Modem_STATUS_								(uint8_t)0
+#define _Modem_ON_									(uint8_t)1
+#define _Modem_OFF_									(uint8_t)2
+
 // Define Status Definitions
 #define PostMan_Status_Terminal						(uint8_t)0
 #define PostMan_Status_Initialize					(uint8_t)1
