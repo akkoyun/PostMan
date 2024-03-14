@@ -77,6 +77,9 @@
 				uint8_t		Time_Zone			= 0;
 			} Time;
 
+			// Define Variables
+			uint8_t Status = 0x00;
+
 			// Clear Variables
 			void Clear_Variables(void) {
 
@@ -204,17 +207,25 @@
 			}
 
 			// Remove Spaces from Char Array
-			void Remove_Spaces(char *str) {
+			void Remove_Spaces(char * _Buffer) {
 
-				char *src = str;
-				char *dst = str;
-				while (*src) {
-					if (*src != ' ') {
-						*dst++ = *src;
-					}
-					src++;
+				// Declare Buffer Variables
+				char * _Source = _Buffer;
+				char * _Desitination = _Buffer;
+
+				// Loop for Buffer
+				while (* _Source) {
+
+					// Control for Space
+					if (* _Source != ' ') * _Desitination++ = * _Source;
+
+					// Increment Source
+					 _Source++;
+
 				}
-				*dst = '\0';
+
+				// Set End of Buffer
+				* _Desitination = '\0';
 
 			}
 
@@ -416,9 +427,8 @@
 				//		"RSSI": 69,
 				//		"WDS": 25,
 				//		"ConnTime": 1.978,
-				//		"TAC": 2242,
-				//		"LAC": 0,
-				//		"Cell_ID": 11915553
+				//		"MCC": 286,
+				//		"MNC": 1
 				//	}
 
 				// Declare ConnTime Buffer
@@ -497,6 +507,9 @@
 
 		// Protected Context
 		protected:
+
+			// Define Instance
+			static Postman* Instance;
 
 			// Initalize GSM Module
 			bool Initialize(void) {
@@ -2165,22 +2178,7 @@
 
 			}
 
-		// Public Context
-		public:
-
-			// Define Instance
-			static Postman* Instance;
-
-			// Define Variables
-			uint8_t Status = 0x00;
-
 			// PCMSK1 Mask Handler Function
-			static void Interrupt_Handler_Static(void) {
-
-				// Set Interrupt Handler
-				if (Instance) Instance->Interrupt_Handler();
-
-			}
 			void Interrupt_Handler(void) {
 
 				// Set Interrupt Handler
@@ -2189,12 +2187,6 @@
 			}
 
 			// JSON Parser Handler Function
-			static void JSON_Parser_Static(void) {
-
-				// Set Interrupt Handler
-				if (Instance) Instance->JSON_Parser();
-
-			}
 			void JSON_Parser(void) {
 
 				// Declare JSON Size
@@ -2265,6 +2257,25 @@
 
 				// Clear Pack Type
 				this->Pack_Type = Pack_None;
+
+			}
+
+		// Public Context
+		public:
+
+			// PCMSK1 Mask Handler Function
+			static void Interrupt_Handler_Static(void) {
+
+				// Set Interrupt Handler
+				if (Instance) Instance->Interrupt_Handler();
+
+			}
+
+			// JSON Parser Handler Function
+			static void JSON_Parser_Static(void) {
+
+				// Set Interrupt Handler
+				if (Instance) Instance->JSON_Parser();
 
 			}
 
@@ -2957,7 +2968,7 @@
 			}
 
 			// Send Data Batch Function
-			bool Publish(const uint8_t _Pack_Type) {
+			bool Publish(const uint8_t _Pack_Type = Pack_Update) {
 
 				// Control for Modem Connection
 				if (bitRead(this->Status, PostMan_Status_Connection)) {

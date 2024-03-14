@@ -15,20 +15,11 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- No aditional library is used anymore. All used dependencies are writen by me.
-- JSON functions are added. These functions are used to parse the JSON data.
-- Variables are now controlled by the library. This is used to control the variables in the library.
-- Downloaded firmware is now MD5 checked. This is used for checking the downloaded firmware.
-- Modem function added. This function is used to ON/OFF the modem.
-- Modem function is alse used for controling the modem's power.
-- Disconnect function added. This function is used to disconnect the device from the cloud.
+- ...
 
 ### Changed
 
-- Cloud function name is changed to Connect.
-- Listen function is moved to public function.
-- Firewall function is moved to public function.
-- Syncronize_Time function is moved to public function.
+- ...
 
 ### Removed
 
@@ -41,6 +32,25 @@ All notable changes to this project will be documented in this file. The format 
 ### Security
 
 - ...
+
+---
+
+## [1.11.0]
+
+- No aditional library is used anymore. All used dependencies are writen by me.
+- JSON functions are added. These functions are used to parse the JSON data.
+- Variables are now controlled by the library. This is used to control the variables in the library.
+- Downloaded firmware is now MD5 checked. This is used for checking the downloaded firmware.
+- Modem function added. This function is used to ON/OFF the modem.
+- Modem function is alse used for controling the modem's power.
+- Disconnect function added. This function is used to disconnect the device from the cloud.
+
+- Cloud function name is changed to Connect.
+- Listen function is moved to public function.
+- Firewall function is moved to public function.
+- Syncronize_Time function is moved to public function.
+- Interrupt_Handler and JSON_Parser functions are moved to protected functions.
+- Status variable is moved to private variable.
 
 ---
 
