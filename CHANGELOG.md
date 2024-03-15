@@ -16,6 +16,13 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [1.13.0]
+
+- TAC and CELLID variables are added to Operator structure.
+- IoT JSON parser function is updated. TAC and CELLID variables are added to the JSON parser function.
+- RFSTS functions are updated. TAC and CELLID variables are added to the RFSTS function.
+- _IoT_Buffer variable size (JSON) is updated from 150 to 200.
+
 ## [1.12.0]
 
 - JSON_Payload_Segment function updated. FOTA data types are added.

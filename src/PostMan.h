@@ -53,6 +53,8 @@
 				uint8_t 	IP_Address[4];
 				uint8_t		WDS = _CONNECTION_UNKNOWN_;
 				uint16_t	RSSI;
+				uint16_t	TAC;
+				uint32_t	CellID;
 				uint8_t		Signal;
 				float 		Connection_Time;
 				uint32_t 	Connection_Start;
@@ -437,7 +439,7 @@
 				dtostrf(this->Operator.Connection_Time, 5, 3, _ConnTime_Buffer);
 
 				// Set IoT Block
-				sprintf(_Buffer, "\"IoT\":{\"Firmware\":\"%s\",\"IMEI\":\"%s\",\"ICCID\":\"%s\",\"RSSI\":%u,\"WDS\":%u,\"ConnTime\":%s,\"MCC\":%u,\"MNC\":%u}", this->Module.Firmware, this->Module.IMEI, this->Operator.ICCID, this->Operator.RSSI, this->Operator.WDS, _ConnTime_Buffer, this->Operator.MCC, this->Operator.MNC);
+				sprintf(_Buffer, "\"IoT\":{\"Firmware\":\"%s\",\"IMEI\":\"%s\",\"ICCID\":\"%s\",\"RSSI\":%u,\"WDS\":%u,\"ConnTime\":%s,\"MCC\":%u,\"MNC\":%u,\"TAC\":%hu,\"CELLID\":%u}", this->Module.Firmware, this->Module.IMEI, this->Operator.ICCID, this->Operator.RSSI, this->Operator.WDS, _ConnTime_Buffer, this->Operator.MCC, this->Operator.MNC, this->Operator.TAC, (unsigned int)this->Operator.CellID);
 
 				// Return Length
 				return(this->Length(_Buffer));
@@ -1342,7 +1344,7 @@
 							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#RFSTS"));
 
 							// Send Command
-							if (!LE910C1_EUX::RFSTS(this->Operator.MCC, this->Operator.MNC, this->Operator.RSSI, this->Operator.Signal)) bitClear(this->Status, PostMan_Status_Connection);
+							if (!LE910C1_EUX::RFSTS(this->Operator.WDS, this->Operator.MCC, this->Operator.MNC, this->Operator.RSSI, this->Operator.Signal, this->Operator.TAC, this->Operator.CellID)) bitClear(this->Status, PostMan_Status_Connection);
 
 							// Calculate Connection Time
 							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
@@ -1617,7 +1619,7 @@
 					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#RFSTS"));
 
 					// Send Command
-					if (!LE910C1_EUX::RFSTS(this->Operator.MCC, this->Operator.MNC, this->Operator.RSSI, this->Operator.Signal)) bitClear(this->Status, PostMan_Status_Connection);
+					if (!LE910C1_EUX::RFSTS(this->Operator.WDS, this->Operator.MCC, this->Operator.MNC, this->Operator.RSSI, this->Operator.Signal, this->Operator.TAC, this->Operator.CellID)) bitClear(this->Status, PostMan_Status_Connection);
 
 					// Control for Terminal State
 					if (bitRead(this->Status, PostMan_Status_Terminal)) {
@@ -2325,7 +2327,7 @@
 				// ----------------
 
 				// Declare IoT Buffer
-				char _IoT_Buffer[150];
+				char _IoT_Buffer[200];
 				memset(_IoT_Buffer, '\0', sizeof(_IoT_Buffer));
 
 				// Parse IoT
