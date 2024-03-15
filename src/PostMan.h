@@ -460,7 +460,7 @@
 				strcpy(_Buffer, _Buffer_Start);
 
 				// Get some data
-				const uint16_t _Keys[] = {_Data_PCB_T_, _Data_PCB_H_, _Data_STATUS_, _Data_PUBLISH_, _Data_STOP_};
+				const uint16_t _Keys[] = {_Data_PCB_T_, _Data_PCB_H_, _Firmware_ID_, _FOTA_Download_Status_, _FOTA_Download_Time_};
 
 				// Declare Comma Status
 				bool _Comma = false;
@@ -480,6 +480,9 @@
 						// Add Key
 						if (_Key == _Data_PCB_T_) strcat(_Buffer, "\"PCB_T\":");
 						else if (_Key == _Data_PCB_H_) strcat(_Buffer, "\"PCB_H\":");
+						else if (_Key == _Firmware_ID_) strcat(_Buffer, "\"Firmware_ID\":");
+						else if (_Key == _FOTA_Download_Status_) strcat(_Buffer, "\"FOTA_Download_Status\":");
+						else if (_Key == _FOTA_Download_Time_) strcat(_Buffer, "\"FOTA_Download_Time\":");
 
 						// Add Value
 						char _Value_Buffer[20];
@@ -1336,7 +1339,7 @@
 						if (bitRead(this->Status, PostMan_Status_Connection)) {
 
 							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT+WS46?"));
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#RFSTS"));
 
 							// Send Command
 							if (!LE910C1_EUX::RFSTS(this->Operator.MCC, this->Operator.MNC, this->Operator.RSSI, this->Operator.Signal)) bitClear(this->Status, PostMan_Status_Connection);
@@ -1518,6 +1521,31 @@
 
 						} else break;
 
+						// SKTTO Commad (Set Socket Inactivity Time)
+						if (bitRead(this->Status, PostMan_Status_Connection)) {
+
+							// Print Message
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SKTTO=0"));
+
+							// Send Command
+							if (!LE910C1_EUX::SKTTO(0)) bitClear(this->Status, PostMan_Status_Connection);
+
+							// Calculate Connection Time
+							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
+
+							// Control for Terminal State
+							if (bitRead(this->Status, PostMan_Status_Terminal)) {
+
+								// Print Message
+								Terminal->OK(bitRead(this->Status, PostMan_Status_Connection));
+
+								// Print Connection Time
+								Terminal->Text(13,74, _Console_GRAY_, this->Operator.Connection_Time);
+
+							} else break;
+
+						} else break;
+
 						// Print Message
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(21, 84, _Console_WHITE_, F("                                    "));
 
@@ -1558,6 +1586,64 @@
 				}
 
 				// Not Initialized
+				return(false);
+
+			}
+
+			// Update Connection Parameters
+			bool Update_Connection_Status(void) {
+
+				// Update Connection Parameters
+				if (bitRead(this->Status, PostMan_Status_Connection)) {
+
+					// Print Message
+					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT+WS46?"));
+
+					// Send Command
+					if (!LE910C1_EUX::WS46(_AT_GET_, this->Operator.WDS)) bitClear(this->Status, PostMan_Status_Connection);
+
+					// Control for Terminal State
+					if (bitRead(this->Status, PostMan_Status_Terminal)) {
+
+						// Print Message
+						Terminal->OK(bitRead(this->Status, PostMan_Status_Connection));
+
+						// Print Connection Status
+						Terminal->Show_Connection_Type(2, 116, this->Operator.WDS);
+
+					}
+
+					// Print Message
+					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#RFSTS"));
+
+					// Send Command
+					if (!LE910C1_EUX::RFSTS(this->Operator.MCC, this->Operator.MNC, this->Operator.RSSI, this->Operator.Signal)) bitClear(this->Status, PostMan_Status_Connection);
+
+					// Control for Terminal State
+					if (bitRead(this->Status, PostMan_Status_Terminal)) {
+
+						// Print Message
+						Terminal->OK(bitRead(this->Status, PostMan_Status_Connection));
+
+						// Print Operator Value
+						char _Operator[6];
+						sprintf(_Operator, "%03d%02d", this->Operator.MCC, this->Operator.MNC);
+						Terminal->Text(15, 74, _Console_GRAY_, String(_Operator));
+
+						// Print Signal Level Value
+						Terminal->Text(14, 75, _Console_GRAY_, this->Operator.RSSI);
+
+						// Print Signal Quality
+						Terminal->Show_Signal_Quality(2, 110, this->Operator.Signal);
+
+					}
+
+					// End Function
+					return(true);
+
+				}
+
+				// End Function
 				return(false);
 
 			}
@@ -1603,6 +1689,9 @@
 
 				// Control for Modem Connection
 				if (bitRead(this->Status, PostMan_Status_Connection)) {
+
+					// Add Variable
+					this->Payload->Add(9001, _Firmware_ID);
 
 					// Stop Socket Listen
 					this->Listen(false);
@@ -1879,6 +1968,9 @@
 											// Print Message
 											if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Server Error..."));
 
+											// Add Variable
+											this->Payload->Add(9002, _FOTA_Download_Status);
+
 											// End Function
 											return(false);
 
@@ -2000,6 +2092,9 @@
 											// Set Status
 											_FOTA_Download_Status = FOTA_Download_CME_Error;
 
+											// Add Variable
+											this->Payload->Add(9002, _FOTA_Download_Status);
+
 											// End Function
 											return(false);
 
@@ -2052,6 +2147,9 @@
 											// Set Status
 											_FOTA_Download_Status = FOTA_Download_TimeOut;
 
+											// Add Variable
+											this->Payload->Add(9002, _FOTA_Download_Status);
+
 											// End While	
 											break;
 
@@ -2070,6 +2168,9 @@
 									// Print Message
 									if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Server Error..."));
 
+									// Add Variable
+									this->Payload->Add(9002, _FOTA_Download_Status);
+
 									// End Function
 									return(false);
 
@@ -2087,6 +2188,9 @@
 
 							// Print Message
 							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Server Error..."));
+
+							// Add Variable
+							this->Payload->Add(9002, _FOTA_Download_Status);
 
 							// End Function
 							return(false);
@@ -2116,6 +2220,9 @@
 						// Disable SD Multiplexer
 						Hardware->SD_Multiplexer(false);
 
+						// Add Variable
+						this->Payload->Add(9002, _FOTA_Download_Status);
+
 						// End Function
 						return(false);
 
@@ -2131,6 +2238,7 @@
 					char _File_MD5_Hash[33];
 
 					// Calculate MD5 Hash
+					// TODO: MD5 kütüphanesinde bir karşılaştırma yapan bir fonksiyon oluşturulmalı
 					this->Calculate_MD5(_File_MD5_Hash);
 
 					// Compare MD5 With ETag
@@ -2158,12 +2266,13 @@
 					// Disable SD Multiplexer
 					Hardware->SD_Multiplexer(false);
 
-					// Add Variable
-					this->Payload->Add(1, _Firmware_ID);
-					this->Payload->Add(2, _FOTA_Download_Status);
-
 					// Listen Incoming Socket
 					this->Listen(true);
+
+					// Add Variable
+					this->Payload->Add(9001, _Firmware_ID);
+					this->Payload->Add(9002, _FOTA_Download_Status);
+					this->Payload->Add(9003, _FOTA_Download_Time);
 
 					// End Function
 					return (_FOTA_Download_Status == FOTA_Download_OK);
@@ -2778,6 +2887,9 @@
 										// Download Firmware
 										this->Download(_FW_ID);
 
+										// Set Socket Configuration for Stream
+										LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0);
+
 									} else if (_Event == Command_FOTA_Burn) {
 
 										// {"Response":200}
@@ -2888,6 +3000,9 @@
 
 									} else if (_Event == Command_GSM) {
 
+										// Update Connection Status
+										this->Update_Connection_Status();
+
 										// Declare IoT Buffer
 										char _IoT_Buffer[150];
 										memset(_IoT_Buffer, '\0', sizeof(_IoT_Buffer));
@@ -2978,6 +3093,12 @@
 
 					// Stop Socket Listen
 					this->Listen(false);
+
+					// Print Message
+					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Updating Connection Status..."));
+
+					// Update Connection Status
+					this->Update_Connection_Status();
 
 					// Print Message
 					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Connecting to Server..."));

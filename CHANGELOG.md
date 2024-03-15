@@ -12,28 +12,20 @@ All notable changes to this project will be documented in this file. The format 
 - Firmware download functions are still in testing.
 - Firmware download function uses GET method. FTP method will be planned on next release (method is not decided yet).
 - Get request control function may be changed.
-
-### Added
-
-- ...
-
-### Changed
-
-- ...
-
-### Removed
-
-- ...
-
-### Fixed
-
-- ...
-
-### Security
-
-- ...
+- Namespace may be added to the library.
 
 ---
+
+## [1.12.0]
+
+- JSON_Payload_Segment function updated. FOTA data types are added.
+- RFSTS command text fixed in connection function.
+- Update_Connection_Status function added. This function is used to update the connection status.
+- Payload variable parameters added in download function.
+- SCFGEXT (to make normal) function is moved from download function to get function.
+- Update_Connection_Status function is added on publish function.
+- Update_Connection_Status function is added on Get function (update IoT parameters command).
+- SKTTO Parameter is set to 0 (no timeout) in connection function.
 
 ## [1.11.0]
 
