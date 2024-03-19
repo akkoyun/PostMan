@@ -21,8 +21,9 @@
 #define Command_Update								(uint16_t)262
 #define Command_Parameter							(uint16_t)500
 #define Command_Environment							(uint16_t)501
-#define Command_Power                               (uint16_t)502
+#define Command_Power								(uint16_t)502
 #define Command_GSM	    							(uint16_t)503
+#define Command_Energy								(uint16_t)800
 #define Command_FOTA_Download						(uint16_t)900
 #define Command_FOTA_Burn							(uint16_t)901
 #define Command_Reset								(uint16_t)999

@@ -56,6 +56,15 @@
 #ifndef _PostMan_Server_
 	#define _PostMan_Server_ 						"165.227.154.147"
 #endif
+#ifndef _PostMan_FTP_Server_
+	#define _PostMan_FTP_Server_ 					"159.89.111.150"
+#endif
+#ifndef _PostMan_FTP_Username_
+	#define _PostMan_FTP_Username_ 					"fota"
+#endif
+#ifndef _PostMan_FTP_Password_
+	#define _PostMan_FTP_Password_ 					"123456"
+#endif
 #ifndef _PostMan_EndPoint_
 	#define _PostMan_EndPoint_ 						"/"
 #endif

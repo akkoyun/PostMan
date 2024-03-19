@@ -16,6 +16,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [1.14.0]
+
+- JSON_Payload_Segment function updated.
+- JSON_Energy_Segment function added.
+- Download function updated. GET and FTP methods are used for downloading the firmware.
+
 ## [1.13.0]
 
 - TAC and CELLID variables are added to Operator structure.

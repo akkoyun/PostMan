@@ -462,7 +462,7 @@
 				strcpy(_Buffer, _Buffer_Start);
 
 				// Get some data
-				const uint16_t _Keys[] = {_Data_PCB_T_, _Data_PCB_H_, _Firmware_ID_, _FOTA_Download_Status_, _FOTA_Download_Time_};
+				const uint16_t _Keys[8] = {_Data_PCB_T_, _Data_PCB_H_, _Firmware_ID_, _FOTA_Download_Status_, _FOTA_Download_Time_, _Data_VRMS_R_, _Data_VRMS_S_, _Data_VRMS_T_};
 
 				// Declare Comma Status
 				bool _Comma = false;
@@ -482,9 +482,72 @@
 						// Add Key
 						if (_Key == _Data_PCB_T_) strcat(_Buffer, "\"PCB_T\":");
 						else if (_Key == _Data_PCB_H_) strcat(_Buffer, "\"PCB_H\":");
+						
+						// FOTA Payload
 						else if (_Key == _Firmware_ID_) strcat(_Buffer, "\"Firmware_ID\":");
 						else if (_Key == _FOTA_Download_Status_) strcat(_Buffer, "\"FOTA_Download_Status\":");
 						else if (_Key == _FOTA_Download_Time_) strcat(_Buffer, "\"FOTA_Download_Time\":");
+						
+						// Energy Payload
+						else if (_Key == _Data_VRMS_R_) strcat(_Buffer, "\"VRMS_R\":");
+						else if (_Key == _Data_VRMS_S_) strcat(_Buffer, "\"VRMS_S\":");
+						else if (_Key == _Data_VRMS_T_) strcat(_Buffer, "\"VRMS_T\":");
+
+						// Add Value
+						char _Value_Buffer[20];
+						memset(_Value_Buffer, '\0', sizeof(_Value_Buffer));
+						dtostrf(*_Value, 10, 2, _Value_Buffer);
+						strcat(_Buffer, _Value_Buffer);
+
+						// Set Comma
+						_Comma = true;
+
+					}
+
+				}
+
+				// Close Payload Buffer
+				strcat(_Buffer, "}");
+
+				// Remove Spaces from Buffer
+				this->Remove_Spaces(_Buffer);
+
+				// Return Length
+				return(this->Length(_Buffer));
+
+			}
+
+			// JSON Payload Segment Parser
+			uint16_t JSON_Energy_Segment(char * _Buffer) {
+
+				// Declare Payload Buffer Start
+				char _Buffer_Start[12] = "\"Energy\":{";
+
+				// Copy Buffer Start
+				strcpy(_Buffer, _Buffer_Start);
+
+				// Get some data
+				const uint16_t _Keys[8] = {_Data_VRMS_R_, _Data_VRMS_S_, _Data_VRMS_T_};
+
+				// Declare Comma Status
+				bool _Comma = false;
+
+				// Print the data
+				for (uint16_t _Key : _Keys) {
+
+					// Get the value
+					const float* _Value = Payload->Get(_Key);
+
+					// Control for Value
+					if (_Value != nullptr) {
+
+						// Add Comma
+						if (_Comma) strcat(_Buffer, ",");
+
+						// Energy Payload
+						if (_Key == _Data_VRMS_R_) strcat(_Buffer, "\"VRMS_R\":");
+						else if (_Key == _Data_VRMS_S_) strcat(_Buffer, "\"VRMS_S\":");
+						else if (_Key == _Data_VRMS_T_) strcat(_Buffer, "\"VRMS_T\":");
 
 						// Add Value
 						char _Value_Buffer[20];
@@ -1505,7 +1568,7 @@
 							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#TCPMAXWIN=65535,3"));
 
 							// Send Command
-							if (!LE910C1_EUX::TCPMAXWIN(0, 0)) bitClear(this->Status, PostMan_Status_Connection);
+							if (!LE910C1_EUX::TCPMAXWIN(65535, 0)) bitClear(this->Status, PostMan_Status_Connection);
 
 							// Calculate Connection Time
 							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
@@ -1522,7 +1585,7 @@
 							} else break;
 
 						} else break;
-
+/*
 						// SKTTO Commad (Set Socket Inactivity Time)
 						if (bitRead(this->Status, PostMan_Status_Connection)) {
 
@@ -1530,7 +1593,7 @@
 							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SKTTO=0"));
 
 							// Send Command
-							if (!LE910C1_EUX::SKTTO(0)) bitClear(this->Status, PostMan_Status_Connection);
+							if (!LE910C1_EUX::SKTTO(90)) bitClear(this->Status, PostMan_Status_Connection);
 
 							// Calculate Connection Time
 							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
@@ -1547,7 +1610,7 @@
 							} else break;
 
 						} else break;
-
+*/
 						// Print Message
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(21, 84, _Console_WHITE_, F("                                    "));
 
@@ -1687,7 +1750,7 @@
 			}
 
 			// Download Firmware Function
-			bool Download(const uint16_t _Firmware_ID) {
+			bool Download(const bool _Method, const uint16_t _Firmware_ID) {
 
 				// Control for Modem Connection
 				if (bitRead(this->Status, PostMan_Status_Connection)) {
@@ -1710,300 +1773,104 @@
 					uint32_t _FOTA_File_Size = 0;
 					uint8_t _FOTA_Download_Status = 0;
 
-					// Define ETag Variable
-					char _FOTA_Server_ETag[33];
-					memset(_FOTA_Server_ETag, '\0', sizeof(_FOTA_Server_ETag));
+					// Declare Variables
+					uint16_t _FOTA_GET_Status = _HTTP_Unknown_;
 
-					// Print Message
-					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Connecting FOTA Server..."));
+					// FOTA GET Download
+					if (_Method == _FOTA_GET_) {
 
-					// Declare SD File
-					File FOTA_File;
-
-					// Delay
-					delay(100);
-
-					// Control for Existing File
-					if (Hardware->exists(_PostMan_Firmware_Name_)) {
-
-						// Delete Existing File
-						Hardware->remove(_PostMan_Firmware_Name_);
+						// Define ETag Variable
+						char _FOTA_Server_ETag[33];
+						memset(_FOTA_Server_ETag, '\0', sizeof(_FOTA_Server_ETag));
 
 						// Print Message
-						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Deleting Existing Firmware File..."));
+						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Connecting FOTA Server..."));
+
+						// Declare SD File
+						File FOTA_File;
+
+						// Delay
+						delay(100);
+
+						// Control for Existing File
+						if (Hardware->exists(_PostMan_Firmware_Name_)) {
+
+							// Delete Existing File
+							Hardware->remove(_PostMan_Firmware_Name_);
+
+							// Print Message
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Deleting Existing Firmware File..."));
+
+							// Command Delay
+							delay(100);
+
+						} else {
+
+							// Print Message
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Creating Firmware File..."));
+
+						}
+
+						// Open File for Write
+						FOTA_File = Hardware->open(_PostMan_Firmware_Name_, O_WRITE | O_CREAT);
 
 						// Command Delay
 						delay(100);
 
-					} else {
+						// Control for File Open
+						if (FOTA_File) {
 
-						// Print Message
-						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Creating Firmware File..."));
+							// Set Download Start Time
+							uint32_t _FOTA_Download_Start_Time = millis();
 
-					}
+							// Set Socket Configuration for Download
+							LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 0, 0, 0, 0, 0);
 
-					// Open File for Write
-					FOTA_File = Hardware->open(_PostMan_Firmware_Name_, O_WRITE | O_CREAT);
+							// Open Socket for Download
+							if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, _AT_TCP_, _PostMan_Server_, _PostMan_Port_, _CONNECTION_MANUAL_CLOSE_, 88, _CONNECTION_COMMAND_)) {
 
-					// Command Delay
-					delay(100);
+								// Print Message
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Firmware Downloading..."));
 
-					// Control for File Open
-					if (FOTA_File) {
+								// Set Download Path
+								char _Download_Path[16];
+								sprintf(_Download_Path, "/Firmware/%d", _Firmware_ID);
 
-						// Set Download Start Time
-						uint32_t _FOTA_Download_Start_Time = millis();
+								// Send Download Request
+								if (LE910C1_EUX::SSEND(_PostMan_Outgoing_Socket_, _HTTP_GET_, _PostMan_Server_, _Download_Path, "")) {
 
-						// Set Socket Configuration for Download
-						LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 0, 0, 0, 0, 0);
+									// Get Ring
+									if (LE910C1_EUX::SRING()) {
 
-						// Open Socket for Download
-						if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, _AT_TCP_, _PostMan_Server_, _PostMan_Port_, _CONNECTION_MANUAL_CLOSE_, 88, _CONNECTION_COMMAND_)) {
+										// Define Response Buffer Size
+										const uint16_t _Response_Buffer_Size = 1024;
 
-							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Firmware Downloading..."));
+										// Declare Buffer Variable
+										char Buffer_Variable[_Response_Buffer_Size];
+										char Data_Variable[_Response_Buffer_Size];
 
-							// Set Download Path
-							char _Download_Path[16];
-							sprintf(_Download_Path, "/Firmware/%d", _Firmware_ID);
+										// Clear Buffer Variable
+										memset(Buffer_Variable, '\0', _Response_Buffer_Size);
+										memset(Data_Variable, '\0', _Response_Buffer_Size);
 
-							// Send Download Request
-							if (LE910C1_EUX::SSEND(_PostMan_Outgoing_Socket_, _HTTP_GET_, _PostMan_Server_, _Download_Path, "")) {
-
-								// Get Ring
-								if (LE910C1_EUX::SRING()) {
-
-									// Define Response Buffer Size
-									const uint16_t _Response_Buffer_Size = 1024;
-
-									// Declare Buffer Variable
-									char Buffer_Variable[_Response_Buffer_Size];
-									char Data_Variable[_Response_Buffer_Size];
-
-									// Clear Buffer Variable
-									memset(Buffer_Variable, '\0', _Response_Buffer_Size);
-									memset(Data_Variable, '\0', _Response_Buffer_Size);
-
-									// Get Request Data Head
-									bool _SRECV = LE910C1_EUX::SRECV(_PostMan_Outgoing_Socket_, (_Response_Buffer_Size - 150), Buffer_Variable);
-
-									// Handle Response
-									if (_SRECV) {
-
-										// \r\n#SRECV: 2,400\r\n
-										// HTTP/1.1 200 OK\r\n
-										// Server: nginx/1.25.3\r\n
-										// Date: Thu, 18 Jan 2024 12:55:03 GMT\r\n
-										// Content-Type: application/octet-stream\r\n
-										// Content-Length: 321838\r\n
-										// Connection: keep-alive\r\n
-										// content-disposition: attachment; filename="PS_041023.hex"\r\n
-										// last-modified: Fri, 15 Dec 2023 11:46:38 GMT\r\n
-										// etag: 43720fe3f56006394f3414b9ca9164f9\r\n\r\n
-										// :100000000C947E0A0C94AF0A0C94AF0A0C94AF0ABD\r\n
-										// :100010000C94AF0A0C94AF0A0C94AF0A0C94AF0A7C\r
-										// \r\n\r\nOK\r\n
-										// \r\nSRING: 2\r\n
-
-										// Declare Start Position Variable
-										uint16_t _Start_Position = 0;
-										uint16_t _End_Position = 0;
-
-										// Find Start Position
-										for (uint16_t i = 5; i < _Response_Buffer_Size; i++) {
-
-											// Find Start Position
-											if (Buffer_Variable[i-4] == '\r' and Buffer_Variable[i-3] == '\n' and Buffer_Variable[i-2] == '\r' and Buffer_Variable[i-1] == '\n' and Buffer_Variable[i] == ':') {
-
-												// Set Start Position
-												_Start_Position = i;
-
-											}
-
-										}
-
-										// Find End Position
-										for (uint16_t i = _Start_Position; i < _Response_Buffer_Size; i++) {
-
-											// Control for i
-											if (i > 7) {
-
-												// Find End Position
-												if (
-													Buffer_Variable[i-7] == '\r' and 
-													Buffer_Variable[i-6] == '\n' and 
-													Buffer_Variable[i-5] == '\r' and 
-													Buffer_Variable[i-4] == '\n' and 
-													Buffer_Variable[i-3] == 'O' and 
-													Buffer_Variable[i-2] == 'K' and 
-													Buffer_Variable[i-1] == '\r' and 
-													Buffer_Variable[i-0] == '\n'
-												) {
-
-													// Set End Position
-													_End_Position = i - 7;
-
-												}
-
-											}
-
-										}
-
-										// Parse Data
-										for (uint16_t i = _Start_Position; i < _End_Position; i++) {
-
-											// Parse Data
-											Data_Variable[i - _Start_Position] = Buffer_Variable[i];
-
-											// Control for HEX Char
-											if (Data_Variable[i - _Start_Position] == 'A' || Data_Variable[i - _Start_Position] == 'B' || Data_Variable[i - _Start_Position] == 'C' || Data_Variable[i - _Start_Position] == 'D' || Data_Variable[i - _Start_Position] == 'E' || Data_Variable[i - _Start_Position] == 'F' || Data_Variable[i - _Start_Position] == '0' || Data_Variable[i - _Start_Position] == '1' || Data_Variable[i - _Start_Position] == '2' || Data_Variable[i - _Start_Position] == '3' || Data_Variable[i - _Start_Position] == '4' || Data_Variable[i - _Start_Position] == '5' || Data_Variable[i - _Start_Position] == '6' || Data_Variable[i - _Start_Position] == '7' || Data_Variable[i - _Start_Position] == '8' || Data_Variable[i - _Start_Position] == '9' || Data_Variable[i - _Start_Position] == '\r' || Data_Variable[i - _Start_Position] == '\n' || Data_Variable[i - _Start_Position] == ':') {
-
-												// Calculate Size
-												_FOTA_Download_Size += 1;
-
-											}
-
-										}
-
-										// Declare Variables
-										uint16_t _FOTA_GET_Status = _HTTP_Unknown_;
-
-										// Get First Line
-										char* _Response_Line = strtok(Buffer_Variable, "\r\n");
-
-										// Control for Response Line
-										while (_Response_Line != NULL) {
-
-											// Control for Response
-											if (strstr(_Response_Line, "Content-Length:") != NULL) {
-
-												// Content-Length: 321838\r\n
-
-												// Get Content Length
-												sscanf(_Response_Line, "Content-Length: %lu", &_FOTA_File_Size);
-							
-											} else if (strstr(_Response_Line, "etag:") != NULL) {
-
-												// etag: 43720fe3f56006394f3414b9ca9164f9\r\n\r\n
-
-												// Get etag
-												sscanf(_Response_Line, "etag: %32[^\r\n]", _FOTA_Server_ETag);
-
-											} else if (strstr(_Response_Line, "HTTP/1.1") != NULL) {
-
-												// HTTP/1.1 200 OK\r\n
-
-												// Get Last Modified
-												sscanf(_Response_Line, "HTTP/1.1 %u OK\r\n", &_FOTA_GET_Status);
-
-											} else if (strstr(_Response_Line, "content-disposition:") != NULL) {
-
-												// content-disposition: attachment; filename="PS_041023.hex"\r\n
-
-												// Declare File Name Variable
-												char _FOTA_File_Name[14];
-
-												// Get File Name
-												sscanf(_Response_Line, "content-disposition: attachment; filename=\"%13[^\"]", _FOTA_File_Name);
-
-												// Print File Name
-												if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(13, 106, _Console_GRAY_, _FOTA_File_Name);
-
-											}
-
-											// Get Line
-											_Response_Line = strtok(NULL, "\r\n");
-
-										}
-
-										// Control for GET Status
-										if (_FOTA_GET_Status == _HTTP_OK_) {
-
-											// Print Message
-											if (bitRead(this->Status, PostMan_Status_Terminal)) {
-
-												// Declare File Size Char Buffer
-												char _File_Size_Buffer[8];
-
-												// Set Buffer
-												sprintf(_File_Size_Buffer, "%07lu", _FOTA_File_Size);
-
-												// Print File Size
-												Terminal->Text(15, 112, _Console_CYAN_, _File_Size_Buffer);
-
-											}
-
-											// Write Data
-											if (_End_Position - _Start_Position > 0) FOTA_File.write(Data_Variable, (_End_Position - _Start_Position));
-
-											// SD Print Delay
-											delay(100);
-
-											// Print Message
-											if (bitRead(this->Status, PostMan_Status_Terminal)) {
-
-												// Declare Download Size Char Buffer
-												char _Download_Size_Buffer[8];
-
-												// Set Buffer
-												sprintf(_Download_Size_Buffer, "%07lu", _FOTA_Download_Size);
-
-												// Print Download Size
-												Terminal->Text(16, 112, _Console_CYAN_, _Download_Size_Buffer);
-
-												// Declare Percent Char Buffer
-												char _Download_Time_Buffer[10];
-
-												// Calculate Time
-												_FOTA_Download_Time = (millis() - _FOTA_Download_Start_Time) / 1000;
-
-												// Set Buffer
-												sprintf(_Download_Time_Buffer, "%04u", _FOTA_Download_Time);
-
-												// Print Download Time
-												Terminal->Text(18, 111, _Console_CYAN_, String(_Download_Time_Buffer));
-
-											}
-
-										} else {
-
-											// Print Message
-											if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Server Error..."));
-
-											// Add Variable
-											this->Payload->Add(9002, _FOTA_Download_Status);
-
-											// End Function
-											return(false);
-
-										}
-	
-									}
-
-									// Declare WD Variable
-									uint8_t _WD = 0;
-
-									// Get Data
-									while (_FOTA_Download_Size < _FOTA_File_Size) {
-
-										// Reset Variables
-										memset(Buffer_Variable, '\0', sizeof(Buffer_Variable));
-										memset(Data_Variable, '\0', sizeof(Data_Variable));
+										// Get Request Data Head
+										bool _SRECV = LE910C1_EUX::SRECV(_PostMan_Outgoing_Socket_, (_Response_Buffer_Size - 150), Buffer_Variable);
 
 										// Handle Response
-										if (LE910C1_EUX::SRECV(_PostMan_Outgoing_Socket_, (_Response_Buffer_Size - 100), Buffer_Variable)) {
+										if (_SRECV) {
 
 											// \r\n#SRECV: 2,400\r\n
-											// \n
-											// :100020000C94AF0A0C94FC5F0C9434600C944E60FA\r\n
-											// :100030000C94AF0A0C9415C70C94AF0A0C94AF0A39\r\n
-											// :100040000C94AF0A0C94AF0A0C94AF0A0C94AF0A4C\r\n
-											// :100050000C94AF0A0C94AF0A0C94AF0A0C943BCAF0\r\n
-											// :100060000C94AF0A0C94A9BF0C94DFBF0C94AF0A98\r\n
-											// :100070000C94AF0A0C94AF0A0C94AF0A0C94AF0A1C\r\n
-											// :100080000C94AF0A0C94AF0A0C94AF0A0C94AF0A0C\r\n
-											// :100090000C9440C00C9476C00C94AF0A0C9426BD0E\r\n
-											// :1000A0000C94AF0A0C94AF0A0C94AF0A0C94AF
+											// HTTP/1.1 200 OK\r\n
+											// Server: nginx/1.25.3\r\n
+											// Date: Thu, 18 Jan 2024 12:55:03 GMT\r\n
+											// Content-Type: application/octet-stream\r\n
+											// Content-Length: 321838\r\n
+											// Connection: keep-alive\r\n
+											// content-disposition: attachment; filename="PS_041023.hex"\r\n
+											// last-modified: Fri, 15 Dec 2023 11:46:38 GMT\r\n
+											// etag: 43720fe3f56006394f3414b9ca9164f9\r\n\r\n
+											// :100000000C947E0A0C94AF0A0C94AF0A0C94AF0ABD\r\n
+											// :100010000C94AF0A0C94AF0A0C94AF0A0C94AF0A7C\r
 											// \r\n\r\nOK\r\n
 											// \r\nSRING: 2\r\n
 
@@ -2012,20 +1879,15 @@
 											uint16_t _End_Position = 0;
 
 											// Find Start Position
-											if (Buffer_Variable[0] == '\r' and Buffer_Variable[1] == '\n' and Buffer_Variable[15] == '\r' and Buffer_Variable[16] == '\n') {
-												
-												// Set Start Position
-												_Start_Position = 17;
+											for (uint16_t i = 5; i < _Response_Buffer_Size; i++) {
 
-											} else if (Buffer_Variable[0] == '\r' and Buffer_Variable[1] == '\n' and Buffer_Variable[14] == '\r' and Buffer_Variable[15] == '\n') {
+												// Find Start Position
+												if (Buffer_Variable[i-4] == '\r' and Buffer_Variable[i-3] == '\n' and Buffer_Variable[i-2] == '\r' and Buffer_Variable[i-1] == '\n' and Buffer_Variable[i] == ':') {
 
-												// Set Start Position
-												_Start_Position = 16;
+													// Set Start Position
+													_Start_Position = i;
 
-											} else if (Buffer_Variable[0] == '\r' and Buffer_Variable[1] == '\n' and Buffer_Variable[13] == '\r' and Buffer_Variable[14] == '\n') {
-
-												// Set Start Position
-												_Start_Position = 15;
+												}
 
 											}
 
@@ -2072,124 +1934,359 @@
 
 											}
 
-											// Write Data
-											if (_End_Position - _Start_Position > 0) FOTA_File.write(Data_Variable, (_End_Position - _Start_Position));
+											// Get First Line
+											char* _Response_Line = strtok(Buffer_Variable, "\r\n");
 
-										} 
+											// Control for Response Line
+											while (_Response_Line != NULL) {
 
-										// Control for CME ERROR 4
-										// \r\n+CME ERROR: 4\r\n
-										if (strstr(Buffer_Variable, "+CME ERROR: 4") != NULL) {
+												// Control for Response
+												if (strstr(_Response_Line, "Content-Length:") != NULL) {
 
-											// Increase WD
-											_WD++;
+													// Content-Length: 321838\r\n
 
-										} else if (strstr(Buffer_Variable, "CME ERROR: 551") != NULL) {
+													// Get Content Length
+													sscanf(_Response_Line, "Content-Length: %lu", &_FOTA_File_Size);
+								
+												} else if (strstr(_Response_Line, "etag:") != NULL) {
 
-											// \r\n+CME ERROR: 551\r\n
+													// etag: 43720fe3f56006394f3414b9ca9164f9\r\n\r\n
+
+													// Get etag
+													sscanf(_Response_Line, "etag: %32[^\r\n]", _FOTA_Server_ETag);
+
+												} else if (strstr(_Response_Line, "HTTP/1.1") != NULL) {
+
+													// HTTP/1.1 200 OK\r\n
+
+													// Get Last Modified
+													sscanf(_Response_Line, "HTTP/1.1 %u OK\r\n", &_FOTA_GET_Status);
+
+												} else if (strstr(_Response_Line, "content-disposition:") != NULL) {
+
+													// content-disposition: attachment; filename="PS_041023.hex"\r\n
+
+													// Declare File Name Variable
+													char _FOTA_File_Name[14];
+
+													// Get File Name
+													sscanf(_Response_Line, "content-disposition: attachment; filename=\"%13[^\"]", _FOTA_File_Name);
+
+													// Print File Name
+													if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(13, 106, _Console_GRAY_, _FOTA_File_Name);
+
+												}
+
+												// Get Line
+												_Response_Line = strtok(NULL, "\r\n");
+
+											}
+
+											// Control for GET Status
+											if (_FOTA_GET_Status == _HTTP_OK_) {
+
+												// Print Message
+												if (bitRead(this->Status, PostMan_Status_Terminal)) {
+
+													// Declare File Size Char Buffer
+													char _File_Size_Buffer[8];
+
+													// Set Buffer
+													sprintf(_File_Size_Buffer, "%07lu", _FOTA_File_Size);
+
+													// Print File Size
+													Terminal->Text(15, 112, _Console_CYAN_, _File_Size_Buffer);
+
+												}
+
+												// Write Data
+												if (_End_Position - _Start_Position > 0) FOTA_File.write(Data_Variable, (_End_Position - _Start_Position));
+
+												// SD Print Delay
+												delay(100);
+
+												// Print Message
+												if (bitRead(this->Status, PostMan_Status_Terminal)) {
+
+													// Declare Download Size Char Buffer
+													char _Download_Size_Buffer[8];
+
+													// Set Buffer
+													sprintf(_Download_Size_Buffer, "%07lu", _FOTA_Download_Size);
+
+													// Print Download Size
+													Terminal->Text(16, 112, _Console_CYAN_, _Download_Size_Buffer);
+
+													// Declare Percent Char Buffer
+													char _Download_Time_Buffer[10];
+
+													// Calculate Time
+													_FOTA_Download_Time = (millis() - _FOTA_Download_Start_Time) / 1000;
+
+													// Set Buffer
+													sprintf(_Download_Time_Buffer, "%04u", _FOTA_Download_Time);
+
+													// Print Download Time
+													Terminal->Text(18, 111, _Console_CYAN_, String(_Download_Time_Buffer));
+
+												}
+
+											} else {
+
+												// Print Message
+												if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Server Error..."));
+
+												// Add Variable
+												this->Payload->Add(9002, _FOTA_Download_Status);
+
+												// End Function
+												return(false);
+
+											}
+		
+										}
+
+										// Declare WD Variable
+										uint8_t _WD = 0;
+
+										// Get Data
+										while (_FOTA_Download_Size < _FOTA_File_Size) {
+
+											// Reset Variables
+											memset(Buffer_Variable, '\0', sizeof(Buffer_Variable));
+											memset(Data_Variable, '\0', sizeof(Data_Variable));
+
+											// Handle Response
+											if (LE910C1_EUX::SRECV(_PostMan_Outgoing_Socket_, (_Response_Buffer_Size - 100), Buffer_Variable)) {
+
+												// \r\n#SRECV: 2,400\r\n
+												// \n
+												// :100020000C94AF0A0C94FC5F0C9434600C944E60FA\r\n
+												// :100030000C94AF0A0C9415C70C94AF0A0C94AF0A39\r\n
+												// :100040000C94AF0A0C94AF0A0C94AF0A0C94AF0A4C\r\n
+												// :100050000C94AF0A0C94AF0A0C94AF0A0C943BCAF0\r\n
+												// :100060000C94AF0A0C94A9BF0C94DFBF0C94AF0A98\r\n
+												// :100070000C94AF0A0C94AF0A0C94AF0A0C94AF0A1C\r\n
+												// :100080000C94AF0A0C94AF0A0C94AF0A0C94AF0A0C\r\n
+												// :100090000C9440C00C9476C00C94AF0A0C9426BD0E\r\n
+												// :1000A0000C94AF0A0C94AF0A0C94AF0A0C94AF
+												// \r\n\r\nOK\r\n
+												// \r\nSRING: 2\r\n
+
+												// Declare Start Position Variable
+												uint16_t _Start_Position = 0;
+												uint16_t _End_Position = 0;
+
+												// Find Start Position
+												if (Buffer_Variable[0] == '\r' and Buffer_Variable[1] == '\n' and Buffer_Variable[15] == '\r' and Buffer_Variable[16] == '\n') {
+													
+													// Set Start Position
+													_Start_Position = 17;
+
+												} else if (Buffer_Variable[0] == '\r' and Buffer_Variable[1] == '\n' and Buffer_Variable[14] == '\r' and Buffer_Variable[15] == '\n') {
+
+													// Set Start Position
+													_Start_Position = 16;
+
+												} else if (Buffer_Variable[0] == '\r' and Buffer_Variable[1] == '\n' and Buffer_Variable[13] == '\r' and Buffer_Variable[14] == '\n') {
+
+													// Set Start Position
+													_Start_Position = 15;
+
+												}
+
+												// Find End Position
+												for (uint16_t i = _Start_Position; i < _Response_Buffer_Size; i++) {
+
+													// Control for i
+													if (i > 7) {
+
+														// Find End Position
+														if (
+															Buffer_Variable[i-7] == '\r' and 
+															Buffer_Variable[i-6] == '\n' and 
+															Buffer_Variable[i-5] == '\r' and 
+															Buffer_Variable[i-4] == '\n' and 
+															Buffer_Variable[i-3] == 'O' and 
+															Buffer_Variable[i-2] == 'K' and 
+															Buffer_Variable[i-1] == '\r' and 
+															Buffer_Variable[i-0] == '\n'
+														) {
+
+															// Set End Position
+															_End_Position = i - 7;
+
+														}
+
+													}
+
+												}
+
+												// Parse Data
+												for (uint16_t i = _Start_Position; i < _End_Position; i++) {
+
+													// Parse Data
+													Data_Variable[i - _Start_Position] = Buffer_Variable[i];
+
+													// Control for HEX Char
+													if (Data_Variable[i - _Start_Position] == 'A' || Data_Variable[i - _Start_Position] == 'B' || Data_Variable[i - _Start_Position] == 'C' || Data_Variable[i - _Start_Position] == 'D' || Data_Variable[i - _Start_Position] == 'E' || Data_Variable[i - _Start_Position] == 'F' || Data_Variable[i - _Start_Position] == '0' || Data_Variable[i - _Start_Position] == '1' || Data_Variable[i - _Start_Position] == '2' || Data_Variable[i - _Start_Position] == '3' || Data_Variable[i - _Start_Position] == '4' || Data_Variable[i - _Start_Position] == '5' || Data_Variable[i - _Start_Position] == '6' || Data_Variable[i - _Start_Position] == '7' || Data_Variable[i - _Start_Position] == '8' || Data_Variable[i - _Start_Position] == '9' || Data_Variable[i - _Start_Position] == '\r' || Data_Variable[i - _Start_Position] == '\n' || Data_Variable[i - _Start_Position] == ':') {
+
+														// Calculate Size
+														_FOTA_Download_Size += 1;
+
+													}
+
+												}
+
+												// Write Data
+												if (_End_Position - _Start_Position > 0) FOTA_File.write(Data_Variable, (_End_Position - _Start_Position));
+
+											} 
+
+											// Control for CME ERROR 4
+											// \r\n+CME ERROR: 4\r\n
+											if (strstr(Buffer_Variable, "+CME ERROR: 4") != NULL) {
+
+												// Increase WD
+												_WD++;
+
+											} else if (strstr(Buffer_Variable, "CME ERROR: 551") != NULL) {
+
+												// \r\n+CME ERROR: 551\r\n
+
+												// Print Message
+												if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Firmware Download Error..."));
+
+												// Set Status
+												_FOTA_Download_Status = FOTA_Download_CME_Error;
+
+												// Add Variable
+												this->Payload->Add(9002, _FOTA_Download_Status);
+
+												// End Function
+												return(false);
+
+											}
 
 											// Print Message
-											if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Firmware Download Error..."));
+											if (bitRead(this->Status, PostMan_Status_Terminal)) {
 
-											// Set Status
-											_FOTA_Download_Status = FOTA_Download_CME_Error;
+												// Declare Download Size Char Buffer
+												char _Download_Size_Buffer[8];
 
-											// Add Variable
-											this->Payload->Add(9002, _FOTA_Download_Status);
+												// Set Buffer
+												sprintf(_Download_Size_Buffer, "%07lu", _FOTA_Download_Size);
 
-											// End Function
-											return(false);
+												// Print Download Size
+												Terminal->Text(16, 112, _Console_CYAN_, _Download_Size_Buffer);
+
+												// Declare Percent Char Buffer
+												char _Download_Percent_Buffer[8];
+
+												// Calculate Percent
+												uint8_t _Percent = (uint8_t)((_FOTA_Download_Size * 100) / _FOTA_File_Size);
+
+												// Set Buffer for Percent (2 Digit Float)
+												sprintf(_Download_Percent_Buffer, "%hu", _Percent);
+
+												// Print Download Percent
+												Terminal->Text(17, 114, _Console_CYAN_, _Download_Percent_Buffer);
+
+												// Declare Percent Char Buffer
+												char _Download_Time_Buffer[10];
+
+												// Calculate Time
+												_FOTA_Download_Time = (millis() - _FOTA_Download_Start_Time) / 1000;
+
+												// Set Buffer
+												sprintf(_Download_Time_Buffer, "%04u", _FOTA_Download_Time);
+
+												// Print Download Time
+												Terminal->Text(18, 111, _Console_CYAN_, String(_Download_Time_Buffer));
+
+											}
+
+											// Control for WD
+											if (_WD > 100) {
+
+												// Print Message
+												if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_RED_, F("Firmware Download TimeOut..."));
+
+												// Set Status
+												_FOTA_Download_Status = FOTA_Download_TimeOut;
+
+												// Add Variable
+												this->Payload->Add(9002, _FOTA_Download_Status);
+
+												// End While	
+												break;
+
+											}
+
+											// Heart Beat
+											Hardware->Heartbeat();
 
 										}
+
+									} else {
+
+										// Set Status
+										_FOTA_Download_Status = FOTA_Server_Error;
 
 										// Print Message
-										if (bitRead(this->Status, PostMan_Status_Terminal)) {
+										if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Server Error..."));
 
-											// Declare Download Size Char Buffer
-											char _Download_Size_Buffer[8];
+										// Add Variable
+										this->Payload->Add(9002, _FOTA_Download_Status);
 
-											// Set Buffer
-											sprintf(_Download_Size_Buffer, "%07lu", _FOTA_Download_Size);
-
-											// Print Download Size
-											Terminal->Text(16, 112, _Console_CYAN_, _Download_Size_Buffer);
-
-											// Declare Percent Char Buffer
-											char _Download_Percent_Buffer[8];
-
-											// Calculate Percent
-											uint8_t _Percent = (uint8_t)((_FOTA_Download_Size * 100) / _FOTA_File_Size);
-
-											// Set Buffer for Percent (2 Digit Float)
-											sprintf(_Download_Percent_Buffer, "%hu", _Percent);
-
-											// Print Download Percent
-											Terminal->Text(17, 114, _Console_CYAN_, _Download_Percent_Buffer);
-
-											// Declare Percent Char Buffer
-											char _Download_Time_Buffer[10];
-
-											// Calculate Time
-											_FOTA_Download_Time = (millis() - _FOTA_Download_Start_Time) / 1000;
-
-											// Set Buffer
-											sprintf(_Download_Time_Buffer, "%04u", _FOTA_Download_Time);
-
-											// Print Download Time
-											Terminal->Text(18, 111, _Console_CYAN_, String(_Download_Time_Buffer));
-
-										}
-
-										// Control for WD
-										if (_WD > 100) {
-
-											// Print Message
-											if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_RED_, F("Firmware Download TimeOut..."));
-
-											// Set Status
-											_FOTA_Download_Status = FOTA_Download_TimeOut;
-
-											// Add Variable
-											this->Payload->Add(9002, _FOTA_Download_Status);
-
-											// End While	
-											break;
-
-										}
-
-										// Heart Beat
-										Hardware->Heartbeat();
+										// End Function
+										return(false);
 
 									}
 
-								} else {
-
-									// Set Status
-									_FOTA_Download_Status = FOTA_Server_Error;
-
-									// Print Message
-									if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Server Error..."));
-
-									// Add Variable
-									this->Payload->Add(9002, _FOTA_Download_Status);
-
-									// End Function
-									return(false);
-
 								}
+
+								// Closing Socket
+								if (LE910C1_EUX::SH(_PostMan_Outgoing_Socket_)) this->Listen(true);
+
+							} else {
+
+								// Set Status
+								_FOTA_Download_Status = FOTA_Server_Error;
+
+								// Print Message
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Server Error..."));
+
+								// Add Variable
+								this->Payload->Add(9002, _FOTA_Download_Status);
+
+								// End Function
+								return(false);
 
 							}
 
-							// Closing Socket
-							if (LE910C1_EUX::SH(_PostMan_Outgoing_Socket_)) this->Listen(true);
+							// Set Download Duration
+							_FOTA_Download_Time = (millis() - _FOTA_Download_Start_Time) / 1000;
+
+							// Set Socket Configuration for Stream
+							LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0);
+
+							// Work Delay
+							delay(8);
+
+							// Close SD File
+							FOTA_File.close();
 
 						} else {
 
 							// Set Status
-							_FOTA_Download_Status = FOTA_Server_Error;
+							_FOTA_Download_Status = FOTA_SD_Error;
 
 							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Server Error..."));
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_RED_, F("Firmware File Open Failed!!"));
+
+							// Disable SD Multiplexer
+							Hardware->SD_Multiplexer(false);
 
 							// Add Variable
 							this->Payload->Add(9002, _FOTA_Download_Status);
@@ -2199,82 +2296,359 @@
 
 						}
 
-						// Set Download Duration
-						_FOTA_Download_Time = (millis() - _FOTA_Download_Start_Time) / 1000;
+						// Clear LED Blue
+						PORT_MCU_LED_BLUE &= ~(1 << PIN_MCU_LED_BLUE);
 
-						// Set Socket Configuration for Stream
-						LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0);
+						// Print Message
+						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(46, 4, _Console_GRAY_, _FOTA_Server_ETag);
 
-						// Work Delay
-						delay(8);
+						// Declare MD5_Hash Variable
+						char _File_MD5_Hash[33];
+
+						// Calculate MD5 Hash
+						// TODO: MD5 kütüphanesinde bir karşılaştırma yapan bir fonksiyon oluşturulmalı
+						this->Calculate_MD5(_File_MD5_Hash);
+
+						// Compare MD5 With ETag
+						if (strcmp(_File_MD5_Hash, _FOTA_Server_ETag) == 0) {
+
+							// Set Status
+							_FOTA_Download_Status = FOTA_Download_OK;
+
+							// Print Message
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Firmware Download Success!!"));
+
+						} else {
+
+							// Set Status
+							_FOTA_Download_Status = FOTA_Download_MD5_Error;
+
+							// Print Message
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Firmware MD5 Error!!"));
+
+						}
 
 						// Close SD File
 						FOTA_File.close();
 
-					} else {
+						// Add Variable
+						this->Payload->Add(9002, _FOTA_Download_Status);
+						this->Payload->Add(9003, _FOTA_Download_Time);
 
-						// Set Status
-						_FOTA_Download_Status = FOTA_SD_Error;
+					}
+
+					// FOTA FTP Download
+					if (_Method == _FOTA_FTP_) {
+
+						// Add Variable
+						this->Payload->Add(9001, _Firmware_ID);
 
 						// Print Message
-						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_RED_, F("Firmware File Open Failed!!"));
+						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Connecting FOTA FTP Server..."));
 
-						// Disable SD Multiplexer
-						Hardware->SD_Multiplexer(false);
+						// Declare SD File
+						File FOTA_File;
+
+						// Delay
+						delay(100);
+
+						// Control for Existing File
+						if (Hardware->exists(_PostMan_Firmware_Name_)) {
+
+							// Delete Existing File
+							Hardware->remove(_PostMan_Firmware_Name_);
+
+							// Print Message
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Deleting Existing Firmware File..."));
+
+							// Command Delay
+							delay(100);
+
+						} else {
+
+							// Print Message
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Creating Firmware File..."));
+
+						}
+
+						// Open File for Write
+						FOTA_File = Hardware->open(_PostMan_Firmware_Name_, O_WRITE | O_CREAT);
+
+						// Command Delay
+						delay(100);
+
+						// Control for File Open
+						if (FOTA_File) {
+
+							// Set Download Start Time
+							uint32_t _FOTA_Download_Start_Time = millis();
+
+							// Declare Command State
+							bool _Command_State = true;
+
+							// FTP Timeout Configuration
+							if (_Command_State) {
+
+								// Print Command
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#FTPTO=600"));
+
+								// Set FTP Timeout
+								if (!LE910C1_EUX::FTPTO(600)) _Command_State = false;
+
+								// Print Command State
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->OK(_Command_State);
+
+							} else {
+
+								// Set Status
+								_FOTA_Download_Status = FOTA_FTP_Config_Error;
+
+							}
+
+							// FTP Open
+							if (_Command_State) {
+
+								// Print Command
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#FTPOPEN='**','**','**',1"));
+
+								// Set FTP Timeout
+								if (!LE910C1_EUX::FTPOPEN(_PostMan_FTP_Server_, _PostMan_FTP_Username_, _PostMan_FTP_Password_, 0)) _Command_State = false;
+
+								// Print Command State
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->OK(_Command_State);
+
+							} else {
+
+								// Set Status
+								_FOTA_Download_Status = FOTA_FTP_Connect_Error;
+
+							}
+
+							// Set FTP Transfer Type
+							if (_Command_State) {
+
+								// Print Command
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#FTPTYPE=0"));
+
+								// Set FTP Timeout
+								if (!LE910C1_EUX::FTPTYPE(0)) _Command_State = false;
+
+								// Print Command State
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->OK(_Command_State);
+
+							} else {
+
+								// Set Status
+								_FOTA_Download_Status = FOTA_FTP_Config_Error;
+
+							}
+
+							// Get File Size
+							if (_Command_State) {
+
+								// Print Command
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#FTPFSIZE='**'"));
+
+								// Set FTP Timeout
+								if (!LE910C1_EUX::FTPFSIZE("1.hex", _FOTA_File_Size)) _Command_State = false;
+
+								// Print Command State
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->OK(_Command_State);
+
+							} else {
+
+								// Set Status
+								_FOTA_Download_Status = FOTA_FTP_Config_Error;
+
+							}
+
+							// Get File
+							if (_Command_State) {
+
+								// Print Command
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#FTPGETPKT='**',0"));
+
+								// Set FTP Timeout
+								if (!LE910C1_EUX::FTPGETPKT("1.hex", 0)) _Command_State = false;
+
+								// Print Command State
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->OK(_Command_State);
+
+							} else {
+
+								// Set Status
+								_FOTA_Download_Status = FOTA_FTP_Connect_Error;
+
+							}
+
+							// Command Delay
+							delay(100);
+
+							// Download File
+							while (_FOTA_Download_Size < _FOTA_File_Size) {
+
+								// Declare Buffer
+								char _FOTA_File_Buffer[768];
+								memset(_FOTA_File_Buffer, '\0', sizeof(_FOTA_File_Buffer));
+
+								// Declare Data Buffer
+								char _FOTA_Data_Buffer[700];
+								memset(_FOTA_Data_Buffer, '\0', sizeof(_FOTA_Data_Buffer));
+
+								// Recieve File
+								if (LE910C1_EUX::FTPRECV(700, _FOTA_File_Buffer)) {
+
+									// \r\n
+									// #FTPRECV: 700\r\n
+									// 0D3091FA0D4091FB0DFE\r\n
+									// :100490005091FC0D61E088E79DE00E94C529209104\r\n
+									// :1004A000010E3091020E4091030E5091040E62E055\r\n
+									// :1004B00088E79DE00E94C5292091050E3091060E27\r\n
+									// :1004C0004091070E5091080E63E088E79DE00E947E\r\n
+									// :1004D000C5291092190E1C9B37C263E477E0CE0148\r\n
+									// :1004E0000B960E9498A78E01055F1F4F20E24EE4F5\r\n
+									// :1004F0006EE288E79DE00E94451CC8010E9426A785\r\n
+									// :100500001D9B2DC263E477E0CE010B960E9498A755\r\n:...
+
+									// Get Pack Size
+									if (_FOTA_File_Buffer[0] == '\r' && _FOTA_File_Buffer[1] == '\n' && _FOTA_File_Buffer[15] == '\r' && _FOTA_File_Buffer[16] == '\n') {
+
+										// Calculate Pack Size
+										uint16_t _Data_Size = ((_FOTA_File_Buffer[12] - 48) * 100) + ((_FOTA_File_Buffer[13] - 48) * 10) + (_FOTA_File_Buffer[14] - 48);
+
+										// Copy Data
+										memcpy(_FOTA_Data_Buffer, _FOTA_File_Buffer + 17, _Data_Size);
+
+										// Calculate Download Size
+										_FOTA_Download_Size += _Data_Size;
+
+									} else if (_FOTA_File_Buffer[0] == '\r' && _FOTA_File_Buffer[1] == '\n' && _FOTA_File_Buffer[14] == '\r' && _FOTA_File_Buffer[15] == '\n') {
+
+										// Calculate Pack Size
+										uint16_t _Data_Size = ((_FOTA_File_Buffer[12] - 48) * 10) + (_FOTA_File_Buffer[13] - 48);
+
+										// Copy Data
+										memcpy(_FOTA_Data_Buffer, _FOTA_File_Buffer + 16, _Data_Size);
+
+										// Calculate Download Size
+										_FOTA_Download_Size += _Data_Size;
+
+									} else if (_FOTA_File_Buffer[0] == '\r' && _FOTA_File_Buffer[1] == '\n' && _FOTA_File_Buffer[13] == '\r' && _FOTA_File_Buffer[14] == '\n') {
+
+										// Calculate Pack Size
+										uint16_t _Data_Size = (_FOTA_File_Buffer[12] - 48);
+
+										// Copy Data
+										memcpy(_FOTA_Data_Buffer, _FOTA_File_Buffer + 15, _Data_Size);
+
+										// Calculate Download Size
+										_FOTA_Download_Size += _Data_Size;
+
+									}
+
+									// Write Data
+									FOTA_File.write(_FOTA_Data_Buffer, Length(_FOTA_Data_Buffer));
+
+									// Print Message
+									if (bitRead(this->Status, PostMan_Status_Terminal)) {
+
+										// Declare Download Size Char Buffer
+										char _Download_Size_Buffer[8];
+
+										// Set Buffer
+										sprintf(_Download_Size_Buffer, "%07lu", _FOTA_Download_Size);
+
+										// Print Download Size
+										Terminal->Text(16, 112, _Console_CYAN_, _Download_Size_Buffer);
+
+										// Declare Percent Char Buffer
+										char _Download_Percent_Buffer[8];
+
+										// Calculate Percent
+										uint8_t _Percent = (uint8_t)((_FOTA_Download_Size * 100) / _FOTA_File_Size);
+
+										// Set Buffer for Percent (2 Digit Float)
+										sprintf(_Download_Percent_Buffer, "%hu", _Percent);
+
+										// Print Download Percent
+										Terminal->Text(17, 114, _Console_CYAN_, _Download_Percent_Buffer);
+
+										// Declare Percent Char Buffer
+										char _Download_Time_Buffer[10];
+
+										// Calculate Time
+										_FOTA_Download_Time = (millis() - _FOTA_Download_Start_Time) / 1000;
+
+										// Set Buffer
+										sprintf(_Download_Time_Buffer, "%04u", _FOTA_Download_Time);
+
+										// Print Download Time
+										Terminal->Text(18, 111, _Console_CYAN_, String(_Download_Time_Buffer));
+
+									}
+
+								}
+
+								// Heart Beat
+								Hardware->Heartbeat();
+
+							}
+
+							// Set FTP Close
+							if (_Command_State) {
+
+								// Print Command
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#FTPCLOSE"));
+
+								// Set FTP Timeout
+								if (!LE910C1_EUX::FTPCLOSE()) _Command_State = false;
+
+								// Print Command State
+								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->OK(_Command_State);
+
+							} else {
+								
+								// Set Status
+								this->Payload->Add(9002, FOTA_FTP_Connect_Error);
+
+							}
+
+						} else {
+
+							// Set Status
+							_FOTA_Download_Status = FOTA_SD_Error;
+
+							// Print Message
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_RED_, F("Firmware File Open Failed!!"));
+
+							// Disable SD Multiplexer
+							Hardware->SD_Multiplexer(false);
+
+							// Add Variable
+							this->Payload->Add(9002, _FOTA_Download_Status);
+
+							// End Function
+							return(false);
+
+						}
+
+						// Clear LED Blue
+						PORT_MCU_LED_BLUE &= ~(1 << PIN_MCU_LED_BLUE);
+
+						// Close SD File
+						FOTA_File.close();
 
 						// Add Variable
 						this->Payload->Add(9002, _FOTA_Download_Status);
-
-						// End Function
-						return(false);
+						this->Payload->Add(9003, _FOTA_Download_Time);
 
 					}
-
-					// Clear LED Blue
-					PORT_MCU_LED_BLUE &= ~(1 << PIN_MCU_LED_BLUE);
-
-					// Print Message
-					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(46, 4, _Console_GRAY_, _FOTA_Server_ETag);
-
-					// Declare MD5_Hash Variable
-					char _File_MD5_Hash[33];
-
-					// Calculate MD5 Hash
-					// TODO: MD5 kütüphanesinde bir karşılaştırma yapan bir fonksiyon oluşturulmalı
-					this->Calculate_MD5(_File_MD5_Hash);
-
-					// Compare MD5 With ETag
-					if (strcmp(_File_MD5_Hash, _FOTA_Server_ETag) == 0) {
-
-						// Set Status
-						_FOTA_Download_Status = FOTA_Download_OK;
-
-						// Print Message
-						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Firmware Download Success!!"));
-
-					} else {
-
-						// Set Status
-						_FOTA_Download_Status = FOTA_Download_MD5_Error;
-
-						// Print Message
-						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Firmware MD5 Error!!"));
-
-					}
-
-					// Close SD File
-					FOTA_File.close();
 
 					// Disable SD Multiplexer
 					Hardware->SD_Multiplexer(false);
 
 					// Listen Incoming Socket
 					this->Listen(true);
-
-					// Add Variable
-					this->Payload->Add(9001, _Firmware_ID);
-					this->Payload->Add(9002, _FOTA_Download_Status);
-					this->Payload->Add(9003, _FOTA_Download_Time);
 
 					// End Function
 					return (_FOTA_Download_Status == FOTA_Download_OK);
@@ -2864,7 +3238,7 @@
 									_Event = _JSON_Data[F("Event")];
 
 									// Control for Event Type
-									if (_Event == Command_FOTA_Download) {
+									if (_Event == Command_FOTA_Download_GET || _Event == Command_FOTA_Download_FTP) {
 
 										// Get Firmware ID
 										uint16_t _FW_ID = _JSON_Data[F("FW_ID")];
@@ -2887,7 +3261,8 @@
 										this->Response(_Buffer);
 
 										// Download Firmware
-										this->Download(_FW_ID);
+										if (_Event == Command_FOTA_Download_GET) this->Download(_FOTA_GET_, _FW_ID);
+										if (_Event == Command_FOTA_Download_FTP) this->Download(_FOTA_FTP_, _FW_ID);
 
 										// Set Socket Configuration for Stream
 										LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0);
@@ -3015,6 +3390,18 @@
 										// Send Response
 										this->Response(_IoT_Buffer);
 
+									} else if (_Event == Command_Energy) {
+
+										// Declare IoT Buffer
+										char _IoT_Buffer[300];
+										memset(_IoT_Buffer, '\0', sizeof(_IoT_Buffer));
+
+										// Parse IoT
+										this->JSON_Energy_Segment(_IoT_Buffer);
+
+										// Send Response
+										this->Response(_IoT_Buffer);
+
 									} else if (_Event == Command_Version) {
 
 										// {"Response":200,"Version":"01.00.00"}
@@ -3089,6 +3476,9 @@
 
 				// Control for Modem Connection
 				if (bitRead(this->Status, PostMan_Status_Connection)) {
+
+					// Print Message
+					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Beep();
 
 					// Print Message
 					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Closing Listen Socket..."));
