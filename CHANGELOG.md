@@ -15,6 +15,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [1.15.0]
+
+- MD5 control is added to FTP file download function.
+
 ## [1.14.1]
 
 - Download function improved. GET and FTP methods are used for downloading the firmware.

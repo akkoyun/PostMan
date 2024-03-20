@@ -28,7 +28,7 @@
 	#define _PostMan_Recieve_JSON_Size_				512
 #endif
 #ifndef _PostMan_Response_JSON_Size_
-	#define _PostMan_Response_JSON_Size_			255
+	#define _PostMan_Response_JSON_Size_			512
 #endif
 
 // Define Operator Defaults

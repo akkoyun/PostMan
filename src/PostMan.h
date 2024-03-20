@@ -44,6 +44,9 @@
 			// Define Pack Type Variable
 			uint8_t Pack_Type = Pack_None;
 
+			// Define MD5 Hash Variable
+			char MD5_Hash[33];
+
 			// Define Operator Structure
 			struct Struct_Operator {
 				uint8_t 	SIM_PIN = _SIM_UNKNOWN_;
@@ -503,6 +506,20 @@
 						_Comma = true;
 
 					}
+
+				}
+
+				// Control for FOTA Download
+				if (this->Pack_Type == Pack_FOTA_Download) {
+
+					// Add MD5 Key
+					strcat(_Buffer, ",\"MD5\":\"");
+
+					// Add MD5 Value
+					strcat(_Buffer, this->MD5_Hash);
+
+					// Add MD5 End
+					strcat(_Buffer, "\"");
 
 				}
 
@@ -2692,7 +2709,13 @@
 								FOTA.Download_Status = FOTA_FTP_File_Size_Error;
 
 							}
-							
+
+							// Clear MD5 Hash
+							memset(this->MD5_Hash, '\0', sizeof(this->MD5_Hash));
+
+							// Calculate MD5 Hash
+							this->Calculate_MD5(MD5_Hash);
+
 							// Add Variable
 							this->Payload->Add(9003, FOTA.Download_Time);
 
@@ -2793,7 +2816,7 @@
 				// ----------------
 
 				// Declare Payload Buffer
-				char _Payload_Buffer[400];
+				char _Payload_Buffer[600];
 				memset(_Payload_Buffer, '\0', sizeof(_Payload_Buffer));
 
 				// Parse Payload
