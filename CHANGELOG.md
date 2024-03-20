@@ -10,11 +10,16 @@ All notable changes to this project will be documented in this file. The format 
 
 - Making terminal coordinates as define. May be on next release.
 - Firmware download functions are still in testing.
-- Firmware download function uses GET method. FTP method will be planned on next release (method is not decided yet).
 - Get request control function may be changed.
 - Namespace may be added to the library.
 
 ---
+
+## [1.14.1]
+
+- Download function improved. GET and FTP methods are used for downloading the firmware.
+- New commands added. Download is now support for GET and FTP together.
+- Bug fixed. Download function is now working properly.
 
 ## [1.14.0]
 
