@@ -15,6 +15,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [1.15.1]
+
+- FTP download function write zero bytes to the file. This is fixed.
+
 ## [1.15.0]
 
 - MD5 control is added to FTP file download function.

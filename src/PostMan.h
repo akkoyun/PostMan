@@ -2694,6 +2694,9 @@
 							// Get SD File Size
 							FOTA.SD_File_Size = FOTA_File.size();
 
+							// Close SD File
+							FOTA_File.close();
+
 							// Control for File Size
 							if (FOTA.Download_Status == FOTA_Download_OK && FOTA.Download_Size == FOTA.Server_File_Size) {
 
