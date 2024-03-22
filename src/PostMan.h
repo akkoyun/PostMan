@@ -41,9 +41,6 @@
 			// Define Variables
 			uint8_t Socket_Status = _SOCKET_CLOSED_;
 
-			// Define Pack Type Variable
-			uint8_t Pack_Type = Pack_None;
-
 			// Define MD5 Hash Variable
 			char MD5_Hash[33];
 
@@ -365,7 +362,7 @@
 			}
 
 			// JSON Info Segment Parser
-			uint16_t JSON_Info_Segment(char * _Buffer) {
+			uint16_t JSON_Info_Segment(char * _Buffer, uint8_t _Pack_Type) {
 
 				// Info Segment
 				// ----------------
@@ -381,7 +378,7 @@
 				strcpy(_Buffer, "\"Info\":{");
 
 				// Command Type
-				switch (this->Pack_Type) {
+				switch (_Pack_Type) {
 
 					// Case Pack_Online
 					case Pack_Online : {
@@ -523,7 +520,7 @@
 			}
 
 			// JSON Post Segment Parser
-			uint16_t JSON_Power_Segment(char * _Buffer) {
+			uint16_t JSON_Power_Segment(char * _Buffer, uint8_t _Pack_Type) {
 
 				//	"Power": {
 				// 		"B_IV": 4.137187,
@@ -556,7 +553,7 @@
 			}
 
 			// JSON IoT Segment Parser
-			uint16_t JSON_IoT_Segment(char * _Buffer) {
+			uint16_t JSON_IoT_Segment(char * _Buffer, uint8_t _Pack_Type) {
 
 				//	"IoT": {
 				//		"Firmware": "25.30.226",
@@ -591,7 +588,7 @@
 				strcat(_Buffer, ",");
 
 				// Control for Pack Type
-				if (this->Pack_Type == Pack_Online) {
+				if (_Pack_Type == Pack_Online) {
 
 					// Add Connection Time Segment
 					this->Add_JSON_Key(_Buffer, F("ConnTime"), this->Operator.Connection_Time);
@@ -643,7 +640,7 @@
 			}
 
 			// JSON Payload Segment Parser
-			uint16_t JSON_Payload_Segment(char * _Buffer) {
+			uint16_t JSON_Payload_Segment(char * _Buffer, uint8_t _Pack_Type) {
 
 				//	"Payload": {
 				//		"PCB_T": 25.82779,
@@ -792,7 +789,7 @@
 				}
 
 				// Control for FOTA Download
-				if (this->Pack_Type == Pack_FOTA_Download) {
+				if (_Pack_Type == Pack_FOTA_Download) {
 
 					// Add Comma
 					strcat(_Buffer, ",");
@@ -893,6 +890,77 @@
 
 				// Return Length
 				return(this->Length(_Buffer));
+
+			}
+
+			// JSON Parser Handler Function
+			void JSON_Parser(uint8_t _Pack_Type) {
+
+				// Declare JSON Size
+				uint16_t _JSON_Size = 16;
+
+				// Info Segment
+				// ----------------
+
+				// Declare Info Buffer
+				char _Info_Buffer[128];
+				memset(_Info_Buffer, '\0', sizeof(_Info_Buffer));
+
+				// Parse Info
+				_JSON_Size += this->JSON_Info_Segment(_Info_Buffer, _Pack_Type);
+
+				// Power Segment
+				// ----------------
+
+				// Declare Power Buffer
+				char _Power_Buffer[100];
+				memset(_Power_Buffer, '\0', sizeof(_Power_Buffer));
+
+				// Parse Power
+				_JSON_Size += this->JSON_Power_Segment(_Power_Buffer, _Pack_Type);
+
+				// IoT Segment
+				// ----------------
+
+				// Declare IoT Buffer
+				char _IoT_Buffer[200];
+				memset(_IoT_Buffer, '\0', sizeof(_IoT_Buffer));
+
+				// Parse IoT
+				_JSON_Size += this->JSON_IoT_Segment(_IoT_Buffer, _Pack_Type);
+
+				// Payload Segment
+				// ----------------
+
+				// Declare Payload Buffer
+				char _Payload_Buffer[600];
+				memset(_Payload_Buffer, '\0', sizeof(_Payload_Buffer));
+
+				// Parse Payload
+				_JSON_Size += this->JSON_Payload_Segment(_Payload_Buffer, _Pack_Type);
+
+				// Print Header
+				// ----------------
+
+				SERIAL_GSM.print(F("POST ")); SERIAL_GSM.print(_PostMan_EndPoint_); SERIAL_GSM.print(F(" HTTP/1.1\r\n"));
+				SERIAL_GSM.print(F("Host: ")); SERIAL_GSM.print(_PostMan_Server_); SERIAL_GSM.print(F("\r\n"));
+				SERIAL_GSM.print(F("Content-Length: ")); SERIAL_GSM.print(_JSON_Size); SERIAL_GSM.print(F("\r\n"));
+				SERIAL_GSM.print(F("Content-Type: application/json\r\n"));
+				SERIAL_GSM.print(F("User-Agent: PostOffice\r\n"));
+				SERIAL_GSM.print(F("\r\n"));
+
+				// Print Body
+				// ----------------
+
+				SERIAL_GSM.print(F("{"));
+				SERIAL_GSM.print(_Info_Buffer);
+				SERIAL_GSM.print(F(",\"Device\":{"));
+				SERIAL_GSM.print(_Power_Buffer);
+				SERIAL_GSM.print(F(","));
+				SERIAL_GSM.print(_IoT_Buffer);
+				SERIAL_GSM.print(F("},"));
+				SERIAL_GSM.print(_Payload_Buffer);
+				SERIAL_GSM.print(F("}"));
 
 			}
 
@@ -3085,82 +3153,11 @@
 
 			}
 
-			// JSON Parser Handler Function
-			void JSON_Parser(void) {
-
-				// Declare JSON Size
-				uint16_t _JSON_Size = 16;
-
-				// Info Segment
-				// ----------------
-
-				// Declare Info Buffer
-				char _Info_Buffer[128];
-				memset(_Info_Buffer, '\0', sizeof(_Info_Buffer));
-
-				// Parse Info
-				_JSON_Size += this->JSON_Info_Segment(_Info_Buffer);
-
-				// Power Segment
-				// ----------------
-
-				// Declare Power Buffer
-				char _Power_Buffer[100];
-				memset(_Power_Buffer, '\0', sizeof(_Power_Buffer));
-
-				// Parse Power
-				_JSON_Size += this->JSON_Power_Segment(_Power_Buffer);
-
-				// IoT Segment
-				// ----------------
-
-				// Declare IoT Buffer
-				char _IoT_Buffer[200];
-				memset(_IoT_Buffer, '\0', sizeof(_IoT_Buffer));
-
-				// Parse IoT
-				_JSON_Size += this->JSON_IoT_Segment(_IoT_Buffer);
-
-				// Payload Segment
-				// ----------------
-
-				// Declare Payload Buffer
-				char _Payload_Buffer[600];
-				memset(_Payload_Buffer, '\0', sizeof(_Payload_Buffer));
-
-				// Parse Payload
-				_JSON_Size += this->JSON_Payload_Segment(_Payload_Buffer);
-
-				// Print Header
-				// ----------------
-
-				SERIAL_GSM.print(F("POST ")); SERIAL_GSM.print(_PostMan_EndPoint_); SERIAL_GSM.print(F(" HTTP/1.1\r\n"));
-				SERIAL_GSM.print(F("Host: ")); SERIAL_GSM.print(_PostMan_Server_); SERIAL_GSM.print(F("\r\n"));
-				SERIAL_GSM.print(F("Content-Length: ")); SERIAL_GSM.print(_JSON_Size); SERIAL_GSM.print(F("\r\n"));
-				SERIAL_GSM.print(F("Content-Type: application/json\r\n"));
-				SERIAL_GSM.print(F("User-Agent: PostOffice\r\n"));
-				SERIAL_GSM.print(F("\r\n"));
-
-				// Print Body
-				// ----------------
-
-				SERIAL_GSM.print(F("{"));
-				SERIAL_GSM.print(_Info_Buffer);
-				SERIAL_GSM.print(F(",\"Device\":{"));
-				SERIAL_GSM.print(_Power_Buffer);
-				SERIAL_GSM.print(F(","));
-				SERIAL_GSM.print(_IoT_Buffer);
-				SERIAL_GSM.print(F("},"));
-				SERIAL_GSM.print(_Payload_Buffer);
-				SERIAL_GSM.print(F("}"));
-
-				// Clear Pack Type
-				this->Pack_Type = Pack_None;
-
-			}
-
 		// Public Context
 		public:
+
+			// Define Pack Type Variable
+			uint8_t Pack_Type = Pack_None;
 
 			// PCMSK1 Mask Handler Function
 			static void Interrupt_Handler_Static(void) {
@@ -3171,10 +3168,10 @@
 			}
 
 			// JSON Parser Handler Function
-			static void JSON_Parser_Static(void) {
+			static void JSON_Parser_Static(uint8_t _Pack_Type) {
 
 				// Set Interrupt Handler
-				if (Instance) Instance->JSON_Parser();
+				if (Instance) Instance->JSON_Parser(_Pack_Type);
 
 			}
 
@@ -3787,7 +3784,7 @@
 										memset(_Power_Buffer, '\0', sizeof(_Power_Buffer));
 
 										// Parse Power
-										this->JSON_Power_Segment(_Power_Buffer);
+										this->JSON_Power_Segment(_Power_Buffer, Pack_Update);
 
 										// Send Response
 										this->Response(_Power_Buffer);
@@ -3802,7 +3799,7 @@
 										memset(_IoT_Buffer, '\0', sizeof(_IoT_Buffer));
 
 										// Parse IoT
-										this->JSON_IoT_Segment(_IoT_Buffer);
+										this->JSON_IoT_Segment(_IoT_Buffer, Pack_Update);
 
 										// Send Response
 										this->Response(_IoT_Buffer);
@@ -3915,11 +3912,8 @@
 					// Open Connection
 					if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, _AT_TCP_, _PostMan_Server_, _PostMan_Port_, _CONNECTION_MANUAL_CLOSE_, 88, _CONNECTION_COMMAND_)) {
 
-						// Set Pack Type
-						this->Pack_Type = _Pack_Type;
-
 						// Sending Data
-						if (LE910C1_EUX::SSEND(this->JSON_Parser_Static)) {
+						if (LE910C1_EUX::SSEND(this->JSON_Parser_Static, _Pack_Type)) {
 
 							// Print Message
 							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Waiting for Response..."));
