@@ -234,6 +234,136 @@
 
 			}
 
+			// Generate JSON Data
+			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key) {
+				
+				// Add Key
+				strcat(_Buffer, "\"");
+				strcat_P(_Buffer, (const char *)_Key);
+				strcat(_Buffer, "\":");
+
+			}
+			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key, const char * _Key_Value, const bool _Comma = false) {
+
+				// Add Key
+				this->Add_JSON_Key(_Buffer, _Key);
+
+				// Add Key Value
+				strcat(_Buffer, "\"");
+				strcat(_Buffer, _Key_Value);
+				strcat(_Buffer, "\"");
+
+				// Add Comma
+				if (_Comma) strcat(_Buffer, ",");
+
+			}
+			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key, const __FlashStringHelper * _Key_Value, const bool _Comma = false) {
+
+				// Add Key
+				this->Add_JSON_Key(_Buffer, _Key);
+
+				// Add Key Value
+				strcat(_Buffer, "\"");
+				strcat_P(_Buffer, (const char *)_Key_Value);
+				strcat(_Buffer, "\"");
+
+				// Add Comma
+				if (_Comma) strcat(_Buffer, ",");
+
+			}
+			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key, bool _Key_Value, const bool _Comma = false) {
+
+				// Add Key
+				this->Add_JSON_Key(_Buffer, _Key);
+
+				// Add Key Value
+				strcat(_Buffer, _Key_Value ? "true" : "false");
+
+				// Add Comma
+				if (_Comma) strcat(_Buffer, ",");
+
+			}
+			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key, uint32_t _Key_Value, const bool _Comma = false) {
+
+				// Add Key
+				this->Add_JSON_Key(_Buffer, _Key);
+
+				// Convert Value to Char Array
+				char _Value_Buffer[11];
+				snprintf(_Value_Buffer, sizeof(_Value_Buffer), "%lu", _Key_Value);
+
+				// Add Key Value
+				strcat(_Buffer, _Value_Buffer);
+
+				// Add Comma
+				if (_Comma) strcat(_Buffer, ",");
+
+			}
+			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key, uint16_t _Key_Value, const bool _Comma = false) {
+
+				// Add Key
+				this->Add_JSON_Key(_Buffer, _Key);
+
+				// Convert Value to Char Array
+				char _Value_Buffer[6];
+				snprintf(_Value_Buffer, sizeof(_Value_Buffer), "%u", _Key_Value);
+
+				// Add Key Value
+				strcat(_Buffer, _Value_Buffer);
+
+				// Add Comma
+				if (_Comma) strcat(_Buffer, ",");
+
+			}
+			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key, uint8_t _Key_Value, const bool _Comma = false) {
+
+				// Add Key
+				this->Add_JSON_Key(_Buffer, _Key);
+
+				// Convert Value to Char Array
+				char _Value_Buffer[5];
+				snprintf(_Value_Buffer, sizeof(_Value_Buffer), "%u", _Key_Value);
+
+				// Add Key Value
+				strcat(_Buffer, _Value_Buffer);
+
+				// Add Comma
+				if (_Comma) strcat(_Buffer, ",");
+
+			}
+			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key, float _Key_Value, const bool _Comma = false) {
+
+				// Add Key
+				this->Add_JSON_Key(_Buffer, _Key);
+
+				// Convert Value to Char Array
+				char _Value_Buffer[20];
+				dtostrf(_Key_Value, 4, 2, _Value_Buffer);
+
+				// Add Key Value
+				strcat(_Buffer, _Value_Buffer);
+
+				// Add Comma
+				if (_Comma) strcat(_Buffer, ",");
+
+			}
+			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key, double _Key_Value, const bool _Comma = false) {
+
+				// Add Key
+				this->Add_JSON_Key(_Buffer, _Key);
+
+				// Convert Value to Char Array
+				char _Value_Buffer[20];
+				dtostrf(_Key_Value, 4, 2, _Value_Buffer);
+
+				// Add Key Value
+				strcat(_Buffer, _Value_Buffer);
+
+				// Add Comma
+				if (_Comma) strcat(_Buffer, ",");
+
+			}
+
 			// JSON Info Segment Parser
 			uint16_t JSON_Info_Segment(char * _Buffer) {
 
@@ -247,9 +377,8 @@
 				// 		"Firmware": "04.00.15"
 				// 	},
 
-				// Declare Pack Type Variable
-				char _Pack_Type[17];
-				memset(_Pack_Type, '\0', sizeof(_Pack_Type));
+				// Add Info Segment Start
+				strcpy(_Buffer, "\"Info\":{");
 
 				// Command Type
 				switch (this->Pack_Type) {
@@ -258,7 +387,7 @@
 					case Pack_Online : {
 
 						// Set Pack Type
-						strcpy(_Pack_Type, "Online");
+						this->Add_JSON_Key(_Buffer, F("Command"), F("Online"));
 
 						// End Case
 						break;
@@ -269,7 +398,7 @@
 					case Pack_Update : {
 
 						// Set Pack Type
-						strcpy(_Pack_Type, "Update");
+						this->Add_JSON_Key(_Buffer, F("Command"), F("Update"));
 
 						// End Case
 						break;
@@ -280,7 +409,7 @@
 					case Pack_Timed : {
 
 						// Set Pack Type
-						strcpy(_Pack_Type, "Timed");
+						this->Add_JSON_Key(_Buffer, F("Command"), F("Timed"));
 
 						// End Case
 						break;
@@ -291,7 +420,7 @@
 					case Pack_Interrupt : {
 
 						// Set Pack Type
-						strcpy(_Pack_Type, "Interrupt");
+						this->Add_JSON_Key(_Buffer, F("Command"), F("Interrupt"));
 
 						// End Case
 						break;
@@ -302,7 +431,7 @@
 					case Pack_Alarm : {
 
 						// Set Pack Type
-						strcpy(_Pack_Type, "Alarm");
+						this->Add_JSON_Key(_Buffer, F("Command"), F("Alarm"));
 
 						// End Case
 						break;
@@ -313,7 +442,7 @@
 					case Pack_Offline : {
 
 						// Set Pack Type
-						strcpy(_Pack_Type, "Offline");
+						this->Add_JSON_Key(_Buffer, F("Command"), F("Offline"));
 
 						// End Case
 						break;
@@ -324,7 +453,7 @@
 					case Pack_FOTA_Info : {
 
 						// Set Pack Type
-						strcpy(_Pack_Type, "FOTA_Info");
+						this->Add_JSON_Key(_Buffer, F("Command"), F("FOTA_Info"));
 
 						// End Case
 						break;
@@ -335,7 +464,7 @@
 					case Pack_FOTA_Download : {
 
 						// Set Pack Type
-						strcpy(_Pack_Type, "FOTA_Download");
+						this->Add_JSON_Key(_Buffer, F("Command"), F("FOTA_Download"));
 
 						// End Case
 						break;
@@ -346,7 +475,7 @@
 					case Pack_FOTA_Burn : {
 
 						// Set Pack Type
-						strcpy(_Pack_Type, "FOTA_Burn");
+						this->Add_JSON_Key(_Buffer, F("Command"), F("FOTA_Burn"));
 
 						// End Case
 						break;
@@ -357,7 +486,7 @@
 					default: {
 
 						// Set Pack Type
-						strcpy(_Pack_Type, "Unknown");
+						this->Add_JSON_Key(_Buffer, F("Command"), F("Unknown"));
 
 						// End Case
 						break;
@@ -366,15 +495,27 @@
 
 				}
 
+				// Add Comma
+				strcat(_Buffer, ",");
+
 				// Declare TimeStamp Buffer
 				char _TimeStamp_Buffer[20];
 				memset(_TimeStamp_Buffer, '\0', sizeof(_TimeStamp_Buffer));
 
-				// Update TimeStamp
+				// Get TimeStamp
 				Hardware->Time_Stamp(_TimeStamp_Buffer);
 
-				// Set Block
-				sprintf(_Buffer, "\"Info\":{\"Command\":\"%s\",\"TimeStamp\":\"%s\",\"ID\":\"%s\",\"Firmware\":\"%s\"}", _Pack_Type, _TimeStamp_Buffer, Hardware->SerialID, _FIRMWARE_);
+				// Add TimeStamp
+				this->Add_JSON_Key(_Buffer, F("TimeStamp"), _TimeStamp_Buffer, true);
+
+				// Add ID Segment
+				this->Add_JSON_Key(_Buffer, F("ID"), Hardware->SerialID, true);	
+
+				// Add Firmware Segment
+				this->Add_JSON_Key(_Buffer, F("Firmware"), _FIRMWARE_);
+
+				// Add End of Info Segment
+				strcat(_Buffer, "}");
 
 				// Return Length
 				return(this->Length(_Buffer));
@@ -394,29 +535,21 @@
 				// 		"B_CS": 3
 				// 	},
 
-				// Declare IV Buffer
-				char _IV_Buffer[10];
-				memset(_IV_Buffer, '\0', sizeof(_IV_Buffer));
-				dtostrf(Hardware->Instant_Voltage(), 3, 2, _IV_Buffer);
+				// Add Power Segment Start
+				strcpy(_Buffer, "\"Power\":{");
 
-				// Declare AC Buffer
-				char _AC_Buffer[10];
-				memset(_AC_Buffer, '\0', sizeof(_AC_Buffer));
-				dtostrf(Hardware->Average_Current(), 5, 2, _AC_Buffer);
+				// Add Variables
+				this->Add_JSON_Key(_Buffer, F("B_IV"), Hardware->Instant_Voltage(), true);
+				this->Add_JSON_Key(_Buffer, F("B_AC"), Hardware->Average_Current(), true);
+				this->Add_JSON_Key(_Buffer, F("B_IC"), Hardware->Instant_Capacity(), true);
+				this->Add_JSON_Key(_Buffer, F("B_FC"), Hardware->Full_Capacity(), true);
+				this->Add_JSON_Key(_Buffer, F("B_SOC"), Hardware->State_Of_Charge(), true);
+				this->Add_JSON_Key(_Buffer, F("B_T"), Hardware->IC_Temperature(), true);
+				this->Add_JSON_Key(_Buffer, F("B_CS"), Hardware->Charge_Status(), false);
 
-				// Declare SOC Buffer
-				char _SOC_Buffer[10];
-				memset(_SOC_Buffer, '\0', sizeof(_SOC_Buffer));
-				dtostrf(Hardware->State_Of_Charge(), 5, 2, _SOC_Buffer);
-
-				// Declare B_T Buffer
-				char _B_T_Buffer[10];
-				memset(_B_T_Buffer, '\0', sizeof(_B_T_Buffer));
-				dtostrf(Hardware->IC_Temperature(), 4, 2, _B_T_Buffer);
-
-				// Set Power Block
-				sprintf(_Buffer, "\"Power\":{\"B_IV\":%s,\"B_AC\":%s,\"B_IC\":%u,\"B_FC\":%u,\"B_SOC\":%s,\"B_T\":%s,\"B_CS\":%u}", _IV_Buffer, _AC_Buffer, Hardware->Instant_Capacity(), Hardware->Full_Capacity(), _SOC_Buffer, _B_T_Buffer, Hardware->Charge_Status());
-
+				// Add End of Power Segment
+				strcat(_Buffer, "}");
+				
 				// Return Length
 				return(this->Length(_Buffer));
 
@@ -436,13 +569,73 @@
 				//		"MNC": 1
 				//	}
 
-				// Declare ConnTime Buffer
-				char _ConnTime_Buffer[10];
-				memset(_ConnTime_Buffer, '\0', sizeof(_ConnTime_Buffer));
-				dtostrf(this->Operator.Connection_Time, 5, 3, _ConnTime_Buffer);
+				// Add IoT Segment Start
+				strcpy(_Buffer, "\"IoT\":{");
 
-				// Set IoT Block
-				sprintf(_Buffer, "\"IoT\":{\"Firmware\":\"%s\",\"IMEI\":\"%s\",\"ICCID\":\"%s\",\"RSSI\":%u,\"WDS\":%u,\"ConnTime\":%s,\"MCC\":%u,\"MNC\":%u,\"TAC\":%hu,\"CELLID\":%u}", this->Module.Firmware, this->Module.IMEI, this->Operator.ICCID, this->Operator.RSSI, this->Operator.WDS, _ConnTime_Buffer, this->Operator.MCC, this->Operator.MNC, this->Operator.TAC, (unsigned int)this->Operator.CellID);
+				// Add Firmware Segment
+				this->Add_JSON_Key(_Buffer, F("Firmware"), this->Module.Firmware);
+
+				// Add Comma
+				strcat(_Buffer, ",");
+
+				// Add IMEI Segment
+				this->Add_JSON_Key(_Buffer, F("IMEI"), this->Module.IMEI);
+
+				// Add Comma
+				strcat(_Buffer, ",");
+
+				// Add ICCID Segment
+				this->Add_JSON_Key(_Buffer, F("ICCID"), this->Operator.ICCID);
+
+				// Add Comma
+				strcat(_Buffer, ",");
+
+				// Control for Pack Type
+				if (this->Pack_Type == Pack_Online) {
+
+					// Add Connection Time Segment
+					this->Add_JSON_Key(_Buffer, F("ConnTime"), this->Operator.Connection_Time);
+
+					// Add Comma
+					strcat(_Buffer, ",");
+
+					// Add MCC Segment
+					this->Add_JSON_Key(_Buffer, F("MCC"), this->Operator.MCC);
+
+					// Add Comma
+					strcat(_Buffer, ",");
+
+					// Add MNC Segment
+					this->Add_JSON_Key(_Buffer, F("MNC"), this->Operator.MNC);
+
+					// Add Comma
+					strcat(_Buffer, ",");
+
+				}
+
+				// Add TAC Segment
+				this->Add_JSON_Key(_Buffer, F("TAC"), this->Operator.TAC);
+
+				// Add Comma
+				strcat(_Buffer, ",");
+
+				// Add CellID Segment
+				this->Add_JSON_Key(_Buffer, F("CELLID"), this->Operator.CellID);
+
+				// Add Comma
+				strcat(_Buffer, ",");
+
+				// Add RSSI Segment
+				this->Add_JSON_Key(_Buffer, F("RSSI"), this->Operator.RSSI);
+
+				// Add Comma
+				strcat(_Buffer, ",");
+
+				// Add WDS Segment
+				this->Add_JSON_Key(_Buffer, F("WDS"), this->Operator.WDS);	
+
+				// Add End of IoT Segment
+				strcat(_Buffer, "}");
 
 				// Return Length
 				return(this->Length(_Buffer));
@@ -458,14 +651,11 @@
 				//		"STATUS": 15
 				//	}
 
-				// Declare Payload Buffer Start
-				char _Buffer_Start[12] = "\"Payload\":{";
-
 				// Copy Buffer Start
-				strcpy(_Buffer, _Buffer_Start);
+				strcpy(_Buffer, "\"Payload\":{");
 
 				// Get some data
-				const uint16_t _Keys[8] = {_Data_PCB_T_, _Data_PCB_H_, _Firmware_ID_, _FOTA_Download_Status_, _FOTA_Download_Time_, _Data_VRMS_R_, _Data_VRMS_S_, _Data_VRMS_T_};
+				const uint16_t _Keys[9] = {_Data_STATUS_, _Data_PCB_T_, _Data_PCB_H_, _Firmware_ID_, _FOTA_Download_Status_, _FOTA_Download_Time_, _Data_VRMS_R_, _Data_VRMS_S_, _Data_VRMS_T_};
 
 				// Declare Comma Status
 				bool _Comma = false;
@@ -483,24 +673,116 @@
 						if (_Comma) strcat(_Buffer, ",");
 
 						// Add Key
-						if (_Key == _Data_PCB_T_) strcat(_Buffer, "\"PCB_T\":");
-						else if (_Key == _Data_PCB_H_) strcat(_Buffer, "\"PCB_H\":");
-						
-						// FOTA Payload
-						else if (_Key == _Firmware_ID_) strcat(_Buffer, "\"Firmware_ID\":");
-						else if (_Key == _FOTA_Download_Status_) strcat(_Buffer, "\"FOTA_Download_Status\":");
-						else if (_Key == _FOTA_Download_Time_) strcat(_Buffer, "\"FOTA_Download_Time\":");
-						
-						// Energy Payload
-						else if (_Key == _Data_VRMS_R_) strcat(_Buffer, "\"VRMS_R\":");
-						else if (_Key == _Data_VRMS_S_) strcat(_Buffer, "\"VRMS_S\":");
-						else if (_Key == _Data_VRMS_T_) strcat(_Buffer, "\"VRMS_T\":");
+						switch (_Key) {
 
-						// Add Value
-						char _Value_Buffer[20];
-						memset(_Value_Buffer, '\0', sizeof(_Value_Buffer));
-						dtostrf(*_Value, 10, 2, _Value_Buffer);
-						strcat(_Buffer, _Value_Buffer);
+							// Case _Data_STATUS_
+							case _Data_STATUS_: {
+
+								// Convert Value to uint32_t
+								float _ValueFloat = *_Value;
+								uint32_t _Status = static_cast<uint32_t>(_ValueFloat);
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("STATUS"), _Status);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_PCB_T_
+							case _Data_PCB_T_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("PCB_T"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_PCB_H_
+							case _Data_PCB_H_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("PCB_H"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Firmware_ID_
+							case _Firmware_ID_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("Firmware_ID"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _FOTA_Download_Status_
+							case _FOTA_Download_Status_: {
+
+								// Convert Value to uint32_t
+								float _ValueFloat = *_Value;
+								uint8_t _Status = static_cast<uint8_t>(_ValueFloat);
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("FOTA_Download_Status"), _Status);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _FOTA_Download_Time_
+							case _FOTA_Download_Time_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("FOTA_Download_Time"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_VRMS_R_
+							case _Data_VRMS_R_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("VRMS_R"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_VRMS_S_
+							case _Data_VRMS_S_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("VRMS_S"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_VRMS_T_
+							case _Data_VRMS_T_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("VRMS_T"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+						}
 
 						// Set Comma
 						_Comma = true;
@@ -512,19 +794,19 @@
 				// Control for FOTA Download
 				if (this->Pack_Type == Pack_FOTA_Download) {
 
-					// Add MD5 Key
-					strcat(_Buffer, ",\"MD5\":\"");
+					// Add Comma
+					strcat(_Buffer, ",");
 
-					// Add MD5 Value
-					strcat(_Buffer, this->MD5_Hash);
-
-					// Add MD5 End
-					strcat(_Buffer, "\"");
+					// Add Key
+					this->Add_JSON_Key(_Buffer, F("MD5"), this->MD5_Hash);
 
 				}
 
 				// Close Payload Buffer
 				strcat(_Buffer, "}");
+
+				// Clear Payload
+				Payload->Clear();
 
 				// Remove Spaces from Buffer
 				this->Remove_Spaces(_Buffer);
@@ -537,11 +819,8 @@
 			// JSON Payload Segment Parser
 			uint16_t JSON_Energy_Segment(char * _Buffer) {
 
-				// Declare Payload Buffer Start
-				char _Buffer_Start[12] = "\"Energy\":{";
-
 				// Copy Buffer Start
-				strcpy(_Buffer, _Buffer_Start);
+				strcpy(_Buffer, "\"Energy\":{");
 
 				// Get some data
 				const uint16_t _Keys[8] = {_Data_VRMS_R_, _Data_VRMS_S_, _Data_VRMS_T_};
@@ -561,16 +840,43 @@
 						// Add Comma
 						if (_Comma) strcat(_Buffer, ",");
 
-						// Energy Payload
-						if (_Key == _Data_VRMS_R_) strcat(_Buffer, "\"VRMS_R\":");
-						else if (_Key == _Data_VRMS_S_) strcat(_Buffer, "\"VRMS_S\":");
-						else if (_Key == _Data_VRMS_T_) strcat(_Buffer, "\"VRMS_T\":");
+						// Add Key
+						switch (_Key) {
 
-						// Add Value
-						char _Value_Buffer[20];
-						memset(_Value_Buffer, '\0', sizeof(_Value_Buffer));
-						dtostrf(*_Value, 10, 2, _Value_Buffer);
-						strcat(_Buffer, _Value_Buffer);
+							// Case _Data_VRMS_R_
+							case _Data_VRMS_R_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("VRMS_R"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_VRMS_S_
+							case _Data_VRMS_S_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("VRMS_S"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_VRMS_T_
+							case _Data_VRMS_T_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("VRMS_T"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+						}
 
 						// Set Comma
 						_Comma = true;
@@ -3665,9 +3971,6 @@
 
 											// Print Message
 											if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Message Sent Success!!"));
-
-											// Clear Variables
-											Payload->Clear();
 
 											// Clear Pack Type
 											this->Pack_Type = Pack_None;

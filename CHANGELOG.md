@@ -15,6 +15,15 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [1.16.0]
+
+- Add_JSON_Key function is added. This function is used to add a key to the JSON data.
+- JSON_Info_Segment function is updated.
+- JSON_Power_Segment function is updated.
+- JSON_IoT_Segment function is updated.
+- JSON_Payload_Segment function is updated.
+- JSON_Energy_Segment function is updated.
+
 ## [1.15.1]
 
 - FTP download function write zero bytes to the file. This is fixed.
