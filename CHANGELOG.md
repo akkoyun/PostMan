@@ -15,6 +15,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [1.16.2]
+
+- Debug control bug is fixed.
+
 ## [1.16.1]
 
 - Pack_Type usage is updated.

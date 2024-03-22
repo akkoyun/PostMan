@@ -3179,7 +3179,17 @@
 			Postman(Stream &_Serial, B107AA* _B107AA, Variable<float>* _Variable, PowerStat_Console* _Terminal) : LE910C1_EUX(_Serial), Hardware(_B107AA), Payload(_Variable), Terminal(_Terminal) {
 
 				// Control for Terminal
-				if (Terminal != nullptr) {bitSet(this->Status, PostMan_Status_Terminal);} else {bitClear(this->Status, PostMan_Status_Terminal);}
+				#ifdef _DEBUG_
+
+					// Control for Terminal
+					if (Terminal != nullptr) {bitSet(this->Status, PostMan_Status_Terminal);} else {bitClear(this->Status, PostMan_Status_Terminal);}
+
+				#else
+
+					// Clear Terminal Status
+					bitClear(this->Status, PostMan_Status_Terminal);
+
+				#endif
 
 				// Set Instance
 				Instance = this;
@@ -3191,7 +3201,17 @@
 			Postman(Stream &_Serial, B107AA* _B107AA, Variable<float>* _Variable) : LE910C1_EUX(_Serial), Hardware(_B107AA), Payload(_Variable), Terminal(nullptr) {
 
 				// Control for Terminal
-				if (Terminal != nullptr) {bitSet(this->Status, PostMan_Status_Terminal);} else {bitClear(this->Status, PostMan_Status_Terminal);}
+				#ifdef _DEBUG_
+
+					// Control for Terminal
+					if (Terminal != nullptr) {bitSet(this->Status, PostMan_Status_Terminal);} else {bitClear(this->Status, PostMan_Status_Terminal);}
+
+				#else
+
+					// Clear Terminal Status
+					bitClear(this->Status, PostMan_Status_Terminal);
+
+				#endif
 
 				// Set Instance
 				Instance = this;
