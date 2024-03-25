@@ -1827,14 +1827,14 @@
 
 						} else break;
 
-						// SCFG (Send Port) Command (Send Data Port Configuration)
+						// SCFG Command (Data Port Configuration)
 						if (bitRead(this->Status, PostMan_Status_Connection)) {
 
 							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SCFG=2,1,1500,90,1200,0"));
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SCFG=1,1,1500,90,1200,50"));
 
 							// Send Command
-							if (!LE910C1_EUX::SCFG(_PostMan_Outgoing_Socket_, 1, 1500, 90, 1200, 0)) bitClear(this->Status, PostMan_Status_Connection);
+							if (!LE910C1_EUX::SCFG(_PostMan_CID_, 1, 1500, 90, 1200, 50)) bitClear(this->Status, PostMan_Status_Connection);
 
 							// Calculate Connection Time
 							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
@@ -1852,14 +1852,14 @@
 
 						} else break;
 
-						// SCFGEXT (Send Port) Command (Send Data Port Extended Configuration)
+						// SCFGEXT Command (Data Port Extended Configuration)
 						if (bitRead(this->Status, PostMan_Status_Connection)) {
 
 							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SCFGEXT=3,1,0,0,0,0"));
+							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SCFGEXT=1,1,0,0,0,0"));
 
 							// Send Command
-							if (!LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0)) bitClear(this->Status, PostMan_Status_Connection);
+							if (!LE910C1_EUX::SCFGEXT(_PostMan_CID_, 1, 0, 0, 0, 0)) bitClear(this->Status, PostMan_Status_Connection);
 
 							// Calculate Connection Time
 							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
@@ -1877,14 +1877,14 @@
 
 						} else break;
 
-						// SCFGEXT2 (Send Port) Command (Send Data Port Extended 2 Configuration)
+						// SCFGEXT2 Command (Data Port Extended 2 Configuration)
 						if (bitRead(this->Status, PostMan_Status_Connection)) {
 
 							// Print Message
 							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SCFGEXT2=3,1,0,0,0,0"));
 
 							// Send Command
-							if (!LE910C1_EUX::SCFGEXT2(_PostMan_Outgoing_Socket_, 1, 0, 0)) bitClear(this->Status, PostMan_Status_Connection);
+							if (!LE910C1_EUX::SCFGEXT2(_PostMan_CID_, 1, 0, 0)) bitClear(this->Status, PostMan_Status_Connection);
 
 							// Calculate Connection Time
 							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
@@ -1899,56 +1899,6 @@
 								Terminal->Text(13,74, _Console_GRAY_, this->Operator.Connection_Time);
 
 							}
-
-						} else break;
-
-						// SCFG (In Port) Command (In Port Configuration)
-						if (bitRead(this->Status, PostMan_Status_Connection)) {
-
-							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SCFG=2,1,1500,90,300,50"));
-
-							// Send Command
-							if (!LE910C1_EUX::SCFG(_PostMan_Incomming_Socket_, 1, 1500, 90, 1200, 50)) bitClear(this->Status, PostMan_Status_Connection);
-
-							// Calculate Connection Time
-							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
-
-							// Control for Terminal State
-							if (bitRead(this->Status, PostMan_Status_Terminal)) {
-
-								// Print Message
-								Terminal->OK(bitRead(this->Status, PostMan_Status_Connection));
-
-								// Print Connection Time
-								Terminal->Text(13,74, _Console_GRAY_, this->Operator.Connection_Time);
-
-							}
-
-						} else break;
-
-						// SCFGEXT (In Port) Command (In Port Extended Configuration)
-						if (bitRead(this->Status, PostMan_Status_Connection)) {
-
-							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SCFGEXT=2,1,0,1,0,0"));
-
-							// Send Command
-							if (!LE910C1_EUX::SCFG(_PostMan_Incomming_Socket_, 1, 1500, 90, 1200, 50)) bitClear(this->Status, PostMan_Status_Connection);
-
-							// Calculate Connection Time
-							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
-
-							// Control for Terminal State
-							if (bitRead(this->Status, PostMan_Status_Terminal)) {
-
-								// Print Message
-								Terminal->OK(bitRead(this->Status, PostMan_Status_Connection));
-
-								// Print Connection Time
-								Terminal->Text(13,74, _Console_GRAY_, this->Operator.Connection_Time);
-
-							} else break;
 
 						} else break;
 
@@ -1976,32 +1926,7 @@
 							} else break;
 
 						} else break;
-/*
-						// SKTTO Commad (Set Socket Inactivity Time)
-						if (bitRead(this->Status, PostMan_Status_Connection)) {
 
-							// Print Message
-							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SKTTO=0"));
-
-							// Send Command
-							if (!LE910C1_EUX::SKTTO(90)) bitClear(this->Status, PostMan_Status_Connection);
-
-							// Calculate Connection Time
-							this->Operator.Connection_Time = (float)((millis() - this->Operator.Connection_Start)) / 1000;
-
-							// Control for Terminal State
-							if (bitRead(this->Status, PostMan_Status_Terminal)) {
-
-								// Print Message
-								Terminal->OK(bitRead(this->Status, PostMan_Status_Connection));
-
-								// Print Connection Time
-								Terminal->Text(13,74, _Console_GRAY_, this->Operator.Connection_Time);
-
-							} else break;
-
-						} else break;
-*/
 						// Print Message
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(21, 84, _Console_WHITE_, F("                                    "));
 
@@ -2111,13 +2036,13 @@
 				if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Sending Response..."));
 
 				// Send Answer
-				if (LE910C1_EUX::SSEND(_PostMan_Incomming_Socket_, _HTTP_RESPONSE_, _PostMan_Server_, _PostMan_EndPoint_, _Buffer)) {
+				if (LE910C1_EUX::SSEND(_PostMan_CID_, _HTTP_RESPONSE_, _PostMan_Server_, _PostMan_EndPoint_, _Buffer)) {
 
 					// Command Delay
 					delay(10);
 
 					// Closing Socket
-					if (LE910C1_EUX::SH(_PostMan_Incomming_Socket_)) {
+					if (LE910C1_EUX::SH(_PostMan_CID_)) {
 
 						// Command Delay
 						delay(10);
@@ -2162,9 +2087,6 @@
 
 					// Add Variable
 					this->Payload->Add(9001, _Firmware_ID);
-
-					// Stop Socket Listen
-					this->Listen(false);
 
 					// Set LED Blue
 					PORT_MCU_LED_BLUE |= (1 << PIN_MCU_LED_BLUE);
@@ -2222,11 +2144,8 @@
 							// Set Download Start Time
 							uint32_t _FOTA_Download_Start_Time = millis();
 
-							// Set Socket Configuration for Download
-							LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 0, 0, 0, 0, 0);
-
 							// Open Socket for Download
-							if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, _AT_TCP_, _PostMan_Server_, _PostMan_Port_, _CONNECTION_MANUAL_CLOSE_, 88, _CONNECTION_COMMAND_)) {
+							if (LE910C1_EUX::ATSD(_PostMan_CID_, _AT_TCP_, _PostMan_Server_, _PostMan_Port_, _CONNECTION_MANUAL_CLOSE_, 88, _CONNECTION_COMMAND_)) {
 
 								// Print Message
 								if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Firmware Downloading..."));
@@ -2236,7 +2155,7 @@
 								sprintf(_Download_Path, "/Firmware/%d", _Firmware_ID);
 
 								// Send Download Request
-								if (LE910C1_EUX::SSEND(_PostMan_Outgoing_Socket_, _HTTP_GET_, _PostMan_Server_, _Download_Path, "")) {
+								if (LE910C1_EUX::SSEND(_PostMan_CID_, _HTTP_GET_, _PostMan_Server_, _Download_Path, "")) {
 
 									// Get Ring
 									if (LE910C1_EUX::SRING()) {
@@ -2253,7 +2172,7 @@
 										memset(Data_Variable, '\0', _Response_Buffer_Size);
 
 										// Get Request Data Head
-										bool _SRECV = LE910C1_EUX::SRECV(_PostMan_Outgoing_Socket_, (_Response_Buffer_Size - 150), Buffer_Variable);
+										bool _SRECV = LE910C1_EUX::SRECV(_PostMan_CID_, (_Response_Buffer_Size - 150), Buffer_Variable);
 
 										// Handle Response
 										if (_SRECV) {
@@ -2456,7 +2375,7 @@
 											memset(Data_Variable, '\0', sizeof(Data_Variable));
 
 											// Handle Response
-											if (LE910C1_EUX::SRECV(_PostMan_Outgoing_Socket_, (_Response_Buffer_Size - 100), Buffer_Variable)) {
+											if (LE910C1_EUX::SRECV(_PostMan_CID_, (_Response_Buffer_Size - 100), Buffer_Variable)) {
 
 												// \r\n#SRECV: 2,400\r\n
 												// \n
@@ -2645,9 +2564,6 @@
 
 								}
 
-								// Closing Socket
-								if (LE910C1_EUX::SH(_PostMan_Outgoing_Socket_)) this->Listen(true);
-
 							} else {
 
 								// Set Status
@@ -2666,9 +2582,6 @@
 
 							// Set Download Duration
 							FOTA.Download_Time = (millis() - _FOTA_Download_Start_Time) / 1000;
-
-							// Set Socket Configuration for Stream
-							LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0);
 
 							// Work Delay
 							delay(8);
@@ -2701,15 +2614,12 @@
 						// Print Message
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Text(46, 4, _Console_GRAY_, _FOTA_Server_ETag);
 
-						// Declare MD5_Hash Variable
-						char _File_MD5_Hash[33];
-
 						// Calculate MD5 Hash
 						// TODO: MD5 kütüphanesinde bir karşılaştırma yapan bir fonksiyon oluşturulmalı
-						this->Calculate_MD5(_File_MD5_Hash);
+						this->Calculate_MD5(this->MD5_Hash);
 
 						// Compare MD5 With ETag
-						if (strcmp(_File_MD5_Hash, _FOTA_Server_ETag) == 0) {
+						if (strcmp(this->MD5_Hash, _FOTA_Server_ETag) == 0) {
 
 							// Set Status
 							FOTA.Download_Status = FOTA_Download_OK;
@@ -3129,9 +3039,6 @@
 					// Disable SD Multiplexer
 					Hardware->SD_Multiplexer(false);
 
-					// Listen Incoming Socket
-					this->Listen(true);
-
 					// End Function
 					return (FOTA.Download_Status == FOTA_Download_OK);
 
@@ -3368,7 +3275,7 @@
 					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SS=2"));
 
 					// Send Command
-					bool _Socket_State = LE910C1_EUX::SS(_PostMan_Incomming_Socket_, this->Socket_Status);
+					bool _Socket_State = LE910C1_EUX::SS(_PostMan_CID_, this->Socket_Status);
 
 					// Control for Terminal State
 					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->OK(_Socket_State);
@@ -3380,7 +3287,7 @@
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SL=*,1,80,255"));
 
 						// Activate Socket for Listen
-						bool _SL_Command = LE910C1_EUX::SL(_PostMan_Incomming_Socket_, 1, 80, 255);
+						bool _SL_Command = LE910C1_EUX::SL(_PostMan_CID_, 1, 80, 255);
 
 						// Control for Terminal State
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->OK(_SL_Command);
@@ -3392,7 +3299,7 @@
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SS=*"));
 
 						// Get Socket Status
-						bool _SS_Command = LE910C1_EUX::SS(_PostMan_Incomming_Socket_, this->Socket_Status);
+						bool _SS_Command = LE910C1_EUX::SS(_PostMan_CID_, this->Socket_Status);
 
 						// Control for Terminal State
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->OK(_SS_Command);
@@ -3419,7 +3326,7 @@
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SL=*,0,80,255"));
 
 						// Activate Socket for Listen
-						bool _SL_Command = LE910C1_EUX::SL(_PostMan_Incomming_Socket_, 0, 80, 255);
+						bool _SL_Command = LE910C1_EUX::SL(_PostMan_CID_, 0, 80, 255);
 
 						// Control for Terminal State
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->OK(_SL_Command);
@@ -3431,7 +3338,7 @@
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->AT_Command(F("AT#SS=*"));
 
 						// Get Socket Status
-						bool _SS_Command = LE910C1_EUX::SS(_PostMan_Incomming_Socket_, this->Socket_Status);
+						bool _SS_Command = LE910C1_EUX::SS(_PostMan_CID_, this->Socket_Status);
 
 						// Control for Terminal State
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->OK(_SS_Command);
@@ -3651,13 +3558,13 @@
 							uint16_t _Length = 0;
 
 							// Answer Socket
-							LE910C1_EUX::SA(_PostMan_Incomming_Socket_, 1, _Length);
+							LE910C1_EUX::SA(_PostMan_CID_, 1, _Length);
 
 							// Handle Length
 							if (_Length == 0 or _Length > _PostMan_Recieve_JSON_Size_) _Length = _PostMan_Recieve_JSON_Size_;
 
 							// Get Request Data
-							LE910C1_EUX::SRECV(_PostMan_Incomming_Socket_, _Length, _Buffer);
+							LE910C1_EUX::SRECV(_PostMan_CID_, _Length, _Buffer);
 
 								// Declare JSON Object
 								JSON _JSON_Data(_Buffer);
@@ -3694,12 +3601,30 @@
 										// Send Response
 										this->Response(_Buffer);
 
-										// Download Firmware
-										if (_Event == Command_FOTA_Download_GET) this->Download(_FOTA_GET_, _FW_ID);
-										if (_Event == Command_FOTA_Download_FTP) this->Download(_FOTA_FTP_, _FW_ID);
+										// Stop Socket Listen
+										this->Listen(false);
 
-										// Set Socket Configuration for Stream
-										LE910C1_EUX::SCFGEXT(_PostMan_Outgoing_Socket_, 1, 0, 0, 0, 0);
+										// Download Firmware
+										if (_Event == Command_FOTA_Download_GET) {
+
+											// Set Socket Configuration for Download
+											LE910C1_EUX::SCFGEXT(_PostMan_CID_, 0, 0, 0, 0, 0);
+
+											// Download File
+											this->Download(_FOTA_GET_, _FW_ID);
+
+											// Set Socket Configuration for Stream
+											LE910C1_EUX::SCFGEXT(_PostMan_CID_, 1, 0, 0, 0, 0);
+
+										} else if (_Event == Command_FOTA_Download_FTP) {
+
+											// Download File
+											this->Download(_FOTA_FTP_, _FW_ID);
+										
+										} 
+
+										// Listen Incoming Socket
+										this->Listen(true);
 
 									} else if (_Event == Command_FOTA_Burn) {
 
@@ -3930,7 +3855,7 @@
 					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Connecting to Server..."));
 
 					// Open Connection
-					if (LE910C1_EUX::ATSD(_PostMan_Outgoing_Socket_, _AT_TCP_, _PostMan_Server_, _PostMan_Port_, _CONNECTION_MANUAL_CLOSE_, 88, _CONNECTION_COMMAND_)) {
+					if (LE910C1_EUX::ATSD(_PostMan_CID_, _AT_TCP_, _PostMan_Server_, _PostMan_Port_, _CONNECTION_MANUAL_CLOSE_, 88, _CONNECTION_COMMAND_)) {
 
 						// Sending Data
 						if (LE910C1_EUX::SSEND(this->JSON_Parser_Static, _Pack_Type)) {
@@ -3960,7 +3885,7 @@
 								if (_Length > _PostMan_Response_JSON_Size_) _Length = _PostMan_Response_JSON_Size_;
 
 								// Get Request Data
-								if (LE910C1_EUX::SRECV(_PostMan_Outgoing_Socket_, _Length, _Response)) {
+								if (LE910C1_EUX::SRECV(_PostMan_CID_, _Length, _Response)) {
 
 									// Command Delay
 									delay(50);
@@ -3969,7 +3894,7 @@
 									if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Closing Connection..."));
 
 									// Closing Socket
-									if (LE910C1_EUX::SH(_PostMan_Outgoing_Socket_)) {
+									if (LE910C1_EUX::SH(_PostMan_CID_)) {
 
 										// Control for Incoming Call
 										this->Listen(true);

@@ -15,6 +15,17 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [1.17.0]
+
+- Connection batch updated. Now, connection is made with the same CID.
+- Response function is updated. Now, response is checked with the same CID.
+- Socket listen state in download function is updated. Moved to GET function.
+- SCFGEXT state in download function is updated. Moved to GET function.
+- MD5 variable in download function (GET) is updated.
+- Listen batch is updated. Now, listen is made with the same CID.
+- GET batch is updated. Now, GET is made with the same CID.
+- Publish batch is updated. Now, publish is made with the same CID.
+
 ## [1.16.2]
 
 - Debug control bug is fixed.
