@@ -15,6 +15,13 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [1.18.1]
+
+- Struct_Time moved to public function.
+- TimeStamp variable is added to the Struct_Time structure.
+- JSON_Info_Segment function is updated.
+- Set_Time function is moved to main program.
+
 ## [1.18.0]
 
 - Add_JSON_Key function added for float* type.

@@ -68,17 +68,6 @@
 				char 		Firmware[15];
 			} Module;
 
-			// Define Time Structure
-			struct Struct_Time {
-				uint8_t 	Year				= 0;
-				uint8_t 	Month				= 0;
-				uint8_t 	Day					= 0;
-				uint8_t 	Hour				= 0;
-				uint8_t 	Minute				= 0;
-				uint8_t 	Second				= 0;
-				uint8_t		Time_Zone			= 0;
-			} Time;
-
 			// Define Variables
 			uint8_t Status = 0x00;
 
@@ -514,15 +503,8 @@
 				// Add Comma
 				strcat(_Buffer, ",");
 
-				// Declare TimeStamp Buffer
-				char _TimeStamp_Buffer[20];
-				memset(_TimeStamp_Buffer, '\0', sizeof(_TimeStamp_Buffer));
-
-				// Get TimeStamp
-				Hardware->Time_Stamp(_TimeStamp_Buffer);
-
 				// Add TimeStamp
-				this->Add_JSON_Key(_Buffer, F("TimeStamp"), _TimeStamp_Buffer, true);
+				this->Add_JSON_Key(_Buffer, F("TimeStamp"), this->Time.TimeStamp, true);
 
 				// Add ID Segment
 				this->Add_JSON_Key(_Buffer, F("ID"), Payload->Device_ID, true);	
@@ -3184,6 +3166,18 @@
 		// Public Context
 		public:
 
+			// Define Time Structure
+			struct Struct_Time {
+				uint8_t 	Year				= 0;
+				uint8_t 	Month				= 0;
+				uint8_t 	Day					= 0;
+				uint8_t 	Hour				= 0;
+				uint8_t 	Minute				= 0;
+				uint8_t 	Second				= 0;
+				uint8_t		Time_Zone			= 0;
+				char		TimeStamp[20];
+			} Time;
+
 			// Define Pack Type Variable
 			uint8_t Pack_Type = Pack_None;
 
@@ -3342,7 +3336,7 @@
 						sei();
 
 						// Publish On Status
-						this->Publish(Pack_Online);
+						this->Pack_Type = Pack_Online;
 
 						// Print Message
 						if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_CYAN_, F("PostMan Ready!!"));
@@ -3625,12 +3619,6 @@
 
 					// Control for Terminal State
 					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Syncronizing Time..."));
-
-					// Set RTC Clock
-					Hardware->Set_Time(this->Time.Second, this->Time.Minute, this->Time.Hour, this->Time.Day, this->Time.Month, this->Time.Year);
-
-					// Control for Terminal State
-					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Time Syncronized"));
 
 					// Clear Terminal Message
 					if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Space(21, 84, 36);
@@ -3989,6 +3977,9 @@
 
 							// Get Ring Port
 							if (LE910C1_EUX::SRING(_Length)) {
+
+								// Control for Length
+								if (_Length > _PostMan_Response_JSON_Size_) _Length = _PostMan_Response_JSON_Size_;
 
 								// Declare Response Variable
 								char _Response[_PostMan_Response_JSON_Size_];
