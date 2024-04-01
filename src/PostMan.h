@@ -344,6 +344,25 @@
 				if (_Comma) strcat(_Buffer, ",");
 
 			}
+			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key, float * _Key_Value, const bool _Comma = false) {
+
+				// Add Key
+				this->Add_JSON_Key(_Buffer, _Key);
+
+				// Set Variable
+				float _Data = * _Key_Value;
+
+				// Convert Value to Char Array
+				char _Value_Buffer[20];
+				dtostrf(_Data, 4, 2, _Value_Buffer);
+
+				// Add Key Value
+				strcat(_Buffer, _Value_Buffer);
+
+				// Add Comma
+				if (_Comma) strcat(_Buffer, ",");
+
+			}
 			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key, double _Key_Value, const bool _Comma = false) {
 
 				// Add Key
@@ -506,7 +525,7 @@
 				this->Add_JSON_Key(_Buffer, F("TimeStamp"), _TimeStamp_Buffer, true);
 
 				// Add ID Segment
-				this->Add_JSON_Key(_Buffer, F("ID"), Hardware->SerialID, true);	
+				this->Add_JSON_Key(_Buffer, F("ID"), Payload->Device_ID, true);	
 
 				// Add Firmware Segment
 				this->Add_JSON_Key(_Buffer, F("Firmware"), _FIRMWARE_);
@@ -535,18 +554,123 @@
 				// Add Power Segment Start
 				strcpy(_Buffer, "\"Power\":{");
 
-				// Add Variables
-				this->Add_JSON_Key(_Buffer, F("B_IV"), Hardware->Instant_Voltage(), true);
-				this->Add_JSON_Key(_Buffer, F("B_AC"), Hardware->Average_Current(), true);
-				this->Add_JSON_Key(_Buffer, F("B_IC"), Hardware->Instant_Capacity(), true);
-				this->Add_JSON_Key(_Buffer, F("B_FC"), Hardware->Full_Capacity(), true);
-				this->Add_JSON_Key(_Buffer, F("B_SOC"), Hardware->State_Of_Charge(), true);
-				this->Add_JSON_Key(_Buffer, F("B_T"), Hardware->IC_Temperature(), true);
-				this->Add_JSON_Key(_Buffer, F("B_CS"), Hardware->Charge_Status(), false);
+				// Get some data
+				const uint16_t _Keys[8] = {_Data_B_IV_, _Data_B_AC_, _Data_B_ICAP_, _Data_B_FCAP_, _Data_B_SOC_, _Data_B_T_, _Data_B_CS_};
+
+				// Declare Comma Status
+				bool _Comma = false;
+
+				// Print the data
+				for (uint16_t _Key : _Keys) {
+
+					// Get the value
+					const float* _Value = Payload->Get(_Key);
+
+					// Control for Value
+					if (_Value != nullptr) {
+
+						// Add Comma
+						if (_Comma) strcat(_Buffer, ",");
+
+						// Add Key
+						switch (_Key) {
+
+							// Case _Data_B_IV_
+							case _Data_B_IV_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("B_IV"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_B_AC_
+							case _Data_B_AC_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("B_AC"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_B_ICAP_
+							case _Data_B_ICAP_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("B_IC"), (uint16_t)*_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_B_FCAP_
+							case _Data_B_FCAP_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("B_FC"), (uint16_t)*_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_B_SOC_
+							case _Data_B_SOC_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("B_SOC"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_B_T_
+							case _Data_B_T_: {
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("B_T"), *_Value);
+
+								// End Case
+								break;
+
+							}
+
+							// Case _Data_B_CS_
+							case _Data_B_CS_: {
+
+								// Convert Value to uint32_t
+								float _ValueFloat = *_Value;
+								uint32_t _Status = static_cast<uint32_t>(_ValueFloat);
+
+								// Add Key
+								this->Add_JSON_Key(_Buffer, F("B_CS"), _Status);
+
+								// End Case
+								break;
+
+							}
+
+						}
+
+						// Set Comma
+						_Comma = true;
+
+					}
+
+				}
 
 				// Add End of Power Segment
 				strcat(_Buffer, "}");
-				
+
+				// Remove Spaces from Buffer
+				this->Remove_Spaces(_Buffer);
+
 				// Return Length
 				return(this->Length(_Buffer));
 
@@ -801,9 +925,6 @@
 
 				// Close Payload Buffer
 				strcat(_Buffer, "}");
-
-				// Clear Payload
-				Payload->Clear();
 
 				// Remove Spaces from Buffer
 				this->Remove_Spaces(_Buffer);
@@ -3694,8 +3815,8 @@
 										char _Buffer[60];
 
 										// Set Variables
-										Payload->Add(_Data_PCB_T_, Hardware->Temperature());
-										Payload->Add(_Data_PCB_H_, Hardware->Humidity());
+										//Payload->Add(_Data_PCB_T_, Hardware->Temperature());
+										//Payload->Add(_Data_PCB_H_, Hardware->Humidity());
 
 										// Clear Buffer
 										memset(_Buffer, '\0', 60);
@@ -3910,6 +4031,9 @@
 
 											// Print Message
 											if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_GREEN_, F("Message Sent Success!!"));
+
+											// Clear Payload
+											Payload->Clear();
 
 											// Clear Pack Type
 											this->Pack_Type = Pack_None;

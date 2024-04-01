@@ -15,6 +15,13 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [1.18.0]
+
+- Add_JSON_Key function added for float* type.
+- Device_ID variable is now pull from variable lbrary.
+- JSON_Power_Segment function is updated.
+- Payload-Clear function position is moved to publish function.
+
 ## [1.17.0]
 
 - Connection batch updated. Now, connection is made with the same CID.
