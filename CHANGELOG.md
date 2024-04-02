@@ -15,6 +15,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [1.18.2]
+
+- JSON_IoT_Segment function is updated.
+
 ## [1.18.1]
 
 - Struct_Time moved to public function.

@@ -757,151 +757,198 @@
 				// Copy Buffer Start
 				strcpy(_Buffer, "\"Payload\":{");
 
-				// Get some data
-				const uint16_t _Keys[9] = {_Data_STATUS_, _Data_PCB_T_, _Data_PCB_H_, _Firmware_ID_, _FOTA_Download_Status_, _FOTA_Download_Time_, _Data_VRMS_R_, _Data_VRMS_S_, _Data_VRMS_T_};
+				// Control for Pack Type
+				if (_Pack_Type == Pack_FOTA_Download) {
 
-				// Declare Comma Status
-				bool _Comma = false;
+					// Get some data
+					const uint16_t _Keys[4] = {_Data_STATUS_, _Firmware_ID_, _FOTA_Download_Status_, _FOTA_Download_Time_};
 
-				// Print the data
-				for (uint16_t _Key : _Keys) {
+					// Declare Comma Status
+					bool _Comma = false;
 
-					// Get the value
-					const float* _Value = Payload->Get(_Key);
+					// Print the data
+					for (uint16_t _Key : _Keys) {
 
-					// Control for Value
-					if (_Value != nullptr) {
+						// Get the value
+						const float* _Value = Payload->Get(_Key);
 
-						// Add Comma
-						if (_Comma) strcat(_Buffer, ",");
+						// Control for Value
+						if (_Value != nullptr) {
 
-						// Add Key
-						switch (_Key) {
+							// Add Comma
+							if (_Comma) strcat(_Buffer, ",");
 
-							// Case _Data_STATUS_
-							case _Data_STATUS_: {
+							// Add Key
+							switch (_Key) {
 
-								// Convert Value to uint32_t
-								float _ValueFloat = *_Value;
-								uint32_t _Status = static_cast<uint32_t>(_ValueFloat);
+								// Case _Data_STATUS_
+								case _Data_STATUS_: {
 
-								// Add Key
-								this->Add_JSON_Key(_Buffer, F("STATUS"), _Status);
+									// Convert Value to uint32_t
+									float _ValueFloat = *_Value;
+									uint32_t _Status = static_cast<uint32_t>(_ValueFloat);
 
-								// End Case
-								break;
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("STATUS"), _Status);
 
-							}
+									// End Case
+									break;
 
-							// Case _Data_PCB_T_
-							case _Data_PCB_T_: {
+								}
 
-								// Add Key
-								this->Add_JSON_Key(_Buffer, F("PCB_T"), *_Value);
+								// Case _Firmware_ID_
+								case _Firmware_ID_: {
 
-								// End Case
-								break;
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("Firmware_ID"), *_Value);
 
-							}
+									// End Case
+									break;
 
-							// Case _Data_PCB_H_
-							case _Data_PCB_H_: {
+								}
 
-								// Add Key
-								this->Add_JSON_Key(_Buffer, F("PCB_H"), *_Value);
+								// Case _FOTA_Download_Status_
+								case _FOTA_Download_Status_: {
 
-								// End Case
-								break;
+									// Convert Value to uint32_t
+									float _ValueFloat = *_Value;
+									uint8_t _Status = static_cast<uint8_t>(_ValueFloat);
 
-							}
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("FOTA_Download_Status"), _Status);
 
-							// Case _Firmware_ID_
-							case _Firmware_ID_: {
+									// End Case
+									break;
 
-								// Add Key
-								this->Add_JSON_Key(_Buffer, F("Firmware_ID"), *_Value);
+								}
 
-								// End Case
-								break;
+								// Case _FOTA_Download_Time_
+								case _FOTA_Download_Time_: {
 
-							}
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("FOTA_Download_Time"), *_Value);
 
-							// Case _FOTA_Download_Status_
-							case _FOTA_Download_Status_: {
+									// End Case
+									break;
 
-								// Convert Value to uint32_t
-								float _ValueFloat = *_Value;
-								uint8_t _Status = static_cast<uint8_t>(_ValueFloat);
-
-								// Add Key
-								this->Add_JSON_Key(_Buffer, F("FOTA_Download_Status"), _Status);
-
-								// End Case
-								break;
+								}
 
 							}
 
-							// Case _FOTA_Download_Time_
-							case _FOTA_Download_Time_: {
-
-								// Add Key
-								this->Add_JSON_Key(_Buffer, F("FOTA_Download_Time"), *_Value);
-
-								// End Case
-								break;
-
-							}
-
-							// Case _Data_VRMS_R_
-							case _Data_VRMS_R_: {
-
-								// Add Key
-								this->Add_JSON_Key(_Buffer, F("VRMS_R"), *_Value);
-
-								// End Case
-								break;
-
-							}
-
-							// Case _Data_VRMS_S_
-							case _Data_VRMS_S_: {
-
-								// Add Key
-								this->Add_JSON_Key(_Buffer, F("VRMS_S"), *_Value);
-
-								// End Case
-								break;
-
-							}
-
-							// Case _Data_VRMS_T_
-							case _Data_VRMS_T_: {
-
-								// Add Key
-								this->Add_JSON_Key(_Buffer, F("VRMS_T"), *_Value);
-
-								// End Case
-								break;
-
-							}
+							// Set Comma
+							_Comma = true;
 
 						}
 
-						// Set Comma
-						_Comma = true;
-
 					}
 
-				}
-
-				// Control for FOTA Download
-				if (_Pack_Type == Pack_FOTA_Download) {
-
 					// Add Comma
-					strcat(_Buffer, ",");
+					if (_Comma) strcat(_Buffer, ",");
 
 					// Add Key
 					this->Add_JSON_Key(_Buffer, F("MD5"), this->MD5_Hash);
+
+				} else {
+
+					// Get some data
+					const uint16_t _Keys[6] = {_Data_STATUS_, _Data_PCB_T_, _Data_PCB_H_, _Data_VRMS_R_, _Data_VRMS_S_, _Data_VRMS_T_};
+
+					// Declare Comma Status
+					bool _Comma = false;
+
+					// Print the data
+					for (uint16_t _Key : _Keys) {
+
+						// Get the value
+						const float* _Value = Payload->Get(_Key);
+
+						// Control for Value
+						if (_Value != nullptr) {
+
+							// Add Comma
+							if (_Comma) strcat(_Buffer, ",");
+
+							// Add Key
+							switch (_Key) {
+
+								// Case _Data_STATUS_
+								case _Data_STATUS_: {
+
+									// Convert Value to uint32_t
+									float _ValueFloat = *_Value;
+									uint32_t _Status = static_cast<uint32_t>(_ValueFloat);
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("STATUS"), _Status);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_PCB_T_
+								case _Data_PCB_T_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("PCB_T"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_PCB_H_
+								case _Data_PCB_H_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("PCB_H"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_VRMS_R_
+								case _Data_VRMS_R_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("VRMS_R"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_VRMS_S_
+								case _Data_VRMS_S_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("VRMS_S"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_VRMS_T_
+								case _Data_VRMS_T_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("VRMS_T"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+							}
+
+							// Set Comma
+							_Comma = true;
+
+						}
+
+					}
 
 				}
 
