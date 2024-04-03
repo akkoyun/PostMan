@@ -15,6 +15,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [1.18.3]
+
+- JSON_Payload_Segment function is updated.
+
 ## [1.18.2]
 
 - JSON_IoT_Segment function is updated.

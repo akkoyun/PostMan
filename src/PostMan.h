@@ -851,7 +851,15 @@
 				} else {
 
 					// Get some data
-					const uint16_t _Keys[6] = {_Data_STATUS_, _Data_PCB_T_, _Data_PCB_H_, _Data_VRMS_R_, _Data_VRMS_S_, _Data_VRMS_T_};
+					const uint16_t _Keys[14] = {
+						_Data_STATUS_, 
+						_Data_PCB_T_, _Data_PCB_H_, 
+						_Data_V_R_, _Data_V_MAX_R_, _Data_V_MIN_R_,
+						_Data_VRMS_R_, _Data_VRMS_MAX_R_, _Data_VRMS_MIN_R_, 
+						_Data_VRMS_S_, 
+						_Data_VRMS_T_, 
+						_Data_FQ_, _Data_FQ_MIN_, _Data_FQ_MAX_
+					};
 
 					// Declare Comma Status
 					bool _Comma = false;
@@ -908,11 +916,66 @@
 
 								}
 
+								// Case _Data_V_R_
+								case _Data_V_R_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("V_R"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_V_MAX_R_
+								case _Data_V_MAX_R_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("V_MAX_R"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_V_MIN_R_
+								case _Data_V_MIN_R_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("V_MIN_R"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
 								// Case _Data_VRMS_R_
 								case _Data_VRMS_R_: {
 
 									// Add Key
 									this->Add_JSON_Key(_Buffer, F("VRMS_R"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_VRMS_MAX_R_
+								case _Data_VRMS_MAX_R_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("VRMS_MAX_R"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_VRMS_MIN_R_
+								case _Data_VRMS_MIN_R_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("VRMS_MIN_R"), *_Value);
 
 									// End Case
 									break;
@@ -935,6 +998,39 @@
 
 									// Add Key
 									this->Add_JSON_Key(_Buffer, F("VRMS_T"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_FQ_
+								case _Data_FQ_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("FQ"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_FQ_MIN_
+								case _Data_FQ_MIN_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("FQ_MIN"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_FQ_MAX_
+								case _Data_FQ_MAX_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("FQ_MAX"), *_Value);
 
 									// End Case
 									break;
