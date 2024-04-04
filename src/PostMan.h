@@ -126,9 +126,6 @@
 					// Declare MD5 Buffer Size
 					uint8_t _MD5_Buffer_Size = 10;
 
-					// Declare Buffer Size
-					uint32_t _Buffer_File_Size = 0;
-
 					// Read File
 					while (_SD_File.available() > 0) {
 
@@ -139,7 +136,7 @@
 						memset(_Data, 0, sizeof(_Data));
 
 						// Read 10 Byte Data
-						_Buffer_File_Size += _SD_File.readBytes(_Data, _MD5_Buffer_Size - 1);
+						_SD_File.readBytes(_Data, _MD5_Buffer_Size - 1);
 
 						// MD5 Checksum
 						_Hash.Update(_Data, _MD5_Buffer_Size - 1);
@@ -184,7 +181,7 @@
 			}
 
 			// Calculate Length of Char Array
-			uint16_t Length(char * _Array) {
+			uint16_t Length(const char * _Array) {
 
 				// Declare Length Variable
 				uint16_t _Length = 0;
@@ -333,7 +330,7 @@
 				if (_Comma) strcat(_Buffer, ",");
 
 			}
-			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key, float * _Key_Value, const bool _Comma = false) {
+			void Add_JSON_Key(char * _Buffer, const __FlashStringHelper * _Key, const float * _Key_Value, const bool _Comma = false) {
 
 				// Add Key
 				this->Add_JSON_Key(_Buffer, _Key);
@@ -784,9 +781,9 @@
 								// Case _Data_STATUS_
 								case _Data_STATUS_: {
 
-									// Convert Value to uint32_t
+									// Convert Value to uint8_t
 									float _ValueFloat = *_Value;
-									uint32_t _Status = static_cast<uint32_t>(_ValueFloat);
+									uint8_t _Status = static_cast<uint8_t>(_ValueFloat);
 
 									// Add Key
 									this->Add_JSON_Key(_Buffer, F("STATUS"), _Status);
@@ -799,8 +796,12 @@
 								// Case _Firmware_ID_
 								case _Firmware_ID_: {
 
+									// Convert Value to uint32_t
+									float _ValueFloat = *_Value;
+									uint32_t _ID = static_cast<uint32_t>(_ValueFloat);
+
 									// Add Key
-									this->Add_JSON_Key(_Buffer, F("Firmware_ID"), *_Value);
+									this->Add_JSON_Key(_Buffer, F("Firmware_ID"), _ID);
 
 									// End Case
 									break;
@@ -825,8 +826,12 @@
 								// Case _FOTA_Download_Time_
 								case _FOTA_Download_Time_: {
 
+									// Convert Value to uint8_t
+									float _ValueFloat = *_Value;
+									uint16_t _Time = static_cast<uint8_t>(_ValueFloat);
+
 									// Add Key
-									this->Add_JSON_Key(_Buffer, F("FOTA_Download_Time"), *_Value);
+									this->Add_JSON_Key(_Buffer, F("FOTA_Download_Time"), _Time);
 
 									// End Case
 									break;
@@ -2319,17 +2324,12 @@
 
 					// Declare FOTA Variable Struct
 					struct PostMan_FOTA_Variables {
-						uint16_t File_ID = 0;
 						uint16_t Download_Time = 0;
 						uint32_t Download_Start_Time = 0;
 						uint32_t Download_Size = 0;
 						uint32_t Server_File_Size = 0;
-						uint32_t SD_File_Size = 0;
 						uint8_t Download_Status = FOTA_Download_Unknown;
 					} FOTA;
-
-					// Set FOTA File ID
-					FOTA.File_ID = _Firmware_ID;
 
 					// Add Variable
 					this->Payload->Add(9001, _Firmware_ID);
@@ -3221,9 +3221,6 @@
 							// Print Message
 							if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_BLUE_, F("Controling File Size..."));
 
-							// Get SD File Size
-							FOTA.SD_File_Size = FOTA_File.size();
-
 							// Close SD File
 							FOTA_File.close();
 
@@ -3833,25 +3830,26 @@
 									// Control for Event Type
 									if (_Event == Command_FOTA_Download_GET || _Event == Command_FOTA_Download_FTP) {
 
-										// Get Firmware ID
-										uint16_t _FW_ID = _JSON_Data[F("FW_ID")];
-
 										// {"Response":200}
-
-										// Declare Buffer Array
-										char _Buffer[17];
 
 										// Declare Response Code
 										uint16_t _Response_Code = _HTTP_OK_;
+
+										// Declare Buffer Array
+										char _Response_Buffer[17];
+										memset(_Response_Buffer, '\0', sizeof(_Response_Buffer));
+
+										// Get Firmware ID
+										uint16_t _FW_ID = _JSON_Data[F("FW_ID")];
 
 										// Decide Response Code
 										if (_FW_ID != 0) _Response_Code = _HTTP_OK_; else _Response_Code = _HTTP_BadRequest_;
 
 										// Generate Response
-										sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+										sprintf(_Response_Buffer, "{\"Response\":%03u}", _Response_Code);
 
 										// Send Response
-										this->Response(_Buffer);
+										this->Response(_Response_Buffer);
 
 										// Stop Socket Listen
 										this->Listen(false);
@@ -3883,16 +3881,17 @@
 										// {"Response":200}
 
 										// Declare Buffer Array
-										char _Buffer[17];
+										char _Response_Buffer[17];
+										memset(_Response_Buffer, '\0', sizeof(_Response_Buffer));
 
 										// Declare Response Code
 										uint16_t _Response_Code = _HTTP_OK_;
 
 										// Generate Response
-										sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+										sprintf(_Response_Buffer, "{\"Response\":%03u}", _Response_Code);
 
 										// Send Response
-										this->Response(_Buffer);
+										this->Response(_Response_Buffer);
 
 										// Print Message
 										if (bitRead(this->Status, PostMan_Status_Terminal)) Terminal->Show_Message(_Console_RED_, F("Starting Firmware Burn..."));
@@ -3905,16 +3904,17 @@
 										// {"Response":200}
 
 										// Declare Buffer Array
-										char _Buffer[17];
+										char _Response_Buffer[17];
+										memset(_Response_Buffer, '\0', sizeof(_Response_Buffer));
 
 										// Declare Response Code
 										uint16_t _Response_Code = _HTTP_OK_;
 
 										// Generate Response
-										sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+										sprintf(_Response_Buffer, "{\"Response\":%03u}", _Response_Code);
 
 										// Send Response
-										this->Response(_Buffer);
+										this->Response(_Response_Buffer);
 
 										// Start Relay
 										Hardware->Relay(RELAY_START, RELAY_UNLOCK, 500);
@@ -3924,16 +3924,17 @@
 										// {"Response":200}
 
 										// Declare Buffer Array
-										char _Buffer[17];
+										char _Response_Buffer[17];
+										memset(_Response_Buffer, '\0', sizeof(_Response_Buffer));
 
 										// Declare Response Code
 										uint16_t _Response_Code = _HTTP_OK_;
 
 										// Generate Response
-										sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+										sprintf(_Response_Buffer, "{\"Response\":%03u}", _Response_Code);
 
 										// Send Response
-										this->Response(_Buffer);
+										this->Response(_Response_Buffer);
 
 										// Stop Relay
 										Hardware->Relay(RELAY_STOP, RELAY_UNLOCK, 500);
@@ -3943,48 +3944,43 @@
 										// {"Response":200,"Environment":{"T":10.00,"H":22.22}}
 
 										// Declare Buffer Array
-										char _Buffer[60];
+										char _Response_Buffer[60];
+										memset(_Response_Buffer, '\0', sizeof(_Response_Buffer));
 
 										// Set Variables
 										//Payload->Add(_Data_PCB_T_, Hardware->Temperature());
 										//Payload->Add(_Data_PCB_H_, Hardware->Humidity());
 
-										// Clear Buffer
-										memset(_Buffer, '\0', 60);
-
 										// Generate Temperature Buffer
-										char _Buffer_T[6];
-										memset(_Buffer_T, '\0', sizeof(_Buffer_T));
-										Payload->Get(_Data_PCB_T_, _Buffer_T);
+										char _Response_Buffer_T[6];
+										memset(_Response_Buffer_T, '\0', sizeof(_Response_Buffer_T));
+										Payload->Get(_Data_PCB_T_, _Response_Buffer_T);
 
 										// Generate Humidity Buffer
-										char _Buffer_H[6];
-										memset(_Buffer_H, '\0', sizeof(_Buffer_H));
-										Payload->Get(_Data_PCB_H_, _Buffer_H);
-
-										// Clear Variables
-										Payload->Clear();
+										char _Response_Buffer_H[6];
+										memset(_Response_Buffer_H, '\0', sizeof(_Response_Buffer_H));
+										Payload->Get(_Data_PCB_H_, _Response_Buffer_H);
 
 										// Declare Response Code
 										uint16_t _Response_Code = _HTTP_OK_;
 
 										// Generate Response
-										sprintf(_Buffer, "{\"Response\":%03u,\"Environment\":{\"T\":%s,\"H\":%s}}", _Response_Code, _Buffer_T, _Buffer_H);
+										sprintf(_Response_Buffer, "{\"Response\":%03u,\"Environment\":{\"T\":%s,\"H\":%s}}", _Response_Code, _Response_Buffer_T, _Response_Buffer_H);
 
 										// Send Response
-										this->Response(_Buffer);
+										this->Response(_Response_Buffer);
 
 									} else if (_Event == Command_Power) {
 
 										// Declare Power Buffer
-										char _Power_Buffer[100];
-										memset(_Power_Buffer, '\0', sizeof(_Power_Buffer));
+										char _Response_Buffer[100];
+										memset(_Response_Buffer, '\0', sizeof(_Response_Buffer));
 
 										// Parse Power
-										this->JSON_Power_Segment(_Power_Buffer, Pack_Update);
+										this->JSON_Power_Segment(_Response_Buffer, Pack_Update);
 
 										// Send Response
-										this->Response(_Power_Buffer);
+										this->Response(_Response_Buffer);
 
 									} else if (_Event == Command_GSM) {
 
@@ -3992,58 +3988,57 @@
 										this->Update_Connection_Status();
 
 										// Declare IoT Buffer
-										char _IoT_Buffer[150];
-										memset(_IoT_Buffer, '\0', sizeof(_IoT_Buffer));
+										char _Response_Buffer[150];
+										memset(_Response_Buffer, '\0', sizeof(_Response_Buffer));
 
 										// Parse IoT
-										this->JSON_IoT_Segment(_IoT_Buffer, Pack_Update);
+										this->JSON_IoT_Segment(_Response_Buffer, Pack_Update);
 
 										// Send Response
-										this->Response(_IoT_Buffer);
+										this->Response(_Response_Buffer);
 
 									} else if (_Event == Command_Energy) {
 
 										// Declare IoT Buffer
-										char _IoT_Buffer[300];
-										memset(_IoT_Buffer, '\0', sizeof(_IoT_Buffer));
+										char _Response_Buffer[300];
+										memset(_Response_Buffer, '\0', sizeof(_Response_Buffer));
 
 										// Parse IoT
-										this->JSON_Energy_Segment(_IoT_Buffer);
+										this->JSON_Energy_Segment(_Response_Buffer);
 
 										// Send Response
-										this->Response(_IoT_Buffer);
+										this->Response(_Response_Buffer);
 
 									} else if (_Event == Command_Version) {
 
 										// {"Response":200,"Version":"01.00.00"}
 
 										// Declare Buffer Array
-										char _Buffer[38];
-
-										// Clear Buffer
-										memset(_Buffer, '\0', 38);
+										char _Response_Buffer[38];
+										memset(_Response_Buffer, '\0', sizeof(_Response_Buffer));
 
 										// Generate Response
-										sprintf(_Buffer, "{\"Response\":200,\"Version\":\"%s\"}", _FIRMWARE_);
+										sprintf(_Response_Buffer, "{\"Response\":200,\"Version\":\"%s\"}", _FIRMWARE_);
 
 										// Send Response
-										this->Response(_Buffer);
+										this->Response(_Response_Buffer);
 
 									} else {
 
 										// {"Response":200}
 
 										// Declare Buffer Array
-										char _Buffer[17];
+										char _Response_Buffer[17];
+										memset(_Response_Buffer, '\0', sizeof(_Response_Buffer));
 
 										// Declare Response Code
 										uint16_t _Response_Code = _HTTP_NotAcceptable_;
 
 										// Generate Response
-										sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+										sprintf(_Response_Buffer, "{\"Response\":%03u}", _Response_Code);
 
 										// Send Response
-										this->Response(_Buffer);
+										this->Response(_Response_Buffer);
 
 									}
 
@@ -4052,16 +4047,17 @@
 									// {"Response":200}
 
 									// Declare Buffer Array
-									char _Buffer[17];
+									char _Response_Buffer[17];
+									memset(_Response_Buffer, '\0', sizeof(_Response_Buffer));
 
 									// Declare Response Code
 									uint16_t _Response_Code = _HTTP_BadRequest_;
 
 									// Generate Response
-									sprintf(_Buffer, "{\"Response\":%03u}", _Response_Code);
+									sprintf(_Response_Buffer, "{\"Response\":%03u}", _Response_Code);
 
 									// Send Response
-									this->Response(_Buffer);
+									this->Response(_Response_Buffer);
 
 								}
 
