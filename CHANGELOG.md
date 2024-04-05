@@ -15,6 +15,11 @@ All notable changes to this project will be documented in this file. The format 
 
 ---
 
+## [1.18.5]
+
+- T_PUMP variable is added to JSON_Payload_Segment function.
+- Command_Ping function is updated.
+
 ## [1.18.4]
 
 - Bug fixed.

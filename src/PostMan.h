@@ -856,9 +856,10 @@
 				} else {
 
 					// Get some data
-					const uint16_t _Keys[14] = {
+					const uint16_t _Keys[15] = {
 						_Data_STATUS_, 
 						_Data_PCB_T_, _Data_PCB_H_, 
+						_Data_T_Pump_,
 						_Data_V_R_, _Data_V_MAX_R_, _Data_V_MIN_R_,
 						_Data_VRMS_R_, _Data_VRMS_MAX_R_, _Data_VRMS_MIN_R_, 
 						_Data_VRMS_S_, 
@@ -915,6 +916,17 @@
 
 									// Add Key
 									this->Add_JSON_Key(_Buffer, F("PCB_H"), *_Value);
+
+									// End Case
+									break;
+
+								}
+
+								// Case _Data_T_Pump_
+								case _Data_T_Pump_: {
+
+									// Add Key
+									this->Add_JSON_Key(_Buffer, F("T_Pump"), *_Value);
 
 									// End Case
 									break;
@@ -4019,6 +4031,29 @@
 
 										// Generate Response
 										sprintf(_Response_Buffer, "{\"Response\":200,\"Version\":\"%s\"}", _FIRMWARE_);
+
+										// Send Response
+										this->Response(_Response_Buffer);
+
+									} else if (_Event == Command_Ping) {
+
+										// {"Response":200,"Pong":100}
+
+										// Declare Buffer Array
+										char _Response_Buffer[35];
+										memset(_Response_Buffer, '\0', sizeof(_Response_Buffer));
+
+										// Declare Response Code
+										uint16_t _Response_Code = _HTTP_OK_;
+
+										// Declare Ping Time
+										uint16_t _Ping_Time = 0;
+										
+										// Get Ping Value
+										LE910C1_EUX::Ping("ditsa.cn", _Ping_Time);
+
+										// Generate Response
+										sprintf(_Response_Buffer, "{\"Response\":%u,\"Pong\":%u}", _Response_Code, _Ping_Time * 100);
 
 										// Send Response
 										this->Response(_Response_Buffer);
