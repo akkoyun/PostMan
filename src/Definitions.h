@@ -14,6 +14,7 @@
 // Define PowerStat Commands
 #define Command_None								(uint16_t)0
 #define Command_Version 							(uint16_t)100
+#define Command_Ping								(uint16_t)101
 #define Command_OK									(uint16_t)200
 #define Command_NOK									(uint16_t)201
 #define Command_Start								(uint16_t)256
